@@ -13,6 +13,8 @@ import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
 import com.jakober.matchday.domain.Match
+import com.jakober.matchday.domain.Participant
+import com.jakober.matchday.domain.ParticipantsSource
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.theme.MatchdayTheme
 import com.jakober.matchday.theme.Pitch
@@ -67,6 +69,8 @@ private fun Root() {
     val subscriptions by Container.store.subscriptions.collectAsState()
     val reminders by Container.store.reminders.collectAsState()
 
+    val activeProfile = profile ?: return
+
     var screen by remember { mutableStateOf(Screen.HOME) }
     var view by remember { mutableStateOf(HomeView.LIST) }
     var selected by remember { mutableStateOf<Match?>(null) }
@@ -100,7 +104,27 @@ private fun Root() {
     }
     val accentOf: (Match) -> Color = { colorBySubscription[it.subscriptionId] ?: Pitch }
 
-    val activeProfile = profile ?: return
+    // Trennstelle zur Gruppe: Solange kein Backend angebunden ist, kennt die
+    // App nur die eigene Antwort. Sobald Supabase dranhaengt, wird hier die
+    // Liste der Gruppenmitglieder eingesetzt - die Oberflaeche bleibt gleich.
+    val participantsOf = remember(rsvps, activeProfile) {
+        ParticipantsSource { matchId ->
+            val status = rsvps[matchId]
+            if (status == null) {
+                emptyList()
+            } else {
+                listOf(
+                    Participant(
+                        id = activeProfile.id,
+                        name = activeProfile.name,
+                        colorArgb = activeProfile.colorArgb,
+                        status = status,
+                        isMe = true,
+                    )
+                )
+            }
+        }
+    }
 
     when (screen) {
         Screen.HOME -> HomeScreen(
@@ -110,6 +134,7 @@ private fun Root() {
             view = view,
             isSyncing = syncing,
             hasSubscriptions = subscriptions.any { it.enabled },
+            participantsOf = participantsOf,
             accentOf = accentOf,
             onViewChange = { view = it },
             onSelect = { selected = it },
@@ -158,6 +183,7 @@ private fun Root() {
         MatchDetailSheet(
             match = match,
             status = rsvps[match.id] ?: RsvpStatus.UNDECIDED,
+            participants = participantsOf(match.id),
             accent = accentOf(match),
             onSetStatus = { status ->
                 Container.store.setRsvp(match.id, status)

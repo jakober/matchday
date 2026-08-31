@@ -36,10 +36,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.jakober.matchday.domain.Match
+import com.jakober.matchday.domain.Participant
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.theme.CardCorner
 import com.jakober.matchday.theme.StatusIn
 import com.jakober.matchday.theme.StatusOut
+import com.jakober.matchday.ui.components.AttendanceLine
 import com.jakober.matchday.ui.components.DateText
 import com.jakober.matchday.ui.components.local
 
@@ -52,6 +54,7 @@ import com.jakober.matchday.ui.components.local
 fun MatchDetailSheet(
     match: Match,
     status: RsvpStatus,
+    participants: List<Participant>,
     accent: Color,
     onSetStatus: (RsvpStatus) -> Unit,
     onDismiss: () -> Unit,
@@ -112,7 +115,17 @@ fun MatchDetailSheet(
                 InfoLine(icon = Icons.Filled.LocationOn, text = it)
             }
 
-            Spacer(Modifier.height(28.dp))
+            Spacer(Modifier.height(24.dp))
+
+            Text(
+                text = "WER KOMMT MIT",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(10.dp))
+            AttendanceLine(participants = participants, avatarSize = 28.dp)
+
+            Spacer(Modifier.height(24.dp))
 
             Text(
                 text = "BIST DU DABEI?",

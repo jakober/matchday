@@ -27,11 +27,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jakober.matchday.data.TeamCatalog
 import com.jakober.matchday.domain.Match
+import com.jakober.matchday.domain.Participant
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.theme.CardCorner
 import com.jakober.matchday.theme.StatusIn
 import com.jakober.matchday.theme.StatusOpen
 import com.jakober.matchday.theme.StatusOut
+import com.jakober.matchday.ui.components.AttendanceLine
 import com.jakober.matchday.ui.components.DateText
 import com.jakober.matchday.ui.components.TeamBadge
 import com.jakober.matchday.ui.components.local
@@ -50,13 +52,14 @@ fun statusLabel(status: RsvpStatus): String = when (status) {
 }
 
 /**
- * Eine Zeile in der Spielliste: Datumsblock links, Begegnung in der Mitte,
- * Zusagestatus rechts.
+ * Eine Zeile in der Spielliste: Wappen, Datum, Begegnung, wer mitkommt und
+ * die eigene Antwort.
  */
 @Composable
 fun MatchRow(
     match: Match,
     status: RsvpStatus,
+    participants: List<Participant>,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -88,8 +91,8 @@ fun MatchRow(
 
         Column(
             modifier = Modifier
-                .width(64.dp)
-                .padding(horizontal = 10.dp),
+                .width(58.dp)
+                .padding(horizontal = 8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
@@ -120,40 +123,36 @@ fun MatchRow(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            Spacer(Modifier.height(8.dp))
+            AttendanceLine(participants = participants)
         }
 
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(8.dp))
 
         StatusDot(status)
     }
 }
 
-/** Uhrzeit, dahinter Ort oder Wettbewerb, sofern vorhanden. */
+/** Uhrzeit, dahinter Wettbewerb oder Ort, sofern vorhanden. */
 private fun subtitleOf(match: Match): String {
     val time = if (match.isAllDay) "Ganztägig" else DateText.time(match.start.local())
-    val extra = match.location?.takeIf { it.isNotBlank() }
-        ?: match.competition?.takeIf { it.isNotBlank() }
+    val extra = match.competition?.takeIf { it.isNotBlank() }
+        ?: match.location?.takeIf { it.isNotBlank() }
     return if (extra == null) time else "$time · $extra"
 }
 
 /**
- * Statusanzeige. Bewusst mit Fuellung und Ring statt nur Farbe, damit sich die
- * drei Zustaende auch ohne Farbunterscheidung lesen lassen.
+ * Eigene Antwort. Bewusst mit Fuellung und Ring statt nur Farbe, damit sich
+ * die drei Zustaende auch ohne Farbunterscheidung lesen lassen.
  */
 @Composable
 private fun StatusDot(status: RsvpStatus) {
     val color = statusColor(status)
-    Box(
-        modifier = Modifier.size(22.dp),
-        contentAlignment = Alignment.Center,
-    ) {
+    Box(modifier = Modifier.size(22.dp), contentAlignment = Alignment.Center) {
         when (status) {
-            RsvpStatus.IN -> Box(
-                Modifier.size(14.dp).clip(CircleShape).background(color),
-            )
+            RsvpStatus.IN -> Box(Modifier.size(14.dp).clip(CircleShape).background(color))
             RsvpStatus.OUT -> Box(
-                Modifier.size(14.dp).clip(CircleShape)
-                    .border(3.dp, color, CircleShape),
+                Modifier.size(14.dp).clip(CircleShape).border(3.dp, color, CircleShape),
             )
             RsvpStatus.UNDECIDED -> Box(
                 Modifier.size(14.dp).clip(CircleShape)

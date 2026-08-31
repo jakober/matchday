@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.jakober.matchday.domain.Match
+import com.jakober.matchday.domain.ParticipantsSource
 import com.jakober.matchday.domain.Profile
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.theme.ChipCorner
@@ -54,6 +55,7 @@ fun HomeScreen(
     view: HomeView,
     isSyncing: Boolean,
     hasSubscriptions: Boolean,
+    participantsOf: ParticipantsSource,
     accentOf: (Match) -> Color,
     onViewChange: (HomeView) -> Unit,
     onSelect: (Match) -> Unit,
@@ -127,12 +129,14 @@ fun HomeScreen(
                         HomeView.LIST -> MatchListView(
                             matches = matches,
                             rsvps = rsvps,
+                            participantsOf = participantsOf,
                             onSelect = onSelect,
                         )
 
                         HomeView.MONTH -> MonthView(
                             matches = matches,
                             rsvps = rsvps,
+                            participantsOf = participantsOf,
                             accentOf = accentOf,
                             onSelect = onSelect,
                         )
