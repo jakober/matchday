@@ -13,11 +13,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -60,14 +62,24 @@ fun OnboardingScreen(onDone: (Profile) -> Unit) {
         .ifEmpty { "?" }
 
     Surface(modifier = Modifier.fillMaxSize()) {
+        // Aussenspalte traegt die Einrueckungen: systemBars und ime getrennt,
+        // nicht safeDrawing - das enthaelt die Tastatur bereits und wuerde sie
+        // zusammen mit imePadding doppelt abziehen.
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .safeDrawingPadding()
-                .imePadding()
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
+                .systemBarsPadding()
+                .imePadding(),
         ) {
+            // Der scrollbare Teil. Ohne ihn schiebt die Tastatur das Eingabefeld
+            // aus dem Bild und man kommt nicht mehr hin.
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
             Spacer(Modifier.height(48.dp))
 
             Text(
@@ -117,8 +129,11 @@ fun OnboardingScreen(onDone: (Profile) -> Unit) {
                 onSelect = { colorArgb = it },
             )
 
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(24.dp))
+            }
 
+            // Der Knopf bleibt ausserhalb des Scrollbereichs und steht damit
+            // immer sichtbar ueber der Tastatur.
             Button(
                 onClick = {
                     onDone(Profile(id = newId(), name = trimmed, colorArgb = colorArgb))
@@ -126,6 +141,7 @@ fun OnboardingScreen(onDone: (Profile) -> Unit) {
                 enabled = canContinue,
                 shape = RoundedCornerShape(CardCorner),
                 modifier = Modifier
+                    .padding(horizontal = 24.dp)
                     .fillMaxWidth()
                     .height(56.dp),
             ) {

@@ -127,6 +127,9 @@ fun HomeScreen(
                     targetState = view,
                     transitionSpec = { fadeIn() togetherWith fadeOut() },
                     label = "ansicht",
+                    // Ohne weight bekaeme der Kalender keine begrenzte Hoehe
+                    // und koennte sich nicht an den Bildschirm anpassen.
+                    modifier = Modifier.weight(1f),
                 ) { current ->
                     when (current) {
                         HomeView.LIST -> MatchListView(

@@ -27,8 +27,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.jakober.matchday.data.TeamCatalog
 import com.jakober.matchday.domain.Match
+import com.jakober.matchday.domain.MatchMood
 import com.jakober.matchday.domain.Participant
 import com.jakober.matchday.domain.RsvpStatus
+import com.jakober.matchday.domain.moodOf
 import com.jakober.matchday.theme.CardCorner
 import com.jakober.matchday.theme.StatusIn
 import com.jakober.matchday.theme.StatusOpen
@@ -67,14 +69,25 @@ fun MatchRow(
     val date = dateTime.date
     val team = TeamCatalog.byId(match.subscriptionId)
 
+    // Umrandung zeigt das Gesamtbild: gruen ab zwei Zusagen, rot bei einer
+    // Absage. Kraeftiger als der normale Rahmen, damit man es beim
+    // Durchscrollen sieht.
+    val mood = moodOf(participants)
+    val borderColor = when (mood) {
+        MatchMood.ENOUGH_IN -> StatusIn
+        MatchMood.DECLINED -> StatusOut
+        MatchMood.OPEN -> MaterialTheme.colorScheme.outlineVariant
+    }
+    val borderWidth = if (mood == MatchMood.OPEN) 1.dp else 2.dp
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(CardCorner))
             .background(MaterialTheme.colorScheme.surface)
             .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outlineVariant,
+                width = borderWidth,
+                color = borderColor,
                 shape = RoundedCornerShape(CardCorner),
             )
             .clickable(onClick = onClick)

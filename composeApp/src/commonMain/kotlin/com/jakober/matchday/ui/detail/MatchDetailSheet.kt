@@ -8,15 +8,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -87,10 +90,16 @@ fun MatchDetailSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         containerColor = MaterialTheme.colorScheme.surface,
+        // Die Einrueckungen traegt der Inhalt selbst - sonst rechnet das Sheet
+        // die Tastatur nicht ein und das Kommentarfeld verschwindet darunter.
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                // Ohne Scrollbarkeit ist bei offener Tastatur weder das Feld
+                // noch der Speichern-Knopf erreichbar.
+                .verticalScroll(rememberScrollState())
                 .navigationBarsPadding()
                 .imePadding()
                 .padding(horizontal = 24.dp)
