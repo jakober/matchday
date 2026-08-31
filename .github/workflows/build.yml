@@ -71,6 +71,23 @@ jobs:
         working-directory: iosApp
         run: xcodegen generate
 
+      # Ein konkretes Geraet statt "generic": nur so laesst sich die App
+      # danach auch starten.
+      - name: Simulator auswaehlen
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "
+          import json, sys
+          for runtime, devices in json.load(sys.stdin)['devices'].items():
+              if 'iOS' in runtime:
+                  for d in devices:
+                      if d.get('isAvailable') and 'iPhone' in d['name']:
+                          print(d['udid']); raise SystemExit
+          ")
+          if [ -z "$UDID" ]; then echo "Kein iPhone-Simulator gefunden"; exit 1; fi
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl list devices | grep "$UDID"
+
       - name: Fuer den Simulator bauen
         run: |
           xcodebuild \
@@ -78,10 +95,47 @@ jobs:
             -scheme iosApp \
             -configuration Debug \
             -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath build/DerivedData \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      # Der eigentliche Test: startet die App ueberhaupt?
+      - name: Im Simulator starten und ansehen
+        run: |
+          UDID="${{ steps.sim.outputs.udid }}"
+          xcrun simctl boot "$UDID" || true
+          xcrun simctl bootstatus "$UDID" -b
+
+          APP=build/DerivedData/Build/Products/Debug-iphonesimulator/iosApp.app
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" com.jakober.matchday
+
+          # Zeit fuer Start und den ersten Abruf der Spielplaene.
+          sleep 25
+          mkdir -p artefakte
+          xcrun simctl io "$UDID" screenshot artefakte/01-start.png
+
+          # Absturzberichte auswerten - ein leerer Screenshot allein wuerde
+          # nicht verraten, warum.
+          CRASHES=$(ls ~/Library/Logs/DiagnosticReports/ 2>/dev/null | grep -i "iosApp" || true)
+          if [ -n "$CRASHES" ]; then
+            echo "::error::Die App ist abgestuerzt:"
+            for f in $CRASHES; do
+              cp ~/Library/Logs/DiagnosticReports/"$f" artefakte/ || true
+              head -60 ~/Library/Logs/DiagnosticReports/"$f"
+            done
+            exit 1
+          fi
+          echo "App laeuft."
+
+      - name: Screenshots hochladen
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matchday-ios-screenshots
+          path: artefakte/
+          if-no-files-found: warn
 
       - name: App-Bundle als Artefakt hochladen
         uses: actions/upload-artifact@v4
