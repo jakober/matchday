@@ -29,7 +29,7 @@ class MatchdayStore(private val settings: Settings) {
     private val _profile = MutableStateFlow(load<Profile>(KEY_PROFILE))
     val profile: StateFlow<Profile?> = _profile.asStateFlow()
 
-    private val _subscriptions = MutableStateFlow(loadList<Subscription>(KEY_SUBSCRIPTIONS))
+    private val _subscriptions = MutableStateFlow(loadOrSeedSubscriptions())
     val subscriptions: StateFlow<List<Subscription>> = _subscriptions.asStateFlow()
 
     private val _matches = MutableStateFlow(loadList<Match>(KEY_MATCHES))
@@ -49,6 +49,34 @@ class MatchdayStore(private val settings: Settings) {
     }
 
     // -- Abos ---------------------------------------------------------------
+
+    /**
+     * Beim allerersten Start werden die fest hinterlegten Mannschaften
+     * eingetragen. Der Merker verhindert, dass sie wieder auftauchen, wenn der
+     * Nutzer beide abwaehlt.
+     */
+    private fun loadOrSeedSubscriptions(): List<Subscription> {
+        val stored = loadList<Subscription>(KEY_SUBSCRIPTIONS)
+        if (stored.isNotEmpty() || settings.getBoolean(KEY_SEEDED, false)) return stored
+        val seeded = TeamCatalog.defaultSubscriptions()
+        settings.putBoolean(KEY_SEEDED, true)
+        settings.putString(KEY_SUBSCRIPTIONS, json.encodeToString(seeded))
+        return seeded
+    }
+
+    /** Schaltet eine Mannschaft an oder ab. */
+    fun setSubscriptionEnabled(id: String, enabled: Boolean) {
+        updateSubscriptions(
+            _subscriptions.value.map { if (it.id == id) it.copy(enabled = enabled) else it }
+        )
+        if (!enabled) {
+            // Spiele einer abgewaehlten Mannschaft verschwinden aus Liste und
+            // Erinnerungsplanung. Die Zusagen bleiben erhalten - schaltet man
+            // sie wieder ein, stehen sie wieder da, weil die Spiel-Id gleich
+            // bleibt.
+            updateMatches(_matches.value.filterNot { it.subscriptionId == id })
+        }
+    }
 
     fun addSubscription(subscription: Subscription) {
         // Dieselbe Adresse nicht doppelt aufnehmen.
@@ -142,6 +170,7 @@ class MatchdayStore(private val settings: Settings) {
         const val KEY_MATCHES = "matches"
         const val KEY_RSVPS = "rsvps"
         const val KEY_REMINDERS = "reminders"
+        const val KEY_SEEDED = "subscriptions_seeded"
     }
 }
 

@@ -148,7 +148,8 @@ object IcsParser {
             homeTeam = teams.first,
             awayTeam = teams.second,
             location = fields["LOCATION"]?.value?.let(::unescape)?.trim()?.ifEmpty { null },
-            competition = fields["CATEGORIES"]?.value?.let(::unescape)?.trim()?.ifEmpty { null },
+            competition = fields["CATEGORIES"]?.value?.let(::unescape)?.trim()?.ifEmpty { null }
+                ?: competitionFromDescription(fields["DESCRIPTION"]?.value?.let(::unescape)),
         )
     }
 
@@ -187,6 +188,26 @@ object IcsParser {
         // Endendes Z heisst UTC und schlaegt einen etwaigen TZID-Parameter.
         val zone = if (v.endsWith("Z")) TimeZone.UTC else zoneOf(property, fallbackZone)
         return local.toInstant(zone)
+    }
+
+    /**
+     * Nicht jeder Feed fuellt CATEGORIES. Die Spielplaene von calovo schreiben
+     * den Wettbewerb stattdessen als erste Zeile der Beschreibung, in der Form
+     * "Wettbewerb: Bundesliga 3. Spieltag".
+     */
+    private fun competitionFromDescription(description: String?): String? {
+        if (description == null) return null
+        for (line in description.split('\n')) {
+            val trimmed = line.trim()
+            for (prefix in listOf("Wettbewerb:", "Competition:")) {
+                if (trimmed.startsWith(prefix, ignoreCase = true)) {
+                    // substring statt removePrefix - der Vergleich ignoriert
+                    // Gross- und Kleinschreibung, removePrefix nicht.
+                    return trimmed.substring(prefix.length).trim().ifEmpty { null }
+                }
+            }
+        }
+        return null
     }
 
     /** Unbekannte Zeitzonen-Kennungen fallen auf die Geraetezone zurueck. */

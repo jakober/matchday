@@ -8,6 +8,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import coil3.ImageLoader
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.network.ktor3.KtorNetworkFetcherFactory
+import coil3.request.crossfade
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.theme.MatchdayTheme
@@ -17,21 +21,30 @@ import com.jakober.matchday.ui.home.HomeScreen
 import com.jakober.matchday.ui.home.HomeView
 import com.jakober.matchday.ui.onboarding.OnboardingScreen
 import com.jakober.matchday.ui.settings.SettingsScreen
-import com.jakober.matchday.ui.subs.SubscriptionsScreen
+import com.jakober.matchday.ui.subs.TeamsScreen
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 
-private enum class Screen { HOME, SUBSCRIPTIONS, SETTINGS }
+private enum class Screen { HOME, TEAMS, SETTINGS }
 
 @Composable
 fun App() {
+    // Wappen werden ueber das Netz geladen; Coil braucht dafuer auf beiden
+    // Plattformen den Ktor-Lader. Der Zwischenspeicher sorgt dafuer, dass das
+    // nur einmal passiert.
+    setSingletonImageLoaderFactory { context ->
+        ImageLoader.Builder(context)
+            .components { add(KtorNetworkFetcherFactory()) }
+            .crossfade(true)
+            .build()
+    }
+
     MatchdayTheme {
         val profile by Container.store.profile.collectAsState()
 
-        val current = profile
-        if (current == null) {
+        if (profile == null) {
             OnboardingScreen(
                 onDone = { newProfile ->
                     Container.store.saveProfile(newProfile)
@@ -59,9 +72,11 @@ private fun Root() {
     var selected by remember { mutableStateOf<Match?>(null) }
     var syncing by remember { mutableStateOf(false) }
 
-    // Beim Start: Erlaubnis klaeren, Feeds abgleichen, Erinnerungen neu planen.
     LaunchedEffect(Unit) {
         Container.scheduler.ensurePermission()
+        // Wiederkehrenden Abgleich einrichten, damit verlegte Anstosszeiten
+        // auch ankommen, wenn die App laenger nicht geoeffnet wird.
+        Container.backgroundSync.schedulePeriodic()
         syncing = true
         Container.repository.syncAll()
         Container.rescheduleReminders()
@@ -94,11 +109,11 @@ private fun Root() {
             rsvps = rsvps,
             view = view,
             isSyncing = syncing,
-            hasSubscriptions = subscriptions.isNotEmpty(),
+            hasSubscriptions = subscriptions.any { it.enabled },
             accentOf = accentOf,
             onViewChange = { view = it },
             onSelect = { selected = it },
-            onOpenSubscriptions = { screen = Screen.SUBSCRIPTIONS },
+            onOpenSubscriptions = { screen = Screen.TEAMS },
             onOpenSettings = { screen = Screen.SETTINGS },
             onRefresh = {
                 syncing = true
@@ -106,15 +121,27 @@ private fun Root() {
             },
         )
 
-        Screen.SUBSCRIPTIONS -> SubscriptionsScreen(
+        Screen.TEAMS -> TeamsScreen(
             subscriptions = subscriptions,
+            matchCountOf = { id -> allMatches.count { it.subscriptionId == id } },
+            onToggle = { id, enabled ->
+                Container.store.setSubscriptionEnabled(id, enabled)
+                // Eingeschaltet: Spielplan holen. Ausgeschaltet: nur die
+                // Erinnerungen aufraeumen, die Spiele sind schon weg.
+                if (enabled) {
+                    syncing = true
+                    Container.syncAll { syncing = false }
+                } else {
+                    Container.rescheduleReminders()
+                }
+            },
             onBack = { screen = Screen.HOME },
         )
 
         Screen.SETTINGS -> SettingsScreen(
             profile = activeProfile,
             reminders = reminders,
-            subscriptionCount = subscriptions.size,
+            subscriptionCount = subscriptions.count { it.enabled },
             onProfileChange = { Container.store.saveProfile(it) },
             onRemindersChange = {
                 Container.store.saveReminders(it)
@@ -122,7 +149,7 @@ private fun Root() {
                 // vorgemerkten Benachrichtigungen aus.
                 Container.rescheduleReminders()
             },
-            onOpenSubscriptions = { screen = Screen.SUBSCRIPTIONS },
+            onOpenSubscriptions = { screen = Screen.TEAMS },
             onBack = { screen = Screen.HOME },
         )
     }

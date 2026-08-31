@@ -12,7 +12,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.RsvpStatus
@@ -29,7 +28,6 @@ import com.jakober.matchday.ui.components.local
 fun MatchListView(
     matches: List<Match>,
     rsvps: Map<String, RsvpStatus>,
-    accentOf: (Match) -> Color,
     onSelect: (Match) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -54,7 +52,6 @@ fun MatchListView(
                 MatchRow(
                     match = match,
                     status = rsvps[match.id] ?: RsvpStatus.UNDECIDED,
-                    accent = accentOf(match),
                     onClick = { onSelect(match) },
                 )
             }

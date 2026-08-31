@@ -150,6 +150,30 @@ class IcsParserTest {
     }
 
     @Test
+    fun `liest den Wettbewerb aus der Beschreibung`() {
+        // Die calovo-Spielplaene fuellen CATEGORIES nicht, sondern schreiben
+        // den Wettbewerb in die erste Zeile der Beschreibung.
+        val ics = calendar(
+            """
+            BEGIN:VEVENT
+            UID:spiel-6
+            DTSTART;TZID=Europe/Berlin:20250913T183000
+            SUMMARY:FC Bayern München - Hamburger SV
+            LOCATION:Allianz Arena\, München
+            DESCRIPTION:Wettbewerb: Bundesliga 3. Spieltag\n\n FC Bayern live im TV: Sky
+            END:VEVENT
+            """
+        )
+
+        val match = IcsParser.parse(ics, "fcbayern", berlin).single()
+
+        assertEquals("Bundesliga 3. Spieltag", match.competition)
+        assertEquals("Allianz Arena, München", match.location)
+        assertEquals("FC Bayern München", match.homeTeam)
+        assertEquals("Hamburger SV", match.awayTeam)
+    }
+
+    @Test
     fun `liest den Kalendernamen`() {
         val ics = calendar(
             """

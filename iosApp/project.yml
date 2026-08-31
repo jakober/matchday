@@ -27,6 +27,11 @@ targets:
         CFBundleVersion: "1"
         UILaunchScreen: {}
         UIUserInterfaceStyle: Dark
+        # Ohne diese beiden Eintraege lehnt iOS die Hintergrundaufgabe ab.
+        UIBackgroundModes:
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.jakober.matchday.refresh
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft

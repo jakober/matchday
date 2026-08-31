@@ -3,8 +3,10 @@ package com.jakober.matchday
 import com.jakober.matchday.data.MatchdayRepository
 import com.jakober.matchday.data.MatchdayStore
 import com.jakober.matchday.data.createSettings
+import com.jakober.matchday.notify.BackgroundSync
 import com.jakober.matchday.notify.ReminderPlanner
 import com.jakober.matchday.notify.ReminderScheduler
+import com.jakober.matchday.notify.createBackgroundSync
 import com.jakober.matchday.notify.createReminderScheduler
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
@@ -34,6 +36,8 @@ object Container {
     val repository: MatchdayRepository by lazy { MatchdayRepository(store, http) }
 
     val scheduler: ReminderScheduler by lazy { createReminderScheduler() }
+
+    val backgroundSync: BackgroundSync by lazy { createBackgroundSync() }
 
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 

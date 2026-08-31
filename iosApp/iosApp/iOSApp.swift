@@ -19,6 +19,13 @@ struct ContentView: View {
 
 @main
 struct iOSApp: App {
+
+    init() {
+        // Muss noch während des App-Starts passieren - später verweigert iOS
+        // die Registrierung der Hintergrundaufgabe.
+        BackgroundSync_iosKt.registerBackgroundRefresh()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

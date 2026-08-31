@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.jakober.matchday.data.TeamCatalog
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.theme.CardCorner
@@ -32,6 +33,7 @@ import com.jakober.matchday.theme.StatusIn
 import com.jakober.matchday.theme.StatusOpen
 import com.jakober.matchday.theme.StatusOut
 import com.jakober.matchday.ui.components.DateText
+import com.jakober.matchday.ui.components.TeamBadge
 import com.jakober.matchday.ui.components.local
 
 /** Farbe und Kurztext zu einem Zusagestatus. */
@@ -55,12 +57,12 @@ fun statusLabel(status: RsvpStatus): String = when (status) {
 fun MatchRow(
     match: Match,
     status: RsvpStatus,
-    accent: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val dateTime = match.start.local()
     val date = dateTime.date
+    val team = TeamCatalog.byId(match.subscriptionId)
 
     Row(
         modifier = modifier
@@ -73,18 +75,15 @@ fun MatchRow(
                 shape = RoundedCornerShape(CardCorner),
             )
             .clickable(onClick = onClick)
-            .padding(start = 0.dp, top = 14.dp, bottom = 14.dp, end = 16.dp),
+            .padding(top = 14.dp, bottom = 14.dp, end = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Farbmarkierung des Abos - macht bei mehreren Vereinen auf einen
-        // Blick klar, wessen Spiel das ist.
-        Box(
-            modifier = Modifier
-                .padding(start = 12.dp)
-                .width(4.dp)
-                .height(40.dp)
-                .clip(CircleShape)
-                .background(accent),
+        // Wappen statt Farbbalken - auf einen Blick erkennbar, um wessen
+        // Spiel es geht.
+        TeamBadge(
+            team = team,
+            size = 38.dp,
+            modifier = Modifier.padding(start = 14.dp),
         )
 
         Column(

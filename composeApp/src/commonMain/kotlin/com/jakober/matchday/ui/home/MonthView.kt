@@ -166,7 +166,6 @@ fun MonthView(
                 MatchRow(
                     match = match,
                     status = rsvps[match.id] ?: RsvpStatus.UNDECIDED,
-                    accent = accentOf(match),
                     onClick = { onSelect(match) },
                 )
             }

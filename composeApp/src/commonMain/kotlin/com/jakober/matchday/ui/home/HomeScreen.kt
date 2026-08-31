@@ -80,7 +80,7 @@ fun HomeScreen(
                         }
                     }
                     IconButton(onClick = onOpenSubscriptions) {
-                        Icon(Icons.Filled.Add, contentDescription = "Kalender abonnieren")
+                        Icon(Icons.Filled.Add, contentDescription = "Mannschaften")
                     }
                     IconButton(onClick = onOpenSettings) {
                         Avatar(profile = profile, size = 32.dp)
@@ -105,9 +105,9 @@ fun HomeScreen(
 
             when {
                 !hasSubscriptions -> EmptyState(
-                    title = "Noch kein Kalender",
-                    body = "Abonniere den Spielplan deines Vereins, dann stehen alle Termine automatisch hier drin.",
-                    actionLabel = "Kalender abonnieren",
+                    title = "Keine Mannschaft gewählt",
+                    body = "Wähle Bayern München oder die Nationalmannschaft, dann stehen alle Termine automatisch hier drin.",
+                    actionLabel = "Mannschaft wählen",
                     onAction = onOpenSubscriptions,
                 )
 
@@ -127,7 +127,6 @@ fun HomeScreen(
                         HomeView.LIST -> MatchListView(
                             matches = matches,
                             rsvps = rsvps,
-                            accentOf = accentOf,
                             onSelect = onSelect,
                         )
 
