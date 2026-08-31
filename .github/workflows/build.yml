@@ -22,6 +22,11 @@ jobs:
       - name: Gradle einrichten
         uses: gradle/actions/setup-gradle@v4
 
+      # Sicherheitsnetz: Commits von Windows aus verlieren gelegentlich das
+      # Ausfuehrbar-Bit, und dann scheitert der Build mit "Permission denied".
+      - name: gradlew ausfuehrbar machen
+        run: chmod +x gradlew
+
       - name: Debug-APK bauen
         run: ./gradlew :composeApp:assembleDebug --stacktrace
 
@@ -51,6 +56,10 @@ jobs:
 
       - name: Gradle einrichten
         uses: gradle/actions/setup-gradle@v4
+
+      # Der Xcode-Build ruft in einer Skriptphase ebenfalls ./gradlew auf.
+      - name: gradlew ausfuehrbar machen
+        run: chmod +x gradlew
 
       - name: XcodeGen installieren
         run: brew install xcodegen
