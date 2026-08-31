@@ -1,0 +1,183 @@
+package com.jakober.matchday.data.remote
+
+import com.jakober.matchday.data.TeamCatalog
+import com.jakober.matchday.domain.RsvpStatus
+import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+
+/**
+ * Anbindung an Supabase.
+ *
+ * Alles laeuft ueber anonyme Anmeldung: Jedes Geraet bekommt eine dauerhafte
+ * Kennung, ohne dass jemand ein Konto anlegen muss. Wer was sehen und aendern
+ * darf, entscheiden die Regeln in der Datenbank - der Client kann sie nicht
+ * umgehen, auch wenn jemand den Schluessel aus der App liest.
+ */
+class MatchdayBackend {
+
+    private val client = createSupabaseClient(
+        supabaseUrl = SupabaseConfig.URL,
+        supabaseKey = SupabaseConfig.PUBLISHABLE_KEY,
+    ) {
+        install(Auth)
+        install(Postgrest)
+    }
+
+    /** Meldet das Geraet an, falls noch keine Sitzung besteht. */
+    suspend fun signInIfNeeded() {
+        if (client.auth.currentSessionOrNull() == null) {
+            client.auth.signInAnonymously()
+        }
+    }
+
+    /**
+     * Legt eine Gruppe an und tritt ihr bei. Die Datenbankfunktion erledigt
+     * beides in einem Rutsch, damit keine Gruppe ohne Mitglied entstehen kann.
+     */
+    suspend fun createGroup(groupName: String, displayName: String, colorArgb: Long): GroupMembership {
+        signInIfNeeded()
+        val created = client.postgrest.rpc(
+            function = "create_group",
+            parameters = JsonObject(
+                mapOf(
+                    "p_group_name" to JsonPrimitive(groupName),
+                    "p_display_name" to JsonPrimitive(displayName),
+                    "p_color" to JsonPrimitive(colorArgb),
+                )
+            ),
+        ).decodeList<CreatedGroupDto>().first()
+
+        return finishSetup(created.groupId, created.inviteCode, groupName)
+    }
+
+    /** Tritt einer bestehenden Gruppe per Einladungscode bei. */
+    suspend fun joinGroup(code: String, displayName: String, colorArgb: Long): GroupMembership {
+        signInIfNeeded()
+        val groupId = client.postgrest.rpc(
+            function = "join_group",
+            parameters = JsonObject(
+                mapOf(
+                    "p_code" to JsonPrimitive(code.trim().uppercase()),
+                    "p_display_name" to JsonPrimitive(displayName),
+                    "p_color" to JsonPrimitive(colorArgb),
+                )
+            ),
+        ).decodeAs<String>()
+
+        val group = client.from("groups").select().decodeList<Map<String, String>>()
+            .firstOrNull { it["id"] == groupId }
+        return finishSetup(groupId, group?.get("invite_code") ?: code.uppercase(), group?.get("name") ?: "Gruppe")
+    }
+
+    /**
+     * Sorgt dafuer, dass beide Mannschaftskalender in der Gruppe angelegt sind,
+     * und merkt sich das eigene Mitglied. Die Kalender braucht es, weil die
+     * Zusagen auf sie verweisen.
+     */
+    private suspend fun finishSetup(groupId: String, inviteCode: String, groupName: String): GroupMembership {
+        val calendarIds = ensureCalendars(groupId)
+        val memberId = ownMemberId(groupId)
+            ?: error("Mitgliedschaft konnte nicht gelesen werden")
+        return GroupMembership(groupId, memberId, inviteCode, groupName, calendarIds)
+    }
+
+    /** Legt fehlende Mannschaftskalender an und liefert die Zuordnung. */
+    private suspend fun ensureCalendars(groupId: String): Map<String, String> {
+        val existing = client.from("calendars").select {
+            filter { eq("group_id", groupId) }
+        }.decodeList<CalendarDto>()
+
+        val missing = TeamCatalog.ALL.filter { team ->
+            existing.none { it.url == team.url }
+        }
+        if (missing.isNotEmpty()) {
+            client.from("calendars").insert(
+                missing.map { team ->
+                    NewCalendarDto(groupId, team.name, team.url, team.colorArgb)
+                }
+            )
+        }
+
+        val all = client.from("calendars").select {
+            filter { eq("group_id", groupId) }
+        }.decodeList<CalendarDto>()
+
+        // Zuordnung ueber die Adresse - der Name koennte sich aendern, die
+        // Kalenderquelle nicht.
+        return TeamCatalog.ALL.mapNotNull { team ->
+            all.firstOrNull { it.url == team.url }?.let { team.id to it.id }
+        }.toMap()
+    }
+
+    /** Eigene Mitglieds-Id in dieser Gruppe. */
+    private suspend fun ownMemberId(groupId: String): String? {
+        val userId = client.auth.currentSessionOrNull()?.user?.id ?: return null
+        return client.from("members").select {
+            filter {
+                eq("group_id", groupId)
+                eq("user_id", userId)
+            }
+        }.decodeList<MemberDto>().firstOrNull()?.id
+    }
+
+    suspend fun members(groupId: String): List<MemberDto> =
+        client.from("members").select {
+            filter { eq("group_id", groupId) }
+        }.decodeList()
+
+    suspend fun rsvps(groupId: String): List<RsvpDto> =
+        client.from("rsvps").select {
+            filter { eq("group_id", groupId) }
+        }.decodeList()
+
+    /** Setzt die eigene Antwort. Vorhandene wird ueberschrieben. */
+    suspend fun setRsvp(
+        membership: GroupMembership,
+        calendarId: String,
+        matchUid: String,
+        status: RsvpStatus,
+        comment: String?,
+    ) {
+        client.from("rsvps").upsert(
+            RsvpDto(
+                groupId = membership.groupId,
+                memberId = membership.memberId,
+                calendarId = calendarId,
+                matchUid = matchUid,
+                status = status.name,
+                comment = comment,
+            )
+        ) {
+            onConflict = "member_id,calendar_id,match_uid"
+        }
+    }
+
+    /** Nimmt die eigene Antwort zurueck. */
+    suspend fun clearRsvp(membership: GroupMembership, calendarId: String, matchUid: String) {
+        client.from("rsvps").delete {
+            filter {
+                eq("member_id", membership.memberId)
+                eq("calendar_id", calendarId)
+                eq("match_uid", matchUid)
+            }
+        }
+    }
+
+    /** Aendert Name und Farbe des eigenen Mitglieds. */
+    suspend fun updateProfile(membership: GroupMembership, displayName: String, colorArgb: Long) {
+        client.from("members").update(
+            {
+                set("display_name", displayName)
+                set("color", colorArgb)
+            }
+        ) {
+            filter { eq("id", membership.memberId) }
+        }
+    }
+}

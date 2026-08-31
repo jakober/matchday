@@ -52,9 +52,12 @@ fun SettingsScreen(
     profile: Profile,
     reminders: ReminderSettings,
     subscriptionCount: Int,
+    groupName: String?,
+    memberCount: Int,
     onProfileChange: (Profile) -> Unit,
     onRemindersChange: (ReminderSettings) -> Unit,
     onOpenSubscriptions: () -> Unit,
+    onOpenGroup: () -> Unit,
     onBack: () -> Unit,
 ) {
     var name by remember { mutableStateOf(profile.name) }
@@ -116,6 +119,19 @@ fun SettingsScreen(
                 onSelect = { onProfileChange(profile.copy(colorArgb = it)) },
             )
 
+            // -- Gruppe ------------------------------------------------------
+            SectionLabel("GRUPPE")
+
+            LinkRow(
+                title = groupName ?: "Keine Gruppe",
+                subtitle = when {
+                    groupName == null -> "Zusagen bleiben auf diesem Gerät"
+                    memberCount <= 1 -> "Lade jemanden mit dem Einladungscode ein"
+                    else -> "$memberCount Mitglieder"
+                },
+                onClick = onOpenGroup,
+            )
+
             // -- Erinnerungen ------------------------------------------------
             SectionLabel("ERINNERUNG VOR ANPFIFF")
 
@@ -151,35 +167,49 @@ fun SettingsScreen(
             // -- Kalender ----------------------------------------------------
             SectionLabel("KALENDER")
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(CardCorner))
-                    .background(MaterialTheme.colorScheme.surface)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(CardCorner))
-                    .clickable(onClick = onOpenSubscriptions)
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = if (subscriptionCount == 1) {
-                        "1 Kalender abonniert"
-                    } else {
-                        "$subscriptionCount Kalender abonniert"
-                    },
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f),
-                )
-                Icon(
-                    Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            LinkRow(
+                title = if (subscriptionCount == 1) "1 Mannschaft" else "$subscriptionCount Mannschaften",
+                subtitle = null,
+                onClick = onOpenSubscriptions,
+            )
 
             Spacer(Modifier.height(40.dp))
         }
+    }
+}
+
+/** Anklickbare Zeile mit Pfeil, fuer die Spruenge in Untermenues. */
+@Composable
+private fun LinkRow(title: String, subtitle: String?, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(CardCorner))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(CardCorner))
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            subtitle?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

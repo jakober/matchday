@@ -49,6 +49,10 @@ kotlin {
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.json)
 
+            implementation(project.dependencies.platform(libs.supabase.bom))
+            implementation(libs.supabase.postgrest)
+            implementation(libs.supabase.auth)
+
             implementation(libs.multiplatform.settings)
             implementation(libs.multiplatform.settings.coroutines)
 

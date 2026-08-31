@@ -6,30 +6,33 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
+import com.jakober.matchday.data.remote.participantsOfMatch
 import com.jakober.matchday.domain.Match
-import com.jakober.matchday.domain.Participant
 import com.jakober.matchday.domain.ParticipantsSource
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.theme.MatchdayTheme
 import com.jakober.matchday.theme.Pitch
 import com.jakober.matchday.ui.detail.MatchDetailSheet
+import com.jakober.matchday.ui.group.GroupScreen
 import com.jakober.matchday.ui.home.HomeScreen
 import com.jakober.matchday.ui.home.HomeView
 import com.jakober.matchday.ui.onboarding.OnboardingScreen
 import com.jakober.matchday.ui.settings.SettingsScreen
 import com.jakober.matchday.ui.subs.TeamsScreen
+import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 
-private enum class Screen { HOME, TEAMS, SETTINGS }
+private enum class Screen { HOME, TEAMS, SETTINGS, GROUP }
 
 @Composable
 fun App() {
@@ -68,22 +71,31 @@ private fun Root() {
     val rsvps by Container.store.rsvps.collectAsState()
     val subscriptions by Container.store.subscriptions.collectAsState()
     val reminders by Container.store.reminders.collectAsState()
+    val membership by Container.store.membership.collectAsState()
+    val groupSnapshot by Container.group.collectAsState()
 
     val activeProfile = profile ?: return
+    val scope = rememberCoroutineScope()
 
     var screen by remember { mutableStateOf(Screen.HOME) }
     var view by remember { mutableStateOf(HomeView.LIST) }
     var selected by remember { mutableStateOf<Match?>(null) }
     var syncing by remember { mutableStateOf(false) }
+    var groupBusy by remember { mutableStateOf(false) }
+    var groupError by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
         Container.scheduler.ensurePermission()
         // Wiederkehrenden Abgleich einrichten, damit verlegte Anstosszeiten
         // auch ankommen, wenn die App laenger nicht geoeffnet wird.
         Container.backgroundSync.schedulePeriodic()
+        // Anonyme Anmeldung: gibt dem Geraet eine dauerhafte Kennung, ohne
+        // dass jemand ein Konto anlegen muss.
+        runCatching { Container.backend.signInIfNeeded() }
         syncing = true
         Container.repository.syncAll()
         Container.rescheduleReminders()
+        Container.refreshGroup()
         syncing = false
     }
 
@@ -104,26 +116,16 @@ private fun Root() {
     }
     val accentOf: (Match) -> Color = { colorBySubscription[it.subscriptionId] ?: Pitch }
 
-    // Trennstelle zur Gruppe: Solange kein Backend angebunden ist, kennt die
-    // App nur die eigene Antwort. Sobald Supabase dranhaengt, wird hier die
-    // Liste der Gruppenmitglieder eingesetzt - die Oberflaeche bleibt gleich.
-    val participantsOf = remember(rsvps, activeProfile) {
+    val participantsOf = remember(rsvps, membership, groupSnapshot, activeProfile) {
         ParticipantsSource { matchId ->
-            val entry = rsvps[matchId]
-            if (entry == null) {
-                emptyList()
-            } else {
-                listOf(
-                    Participant(
-                        id = activeProfile.id,
-                        name = activeProfile.name,
-                        colorArgb = activeProfile.colorArgb,
-                        status = entry.status,
-                        comment = entry.comment,
-                        isMe = true,
-                    )
-                )
-            }
+            participantsOfMatch(
+                matchId = matchId,
+                membership = membership,
+                snapshot = groupSnapshot,
+                localRsvps = rsvps,
+                ownName = activeProfile.name,
+                ownColor = activeProfile.colorArgb,
+            )
         }
     }
 
@@ -169,7 +171,9 @@ private fun Root() {
             profile = activeProfile,
             reminders = reminders,
             subscriptionCount = subscriptions.count { it.enabled },
-            onProfileChange = { Container.store.saveProfile(it) },
+            groupName = membership?.groupName,
+            memberCount = groupSnapshot.members.size,
+            onProfileChange = { Container.saveProfile(it) },
             onRemindersChange = {
                 Container.store.saveReminders(it)
                 // Geaenderte Vorlaufzeit wirkt sich sofort auf alle
@@ -177,7 +181,62 @@ private fun Root() {
                 Container.rescheduleReminders()
             },
             onOpenSubscriptions = { screen = Screen.TEAMS },
+            onOpenGroup = { screen = Screen.GROUP },
             onBack = { screen = Screen.HOME },
+        )
+
+        Screen.GROUP -> GroupScreen(
+            membership = membership,
+            members = groupSnapshot.members,
+            busy = groupBusy,
+            error = groupError,
+            onCreate = { name ->
+                groupBusy = true
+                groupError = null
+                scope.launch {
+                    runCatching {
+                        Container.backend.createGroup(
+                            groupName = name,
+                            displayName = activeProfile.name,
+                            colorArgb = activeProfile.colorArgb,
+                        )
+                    }
+                        .onSuccess {
+                            Container.store.saveMembership(it)
+                            // Was vor dem Beitritt lokal beantwortet wurde,
+                            // soll die Gruppe auch sehen.
+                            Container.pushLocalRsvps()
+                            Container.refreshGroup()
+                        }
+                        .onFailure { groupError = it.message ?: "Anlegen fehlgeschlagen" }
+                    groupBusy = false
+                }
+            },
+            onJoin = { code ->
+                groupBusy = true
+                groupError = null
+                scope.launch {
+                    runCatching {
+                        Container.backend.joinGroup(
+                            code = code,
+                            displayName = activeProfile.name,
+                            colorArgb = activeProfile.colorArgb,
+                        )
+                    }
+                        .onSuccess {
+                            Container.store.saveMembership(it)
+                            Container.pushLocalRsvps()
+                            Container.refreshGroup()
+                        }
+                        .onFailure { groupError = it.message ?: "Code nicht gefunden" }
+                    groupBusy = false
+                }
+            },
+            onLeave = {
+                Container.store.clearMembership()
+                Container.clearGroupSnapshot()
+            },
+            onBack = { screen = Screen.SETTINGS },
         )
     }
 
@@ -189,10 +248,7 @@ private fun Root() {
             participants = participantsOf(match.id),
             accent = accentOf(match),
             onSetStatus = { status, comment ->
-                Container.store.setRsvp(match.id, status, comment)
-                // Eine Zusage nimmt die Wochen-Nachfrage aus dem Plan,
-                // eine Ruecknahme bringt sie zurueck.
-                Container.rescheduleReminders()
+                Container.setRsvp(match.id, status, comment)
             },
             onDismiss = { selected = null },
         )

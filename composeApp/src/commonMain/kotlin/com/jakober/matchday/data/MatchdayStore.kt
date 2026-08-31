@@ -1,5 +1,6 @@
 package com.jakober.matchday.data
 
+import com.jakober.matchday.data.remote.GroupMembership
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.Profile
 import com.jakober.matchday.domain.ReminderSettings
@@ -41,6 +42,22 @@ class MatchdayStore(private val settings: Settings) {
 
     private val _reminders = MutableStateFlow(load<ReminderSettings>(KEY_REMINDERS) ?: ReminderSettings())
     val reminders: StateFlow<ReminderSettings> = _reminders.asStateFlow()
+
+    private val _membership = MutableStateFlow(load<GroupMembership>(KEY_MEMBERSHIP))
+    val membership: StateFlow<GroupMembership?> = _membership.asStateFlow()
+
+    // -- Gruppe ---------------------------------------------------------------
+
+    fun saveMembership(value: GroupMembership) {
+        _membership.value = value
+        settings.putString(KEY_MEMBERSHIP, json.encodeToString(value))
+    }
+
+    /** Gruppe verlassen - nur lokal, der Eintrag in der Datenbank bleibt. */
+    fun clearMembership() {
+        _membership.value = null
+        settings.remove(KEY_MEMBERSHIP)
+    }
 
     // -- Profil -------------------------------------------------------------
 
@@ -181,6 +198,7 @@ class MatchdayStore(private val settings: Settings) {
         const val KEY_RSVPS = "rsvps"
         const val KEY_REMINDERS = "reminders"
         const val KEY_SEEDED = "subscriptions_seeded"
+        const val KEY_MEMBERSHIP = "membership"
     }
 }
 
