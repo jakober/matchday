@@ -1,6 +1,7 @@
 package com.jakober.matchday.notify
 
 import com.jakober.matchday.Container
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.launch
 import platform.BackgroundTasks.BGAppRefreshTask
 import platform.BackgroundTasks.BGAppRefreshTaskRequest
@@ -56,6 +57,7 @@ fun registerBackgroundRefresh() {
  * Bittet um das naechste Zeitfenster. iOS entscheidet selbst, wann es die App
  * tatsaechlich weckt - der Wunschzeitpunkt ist ein fruehestens, kein genau.
  */
+@OptIn(ExperimentalForeignApi::class)
 private fun submitRefreshRequest() {
     val request = BGAppRefreshTaskRequest(REFRESH_TASK_ID).apply {
         earliestBeginDate = NSDate.dateWithTimeIntervalSinceNow(
