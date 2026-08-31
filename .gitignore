@@ -1,0 +1,33 @@
+# Gradle
+.gradle/
+build/
+*/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Lokale Konfiguration (Pfade, Schluessel) gehoert nicht ins Repo
+local.properties
+secrets.properties
+
+# Kotlin
+.kotlin/
+
+# IDEs
+.idea/
+*.iml
+.fleet/
+
+# Xcode
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+iosApp/iosApp.xcodeproj/
+Pods/
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+
+# Build-Artefakte
+*.apk
+*.aab
+*.ipa
