@@ -1,0 +1,79 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  android:
+    name: Android
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 17 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle einrichten
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Debug-APK bauen
+        run: ./gradlew :composeApp:assembleDebug --stacktrace
+
+      - name: APK als Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: matchday-android-debug
+          path: composeApp/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+  ios:
+    name: iOS (Simulator)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: JDK 17 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK einrichten
+        # Das Gradle-Projekt enthaelt ein Android-Target; ohne SDK schlaegt schon
+        # die Konfigurationsphase fehl, auch wenn nur iOS gebaut wird.
+        uses: android-actions/setup-android@v3
+
+      - name: Gradle einrichten
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: XcodeGen installieren
+        run: brew install xcodegen
+
+      - name: Xcode-Projekt erzeugen
+        working-directory: iosApp
+        run: xcodegen generate
+
+      - name: Fuer den Simulator bauen
+        run: |
+          xcodebuild \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: App-Bundle als Artefakt hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: matchday-ios-simulator
+          path: build/DerivedData/Build/Products/Debug-iphonesimulator/*.app
+          if-no-files-found: error
