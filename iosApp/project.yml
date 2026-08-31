@@ -28,6 +28,10 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen: {}
+        # Die App nutzt nur HTTPS. Ohne diesen Eintrag fragt App Store Connect
+        # bei jedem Build nach der Exportregelung fuer Verschluesselung und
+        # haelt den Build so lange zurueck.
+        ITSAppUsesNonExemptEncryption: false
         UIUserInterfaceStyle: Dark
         # Ohne diese beiden Eintraege lehnt iOS die Hintergrundaufgabe ab.
         UIBackgroundModes:
