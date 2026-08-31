@@ -1,0 +1,121 @@
+package com.jakober.matchday.notify
+
+import android.Manifest
+import android.app.AlarmManager
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
+import com.jakober.matchday.MatchdayApp
+
+actual fun createReminderScheduler(): ReminderScheduler =
+    AndroidReminderScheduler(MatchdayApp.appContext)
+
+/**
+ * Setzt fuer jede Erinnerung einen Alarm, der beim Ausloesen die
+ * Benachrichtigung baut. Die Ids der gesetzten Alarme merken wir uns, weil
+ * der AlarmManager kein Auflisten anbietet und wir sie sonst nicht mehr
+ * zurueckziehen koennten.
+ */
+class AndroidReminderScheduler(private val context: Context) : ReminderScheduler {
+
+    private val alarmManager =
+        context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+    private val prefs =
+        context.getSharedPreferences("matchday_alarms", Context.MODE_PRIVATE)
+
+    override suspend fun ensurePermission(): Boolean {
+        // Vor Android 13 gab es die Laufzeitberechtigung noch nicht.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true
+        return ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS,
+        ) == PackageManager.PERMISSION_GRANTED
+    }
+
+    override fun replaceAll(reminders: List<ScheduledReminder>) {
+        cancelPrevious()
+
+        for (reminder in reminders) {
+            val intent = Intent(context, ReminderReceiver::class.java).apply {
+                putExtra(ReminderReceiver.EXTRA_ID, reminder.id)
+                putExtra(ReminderReceiver.EXTRA_TITLE, reminder.title)
+                putExtra(ReminderReceiver.EXTRA_BODY, reminder.body)
+            }
+            val pending = PendingIntent.getBroadcast(
+                context,
+                reminder.id.hashCode(),
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+
+            val triggerAt = reminder.at.toEpochMilliseconds()
+            try {
+                if (canScheduleExact()) {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP, triggerAt, pending,
+                    )
+                } else {
+                    // Ohne die Erlaubnis fuer exakte Alarme bleibt nur ein
+                    // Zeitfenster. Das kann im Doze-Modus einige Minuten
+                    // spaeter feuern - fuer eine Spielerinnerung vertretbar.
+                    alarmManager.setAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP, triggerAt, pending,
+                    )
+                }
+            } catch (_: SecurityException) {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+            }
+        }
+
+        prefs.edit().putStringSet(KEY_SCHEDULED, reminders.map { it.id }.toSet()).apply()
+    }
+
+    /**
+     * Ab Android 12 ist der exakte Alarm eine eigene Erlaubnis, die der
+     * Nutzer in den Systemeinstellungen erteilt.
+     */
+    fun canScheduleExact(): Boolean =
+        Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms()
+
+    private fun cancelPrevious() {
+        val previous = prefs.getStringSet(KEY_SCHEDULED, emptySet()).orEmpty()
+        for (id in previous) {
+            val intent = Intent(context, ReminderReceiver::class.java)
+            val pending = PendingIntent.getBroadcast(
+                context,
+                id.hashCode(),
+                intent,
+                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE,
+            )
+            if (pending != null) {
+                alarmManager.cancel(pending)
+                pending.cancel()
+            }
+        }
+    }
+
+    companion object {
+        private const val KEY_SCHEDULED = "scheduled_ids"
+        const val CHANNEL_ID = "matches"
+
+        fun createChannel(context: Context) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
+            val channel = NotificationChannel(
+                CHANNEL_ID,
+                "Spiele",
+                NotificationManager.IMPORTANCE_HIGH,
+            ).apply {
+                description = "Erinnerungen an anstehende Spiele"
+            }
+            val manager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.createNotificationChannel(channel)
+        }
+    }
+}

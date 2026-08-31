@@ -27,6 +27,9 @@ jobs:
       - name: gradlew ausfuehrbar machen
         run: chmod +x gradlew
 
+      - name: Tests laufen lassen
+        run: ./gradlew :composeApp:testDebugUnitTest --stacktrace
+
       - name: Debug-APK bauen
         run: ./gradlew :composeApp:assembleDebug --stacktrace
 
