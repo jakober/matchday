@@ -1,0 +1,131 @@
+name: TestFlight
+
+# Bewusst nur von Hand ausloesbar. Ein Upload bei jedem Commit waere schaedlich:
+# TestFlight-Builds sind 90 Tage gueltig, jeder neue benachrichtigt die Tester,
+# und die Buildnummer laesst sich nicht wiederverwenden.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versionsnummer, die den Testern angezeigt wird (z.B. 0.6)'
+        required: true
+        default: '0.6'
+
+jobs:
+  upload:
+    name: Bauen und zu TestFlight hochladen
+    runs-on: macos-15
+
+    env:
+      KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+      ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+      TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secrets pruefen
+        run: |
+          missing=""
+          [ -z "$KEY_ID" ] && missing="$missing APPSTORE_KEY_ID"
+          [ -z "$ISSUER_ID" ] && missing="$missing APPSTORE_ISSUER_ID"
+          [ -z "$TEAM_ID" ] && missing="$missing APPLE_TEAM_ID"
+          [ -z "${{ secrets.APPSTORE_PRIVATE_KEY }}" ] && missing="$missing APPSTORE_PRIVATE_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Es fehlen Repository-Secrets:$missing"
+            exit 1
+          fi
+          echo "Alle Secrets vorhanden."
+
+      - name: JDK 17 einrichten
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Android SDK einrichten
+        uses: android-actions/setup-android@v3
+
+      - name: Gradle einrichten
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: gradlew ausfuehrbar machen
+        run: chmod +x gradlew
+
+      - name: XcodeGen installieren
+        run: brew install xcodegen
+
+      - name: Xcode-Projekt erzeugen
+        working-directory: iosApp
+        run: xcodegen generate
+
+      # Der Schluessel landet nur im Arbeitsspeicher des Runners und wird nach
+      # dem Lauf mit der Maschine verworfen.
+      - name: API-Schluessel bereitlegen
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s' "${{ secrets.APPSTORE_PRIVATE_KEY }}" > ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8
+          chmod 600 ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8
+
+      # Die Buildnummer muss bei jedem Upload steigen; die Laufnummer der
+      # Aktion ist dafuer eine verlaessliche, immer wachsende Quelle.
+      - name: Archivieren
+        run: |
+          xcodebuild archive \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Matchday.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8 \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            MARKETING_VERSION="${{ inputs.version }}" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}"
+
+      - name: Exportoptionen schreiben
+        run: |
+          cat > build/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>${TEAM_ID}</string>
+            <key>uploadSymbols</key><true/>
+            <key>destination</key><string>export</string>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: IPA exportieren
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath build/Matchday.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist build/ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${KEY_ID}.p8 \
+            -authenticationKeyID "$KEY_ID" \
+            -authenticationKeyIssuerID "$ISSUER_ID"
+          ls -la build/ipa
+
+      - name: Zu App Store Connect hochladen
+        run: |
+          IPA=$(ls build/ipa/*.ipa | head -1)
+          echo "Lade hoch: $IPA"
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$IPA" \
+            --apiKey "$KEY_ID" \
+            --apiIssuer "$ISSUER_ID"
+
+      - name: IPA als Artefakt sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: matchday-ios-${{ inputs.version }}-${{ github.run_number }}
+          path: build/ipa/*.ipa
+          if-no-files-found: warn

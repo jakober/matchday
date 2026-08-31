@@ -23,8 +23,10 @@ targets:
       path: iosApp/Info.plist
       properties:
         CFBundleDisplayName: Matchday
-        CFBundleShortVersionString: "0.1"
-        CFBundleVersion: "1"
+        # Aus den Build-Einstellungen gespeist, damit die CI die Buildnummer
+        # setzen kann - TestFlight lehnt eine bereits hochgeladene ab.
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen: {}
         UIUserInterfaceStyle: Dark
         # Ohne diese beiden Eintraege lehnt iOS die Hintergrundaufgabe ab.
@@ -39,6 +41,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jakober.matchday
+        MARKETING_VERSION: "0.6"
+        CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         FRAMEWORK_SEARCH_PATHS:
