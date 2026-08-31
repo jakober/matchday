@@ -37,6 +37,16 @@ data class Match(
         get() = if (homeTeam != null && awayTeam != null) "$homeTeam - $awayTeam" else title
 }
 
+/**
+ * Eine Antwort auf ein Spiel: Status und - bei einer Absage - optional ein
+ * kurzer Grund fuer die anderen.
+ */
+@Serializable
+data class Rsvp(
+    val status: RsvpStatus,
+    val comment: String? = null,
+)
+
 /** Zusage zu einem Spiel. */
 enum class RsvpStatus {
     /** Noch nicht beantwortet - loest die Wochen-Erinnerung aus. */

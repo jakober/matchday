@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.ParticipantsSource
+import com.jakober.matchday.domain.Rsvp
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.ui.components.DateText
 import com.jakober.matchday.ui.components.local
@@ -28,7 +29,7 @@ import com.jakober.matchday.ui.components.local
 @Composable
 fun MatchListView(
     matches: List<Match>,
-    rsvps: Map<String, RsvpStatus>,
+    rsvps: Map<String, Rsvp>,
     participantsOf: ParticipantsSource,
     onSelect: (Match) -> Unit,
     modifier: Modifier = Modifier,
@@ -53,7 +54,7 @@ fun MatchListView(
             items(group, key = { it.id }) { match ->
                 MatchRow(
                     match = match,
-                    status = rsvps[match.id] ?: RsvpStatus.UNDECIDED,
+                    status = rsvps[match.id]?.status ?: RsvpStatus.UNDECIDED,
                     participants = participantsOf(match.id),
                     onClick = { onSelect(match) },
                 )

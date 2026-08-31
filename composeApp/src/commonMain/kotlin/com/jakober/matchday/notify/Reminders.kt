@@ -2,7 +2,7 @@ package com.jakober.matchday.notify
 
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.ReminderSettings
-import com.jakober.matchday.domain.RsvpStatus
+import com.jakober.matchday.domain.Rsvp
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -45,7 +45,7 @@ object ReminderPlanner {
 
     fun plan(
         matches: List<Match>,
-        rsvps: Map<String, RsvpStatus>,
+        rsvps: Map<String, Rsvp>,
         settings: ReminderSettings,
         now: Instant,
     ): List<ScheduledReminder> {

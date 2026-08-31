@@ -96,11 +96,17 @@ fun AttendanceLine(
     avatarSize: Dp = 22.dp,
 ) {
     val attending = participants.filter { it.status == RsvpStatus.IN }
+    val declined = participants.filter { it.status == RsvpStatus.OUT }
 
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         if (attending.isEmpty()) {
             Text(
-                text = "Noch keine Zusage",
+                text = when {
+                    declined.isEmpty() -> "Noch keine Zusage"
+                    declined.size == 1 && declined.first().isMe -> "Du hast abgesagt"
+                    declined.size == 1 -> "1 Absage"
+                    else -> "${declined.size} Absagen"
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -110,7 +116,12 @@ fun AttendanceLine(
         AvatarStack(participants = attending, size = avatarSize)
         Spacer(Modifier.width(10.dp))
         Text(
-            text = attendanceText(attending),
+            text = buildString {
+                append(attendanceText(attending))
+                // Absagen nur als Zahl anhaengen; die Gruende stehen in der
+                // Detailansicht, in eine Listenzeile passen sie nicht.
+                if (declined.isNotEmpty()) append(" · ${declined.size} abgesagt")
+            },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.Participant
 import com.jakober.matchday.domain.ParticipantsSource
+import com.jakober.matchday.domain.Rsvp
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.ui.components.DateText
 import com.jakober.matchday.ui.components.local
@@ -57,7 +58,7 @@ import kotlinx.datetime.LocalDate
 @Composable
 fun MonthView(
     matches: List<Match>,
-    rsvps: Map<String, RsvpStatus>,
+    rsvps: Map<String, Rsvp>,
     participantsOf: ParticipantsSource,
     accentOf: (Match) -> Color,
     onSelect: (Match) -> Unit,
@@ -119,12 +120,22 @@ fun MonthView(
                             date = date,
                             inCurrentMonth = date.monthNumber == month,
                             isToday = date == today,
+                            isPast = date < today,
                             matchCount = dayMatches.size,
                             ballColor = dayMatches.firstOrNull()?.let(accentOf),
                             attending = dayMatches.any { match ->
                                 participantsOf(match.id).any { it.status == RsvpStatus.IN }
                             },
-                            onClick = { selectedDay = date },
+                            onClick = {
+                                // Tag aus dem Nachbarmonat: erst umblaettern,
+                                // damit die Auswahl nicht sofort wieder aus dem
+                                // Raster faellt.
+                                if (date.monthNumber != month) {
+                                    year = date.year
+                                    month = date.monthNumber
+                                }
+                                selectedDay = date
+                            },
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -135,7 +146,7 @@ fun MonthView(
         Spacer(Modifier.height(12.dp))
 
         Text(
-            text = "Tippe einen Spieltag an.",
+            text = "Tippe einen Spieltag an. Tage aus dem Nachbarmonat blättern weiter.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -165,7 +176,7 @@ fun MonthView(
 private fun DaySheet(
     date: LocalDate,
     matches: List<Match>,
-    rsvps: Map<String, RsvpStatus>,
+    rsvps: Map<String, Rsvp>,
     participantsOf: ParticipantsSource,
     onSelect: (Match) -> Unit,
     onDismiss: () -> Unit,
@@ -203,7 +214,7 @@ private fun DaySheet(
             for (match in matches) {
                 MatchRow(
                     match = match,
-                    status = rsvps[match.id] ?: RsvpStatus.UNDECIDED,
+                    status = rsvps[match.id]?.status ?: RsvpStatus.UNDECIDED,
                     participants = participantsOf(match.id),
                     onClick = { onSelect(match) },
                 )
@@ -217,6 +228,7 @@ private fun DayCell(
     date: LocalDate,
     inCurrentMonth: Boolean,
     isToday: Boolean,
+    isPast: Boolean,
     matchCount: Int,
     ballColor: Color?,
     attending: Boolean,
@@ -235,8 +247,10 @@ private fun DayCell(
             // Raster unter, sobald man das Handy schraeg haelt.
             .background(
                 when {
-                    hasMatch && inCurrentMonth -> MaterialTheme.colorScheme.surfaceVariant
-                    else -> Color.Transparent
+                    !hasMatch -> Color.Transparent
+                    // Nachbarmonat und Vergangenheit blasser, aber sichtbar.
+                    inCurrentMonth && !isPast -> MaterialTheme.colorScheme.surfaceVariant
+                    else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                 }
             )
             .border(
@@ -244,7 +258,7 @@ private fun DayCell(
                 color = if (isToday) MaterialTheme.colorScheme.primary else Color.Transparent,
                 shape = shape,
             )
-            .clickable(enabled = inCurrentMonth && hasMatch, onClick = onClick),
+            .clickable(enabled = hasMatch, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
@@ -253,13 +267,15 @@ private fun DayCell(
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = if (isToday || hasMatch) FontWeight.Bold else FontWeight.Normal,
             color = when {
-                !inCurrentMonth -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                !inCurrentMonth -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
                 isToday -> MaterialTheme.colorScheme.primary
+                isPast -> MaterialTheme.colorScheme.onSurfaceVariant
                 else -> MaterialTheme.colorScheme.onSurface
             },
         )
 
-        if (hasMatch && inCurrentMonth) {
+        if (hasMatch) {
+            val dimmed = !inCurrentMonth || isPast
             Spacer(Modifier.height(2.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -268,7 +284,8 @@ private fun DayCell(
                 Icon(
                     imageVector = Icons.Filled.SportsSoccer,
                     contentDescription = if (matchCount == 1) "Spieltag" else "$matchCount Spiele",
-                    tint = ballColor ?: MaterialTheme.colorScheme.primary,
+                    tint = (ballColor ?: MaterialTheme.colorScheme.primary)
+                        .copy(alpha = if (dimmed) 0.45f else 1f),
                     modifier = Modifier.size(14.dp),
                 )
                 if (matchCount > 1) {

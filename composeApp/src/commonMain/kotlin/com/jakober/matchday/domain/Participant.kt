@@ -12,6 +12,8 @@ data class Participant(
     val name: String,
     val colorArgb: Long,
     val status: RsvpStatus,
+    /** Begruendung, meist bei einer Absage. */
+    val comment: String? = null,
     /** Zeigt an, dass dieser Eintrag der Nutzer selbst ist. */
     val isMe: Boolean = false,
 ) {

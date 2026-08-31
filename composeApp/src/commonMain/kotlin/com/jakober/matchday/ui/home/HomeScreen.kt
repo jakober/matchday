@@ -39,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.ParticipantsSource
 import com.jakober.matchday.domain.Profile
+import com.jakober.matchday.domain.Rsvp
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.theme.ChipCorner
 import com.jakober.matchday.ui.components.Avatar
@@ -51,7 +52,9 @@ enum class HomeView { LIST, MONTH }
 fun HomeScreen(
     profile: Profile,
     matches: List<Match>,
-    rsvps: Map<String, RsvpStatus>,
+    /** Fuer den Kalender: einschliesslich bereits gespielter Partien. */
+    calendarMatches: List<Match>,
+    rsvps: Map<String, Rsvp>,
     view: HomeView,
     isSyncing: Boolean,
     hasSubscriptions: Boolean,
@@ -134,7 +137,7 @@ fun HomeScreen(
                         )
 
                         HomeView.MONTH -> MonthView(
-                            matches = matches,
+                            matches = calendarMatches,
                             rsvps = rsvps,
                             participantsOf = participantsOf,
                             accentOf = accentOf,

@@ -1,13 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Benachrichtigungssymbole werden vom System eingefaerbt und muessen
-     deshalb einfarbig weiss mit Transparenz sein. -->
+<!-- Benachrichtigungssymbole werden vom System eingefaerbt; nur die Deckkraft
+     zaehlt. Deshalb derselbe Ball als Umriss wie beim App-Symbol. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
     android:height="24dp"
     android:viewportWidth="24"
-    android:viewportHeight="24"
-    android:tint="#FFFFFF">
+    android:viewportHeight="24">
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.7"
+        android:pathData="M12,2.6 a9.4,9.4 0 1,0 0,18.8 a9.4,9.4 0 1,0 0,-18.8 Z" />
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10,-4.48 10,-10S17.52,2 12,2zM12,4.62l4.05,2.94 -1.55,4.76h-5l-1.55,-4.76zM7.44,6.9l1.2,3.68 -2.9,2.1 -0.55,-1.7C5.13,10.7 5.1,10.35 5.1,10c0,-1.16 0.22,-2.26 0.62,-3.28zM16.56,6.9c0.52,1.02 0.74,2.12 0.74,3.28 0,0.35 -0.03,0.7 -0.09,1.02l-0.55,1.7 -2.9,-2.1zM9.5,14.2h5l1.55,4.78 -1.02,0.74c-0.96,0.3 -1.98,0.46 -3.03,0.46s-2.07,-0.16 -3.03,-0.46l-1.02,-0.74z" />
+        android:pathData="M12,8.05 L15.28,10.43 L14.03,14.29 L9.97,14.29 L8.72,10.43 Z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M12,8.05 L12,3.4 M15.28,10.43 L19.7,9.0 M14.03,14.29 L16.75,18.0 M9.97,14.29 L7.25,18.0 M8.72,10.43 L4.3,9.0" />
 </vector>

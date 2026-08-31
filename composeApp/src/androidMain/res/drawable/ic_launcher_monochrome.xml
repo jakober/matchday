@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Einfarbige Fassung fuer themenbezogene Symbole. Das System faerbt sie selbst
+  ein und wertet nur die Deckkraft aus - deshalb Umriss statt Flaeche, sonst
+  waere der Ball ein voller Kreis ohne erkennbares Muster.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="4"
+        android:pathData="M54,24 a30,30 0 1,0 0,60 a30,30 0 1,0 0,-60 Z" />
+    <path
+        android:fillColor="#000000"
+        android:pathData="M54,43 L64.46,50.6 L60.47,62.9 L47.53,62.9 L43.54,50.6 Z" />
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="3.4"
+        android:strokeLineCap="round"
+        android:pathData="M54,43 L54,25.5 M64.46,50.6 L80.6,45.3 M60.47,62.9 L70.4,76.6 M47.53,62.9 L37.6,76.6 M43.54,50.6 L27.4,45.3" />
+</vector>

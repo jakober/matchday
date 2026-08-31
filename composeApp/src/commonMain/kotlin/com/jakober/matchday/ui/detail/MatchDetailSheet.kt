@@ -10,57 +10,78 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.Participant
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.theme.CardCorner
+import com.jakober.matchday.theme.ChipCorner
 import com.jakober.matchday.theme.StatusIn
 import com.jakober.matchday.theme.StatusOut
 import com.jakober.matchday.ui.components.AttendanceLine
+import com.jakober.matchday.ui.components.Avatar
 import com.jakober.matchday.ui.components.DateText
 import com.jakober.matchday.ui.components.local
 
+/** Laenge des Absagegrunds - genug fuer einen Satz, zu wenig fuer einen Aufsatz. */
+private const val MAX_COMMENT = 140
+
 /**
- * Detailansicht als Bottom Sheet. Hier wird die Teilnahme gesetzt und wieder
- * zurueckgenommen.
+ * Detailansicht als Bottom Sheet. Hier wird die Teilnahme gesetzt, begruendet
+ * und wieder zurueckgenommen.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MatchDetailSheet(
     match: Match,
     status: RsvpStatus,
+    comment: String?,
     participants: List<Participant>,
     accent: Color,
-    onSetStatus: (RsvpStatus) -> Unit,
+    onSetStatus: (RsvpStatus, String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val dateTime = match.start.local()
+
+    var draft by remember(match.id) { mutableStateOf(comment.orEmpty()) }
+    // Das Kommentarfeld erscheint erst bei einer Absage - bei einer Zusage
+    // will niemand etwas begruenden.
+    var showComment by remember(match.id) { mutableStateOf(status == RsvpStatus.OUT) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -71,6 +92,7 @@ fun MatchDetailSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .navigationBarsPadding()
+                .imePadding()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 24.dp),
         ) {
@@ -125,6 +147,8 @@ fun MatchDetailSheet(
             Spacer(Modifier.height(10.dp))
             AttendanceLine(participants = participants, avatarSize = 28.dp)
 
+            DeclineNotes(participants)
+
             Spacer(Modifier.height(24.dp))
 
             Text(
@@ -140,7 +164,10 @@ fun MatchDetailSheet(
                     icon = Icons.Filled.Check,
                     color = StatusIn,
                     selected = status == RsvpStatus.IN,
-                    onClick = { onSetStatus(RsvpStatus.IN) },
+                    onClick = {
+                        onSetStatus(RsvpStatus.IN, null)
+                        onDismiss()
+                    },
                     modifier = Modifier.weight(1f),
                 )
                 ChoiceButton(
@@ -148,9 +175,43 @@ fun MatchDetailSheet(
                     icon = Icons.Filled.Close,
                     color = StatusOut,
                     selected = status == RsvpStatus.OUT,
-                    onClick = { onSetStatus(RsvpStatus.OUT) },
+                    onClick = {
+                        // Absage sofort speichern, damit sie auch dann steht,
+                        // wenn das Sheet ohne Speichern weggewischt wird.
+                        onSetStatus(RsvpStatus.OUT, draft.ifBlank { null })
+                        showComment = true
+                    },
                     modifier = Modifier.weight(1f),
                 )
+            }
+
+            if (showComment && status == RsvpStatus.OUT) {
+                Spacer(Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = draft,
+                    onValueChange = { if (it.length <= MAX_COMMENT) draft = it },
+                    label = { Text("Warum nicht? (optional)") },
+                    placeholder = { Text("z.B. bin im Urlaub") },
+                    supportingText = { Text("${draft.length}/$MAX_COMMENT") },
+                    shape = RoundedCornerShape(ChipCorner),
+                    maxLines = 3,
+                    keyboardOptions = KeyboardOptions(
+                        capitalization = KeyboardCapitalization.Sentences,
+                        imeAction = ImeAction.Done,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(Modifier.height(10.dp))
+                Button(
+                    onClick = {
+                        onSetStatus(RsvpStatus.OUT, draft.ifBlank { null })
+                        onDismiss()
+                    },
+                    shape = RoundedCornerShape(ChipCorner),
+                    modifier = Modifier.fillMaxWidth().height(48.dp),
+                ) {
+                    Text(if (draft.isBlank()) "Ohne Grund absagen" else "Speichern")
+                }
             }
 
             // Zuruecknehmen setzt auf "offen" - damit greift auch die
@@ -158,12 +219,56 @@ fun MatchDetailSheet(
             if (status != RsvpStatus.UNDECIDED) {
                 Spacer(Modifier.height(6.dp))
                 TextButton(
-                    onClick = { onSetStatus(RsvpStatus.UNDECIDED) },
+                    onClick = {
+                        onSetStatus(RsvpStatus.UNDECIDED, null)
+                        onDismiss()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
                         text = "Antwort zurücknehmen",
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Absagen mit Begruendung, damit man den Grund sieht und nicht nur die Zahl. */
+@Composable
+private fun DeclineNotes(participants: List<Participant>) {
+    val declines = participants.filter {
+        it.status == RsvpStatus.OUT && !it.comment.isNullOrBlank()
+    }
+    if (declines.isEmpty()) return
+
+    Spacer(Modifier.height(14.dp))
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (person in declines) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(CardCorner))
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(12.dp),
+            ) {
+                Avatar(
+                    initials = person.initials,
+                    colorArgb = person.colorArgb,
+                    size = 26.dp,
+                )
+                Spacer(Modifier.size(10.dp))
+                Column {
+                    Text(
+                        text = if (person.isMe) "Du" else person.name,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = StatusOut,
+                    )
+                    Text(
+                        text = person.comment.orEmpty(),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
             }

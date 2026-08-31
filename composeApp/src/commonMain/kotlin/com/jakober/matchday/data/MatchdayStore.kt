@@ -3,6 +3,7 @@ package com.jakober.matchday.data
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.Profile
 import com.jakober.matchday.domain.ReminderSettings
+import com.jakober.matchday.domain.Rsvp
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.domain.Subscription
 import com.russhwolf.settings.Settings
@@ -36,7 +37,7 @@ class MatchdayStore(private val settings: Settings) {
     val matches: StateFlow<List<Match>> = _matches.asStateFlow()
 
     private val _rsvps = MutableStateFlow(loadRsvps())
-    val rsvps: StateFlow<Map<String, RsvpStatus>> = _rsvps.asStateFlow()
+    val rsvps: StateFlow<Map<String, Rsvp>> = _rsvps.asStateFlow()
 
     private val _reminders = MutableStateFlow(load<ReminderSettings>(KEY_REMINDERS) ?: ReminderSettings())
     val reminders: StateFlow<ReminderSettings> = _reminders.asStateFlow()
@@ -116,22 +117,22 @@ class MatchdayStore(private val settings: Settings) {
 
     // -- Zusagen ------------------------------------------------------------
 
-    fun setRsvp(matchId: String, status: RsvpStatus) {
+    fun setRsvp(matchId: String, status: RsvpStatus, comment: String? = null) {
         // UNDECIDED bedeutet "zurueckgenommen" und wird nicht gespeichert -
         // damit greift wieder die Wochen-Erinnerung.
         val next = if (status == RsvpStatus.UNDECIDED) {
             _rsvps.value - matchId
         } else {
-            _rsvps.value + (matchId to status)
+            _rsvps.value + (matchId to Rsvp(status, comment?.trim()?.ifEmpty { null }))
         }
         updateRsvps(next)
     }
 
-    fun rsvpOf(matchId: String): RsvpStatus = _rsvps.value[matchId] ?: RsvpStatus.UNDECIDED
+    fun rsvpOf(matchId: String): Rsvp? = _rsvps.value[matchId]
 
-    private fun updateRsvps(map: Map<String, RsvpStatus>) {
+    private fun updateRsvps(map: Map<String, Rsvp>) {
         _rsvps.value = map
-        settings.putString(KEY_RSVPS, json.encodeToString(map.mapValues { it.value.name }))
+        settings.putString(KEY_RSVPS, json.encodeToString(map))
     }
 
     // -- Erinnerungen -------------------------------------------------------
@@ -153,12 +154,21 @@ class MatchdayStore(private val settings: Settings) {
         return runCatching { json.decodeFromString<List<T>>(raw) }.getOrDefault(emptyList())
     }
 
-    private fun loadRsvps(): Map<String, RsvpStatus> {
+    /**
+     * Liest die Antworten. Bis Version 0.3 stand hier nur der Statusname je
+     * Spiel; seit dem Kommentarfeld ist es ein Objekt. Die alte Form wird noch
+     * gelesen, damit vorhandene Zusagen ein Update ueberleben.
+     */
+    private fun loadRsvps(): Map<String, Rsvp> {
         val raw = settings.getStringOrNull(KEY_RSVPS) ?: return emptyMap()
+
+        runCatching { json.decodeFromString<Map<String, Rsvp>>(raw) }
+            .onSuccess { return it }
+
         return runCatching {
             json.decodeFromString<Map<String, String>>(raw)
                 .mapNotNull { (id, name) ->
-                    runCatching { id to RsvpStatus.valueOf(name) }.getOrNull()
+                    runCatching { id to Rsvp(RsvpStatus.valueOf(name)) }.getOrNull()
                 }
                 .toMap()
         }.getOrDefault(emptyMap())

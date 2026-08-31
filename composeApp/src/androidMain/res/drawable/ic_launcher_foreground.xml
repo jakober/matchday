@@ -1,10 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Fussball in Weiss auf Bayern-Rot. Der Ball sitzt mit Radius 30 um die Mitte
+  und bleibt damit innerhalb der Sicherheitszone adaptiver Symbole (66 von 108
+  dp) - sonst schneiden runde Launcher die Raender ab.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Ballkoerper -->
     <path
-        android:fillColor="#37E27A"
-        android:pathData="M54,28c-14.36,0 -26,11.64 -26,26s11.64,26 26,26 26,-11.64 26,-26 -11.64,-26 -26,-26zM54,34.4l12.2,8.86 -4.66,14.34h-15.08l-4.66,-14.34zM40.3,41.1l3.6,11.06 -8.68,6.3 -1.7,-5.24c-0.1,-0.72 -0.16,-1.46 -0.16,-2.22 0,-3.6 0.94,-6.98 2.58,-9.9zM67.7,41.1c1.64,2.92 2.58,6.3 2.58,9.9 0,0.76 -0.06,1.5 -0.16,2.22l-1.7,5.24 -8.68,-6.3zM47.5,62.6h13l4.66,14.34 -3.06,2.22c-2.54,0.86 -5.26,1.34 -8.1,1.34s-5.56,-0.48 -8.1,-1.34l-3.06,-2.22z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,24 a30,30 0 1,0 0,60 a30,30 0 1,0 0,-60 Z" />
+
+    <!-- Mittleres Fuenfeck -->
+    <path
+        android:fillColor="#DC052D"
+        android:pathData="M54,43 L64.46,50.6 L60.47,62.9 L47.53,62.9 L43.54,50.6 Z" />
+
+    <!-- Naehte von den Ecken des Fuenfecks nach aussen -->
+    <path
+        android:strokeColor="#DC052D"
+        android:strokeWidth="3.4"
+        android:strokeLineCap="round"
+        android:pathData="M54,43 L54,25.5" />
+    <path
+        android:strokeColor="#DC052D"
+        android:strokeWidth="3.4"
+        android:strokeLineCap="round"
+        android:pathData="M64.46,50.6 L80.6,45.3" />
+    <path
+        android:strokeColor="#DC052D"
+        android:strokeWidth="3.4"
+        android:strokeLineCap="round"
+        android:pathData="M60.47,62.9 L70.4,76.6" />
+    <path
+        android:strokeColor="#DC052D"
+        android:strokeWidth="3.4"
+        android:strokeLineCap="round"
+        android:pathData="M47.53,62.9 L37.6,76.6" />
+    <path
+        android:strokeColor="#DC052D"
+        android:strokeWidth="3.4"
+        android:strokeLineCap="round"
+        android:pathData="M43.54,50.6 L27.4,45.3" />
 </vector>

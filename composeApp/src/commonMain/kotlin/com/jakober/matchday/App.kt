@@ -109,8 +109,8 @@ private fun Root() {
     // Liste der Gruppenmitglieder eingesetzt - die Oberflaeche bleibt gleich.
     val participantsOf = remember(rsvps, activeProfile) {
         ParticipantsSource { matchId ->
-            val status = rsvps[matchId]
-            if (status == null) {
+            val entry = rsvps[matchId]
+            if (entry == null) {
                 emptyList()
             } else {
                 listOf(
@@ -118,7 +118,8 @@ private fun Root() {
                         id = activeProfile.id,
                         name = activeProfile.name,
                         colorArgb = activeProfile.colorArgb,
-                        status = status,
+                        status = entry.status,
+                        comment = entry.comment,
                         isMe = true,
                     )
                 )
@@ -130,6 +131,7 @@ private fun Root() {
         Screen.HOME -> HomeScreen(
             profile = activeProfile,
             matches = matches,
+            calendarMatches = allMatches,
             rsvps = rsvps,
             view = view,
             isSyncing = syncing,
@@ -182,15 +184,15 @@ private fun Root() {
     selected?.let { match ->
         MatchDetailSheet(
             match = match,
-            status = rsvps[match.id] ?: RsvpStatus.UNDECIDED,
+            status = rsvps[match.id]?.status ?: RsvpStatus.UNDECIDED,
+            comment = rsvps[match.id]?.comment,
             participants = participantsOf(match.id),
             accent = accentOf(match),
-            onSetStatus = { status ->
-                Container.store.setRsvp(match.id, status)
+            onSetStatus = { status, comment ->
+                Container.store.setRsvp(match.id, status, comment)
                 // Eine Zusage nimmt die Wochen-Nachfrage aus dem Plan,
                 // eine Ruecknahme bringt sie zurueck.
                 Container.rescheduleReminders()
-                selected = null
             },
             onDismiss = { selected = null },
         )
