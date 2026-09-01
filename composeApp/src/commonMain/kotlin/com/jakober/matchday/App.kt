@@ -1,6 +1,7 @@
 package com.jakober.matchday
 
 import androidx.compose.runtime.Composable
+import com.jakober.matchday.ui.components.SystemBackHandler
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -146,6 +147,19 @@ private fun Root() {
                 ownName = activeProfile.name,
                 ownColor = activeProfile.colorArgb,
             )
+        }
+    }
+
+    // Zurueck-Geste: Auf Android das Wischen vom Rand oder die Zurueck-Taste,
+    // auf iOS das Wischen vom linken Rand. Ohne diese Behandlung landet die
+    // Geste beim System und beendet die App, statt eine Ebene zurueckzugehen.
+    SystemBackHandler(enabled = selected != null) { selected = null }
+    SystemBackHandler(enabled = selected == null && screen != Screen.HOME) {
+        screen = when (screen) {
+            // Die Gruppe wird aus den Einstellungen heraus geoeffnet, also
+            // fuehrt der Weg zurueck auch dorthin.
+            Screen.GROUP -> Screen.SETTINGS
+            else -> Screen.HOME
         }
     }
 

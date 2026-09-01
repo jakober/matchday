@@ -156,7 +156,10 @@ fun MatchRow(
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(start = 6.dp, top = 6.dp)
+                // Waagerecht auf die Mitte des Wappens gesetzt: Das beginnt
+                // bei 14 dp und ist 38 dp breit, seine Mitte liegt also bei
+                // 33 dp - abzueglich des halben Abzeichens.
+                .padding(start = 20.dp, top = 4.dp)
                 .size(26.dp)
                 .clip(CircleShape)
                 .background(MaterialTheme.colorScheme.surface),
