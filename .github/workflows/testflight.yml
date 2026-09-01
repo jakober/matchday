@@ -16,6 +16,11 @@ jobs:
     name: Bauen und zu TestFlight hochladen
     runs-on: macos-15
 
+    # match legt Zertifikat und Profil im Zweig "certificates" desselben Repos
+    # ab - dafuer braucht der Lauf Schreibrecht.
+    permissions:
+      contents: write
+
     env:
       APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
       APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
@@ -26,6 +31,10 @@ jobs:
       # verlaesslich und wird nie wiederverwendet.
       BUILD_NUMBER: ${{ github.run_number }}
       FASTLANE_SKIP_UPDATE_CHECK: '1'
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      # Der eingebaute Token reicht: Es ist dasselbe Repo, ein zusaetzlicher
+      # Zugriffsschluessel waere unnoetiges Risiko.
+      MATCH_GIT_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
 
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +46,7 @@ jobs:
           [ -z "$APPSTORE_ISSUER_ID" ] && missing="$missing APPSTORE_ISSUER_ID"
           [ -z "$APPSTORE_PRIVATE_KEY" ] && missing="$missing APPSTORE_PRIVATE_KEY"
           [ -z "$APPLE_TEAM_ID" ] && missing="$missing APPLE_TEAM_ID"
+          [ -z "$MATCH_PASSWORD" ] && missing="$missing MATCH_PASSWORD"
           if [ -n "$missing" ]; then
             echo "::error::Es fehlen Repository-Secrets:$missing"
             exit 1
@@ -70,6 +80,13 @@ jobs:
         with:
           ruby-version: '3.3'
           bundler-cache: true
+
+      # match legt einen Commit im Zertifikatszweig an und braucht dafuer eine
+      # Absenderkennung.
+      - name: Git-Kennung fuer match setzen
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@users.noreply.github.com"
 
       - name: Signieren, bauen und hochladen
         run: bundle exec fastlane beta
