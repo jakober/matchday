@@ -56,6 +56,13 @@ targets:
           - "$(inherited)"
           - "-framework"
           - "ComposeApp"
+        CODE_SIGN_STYLE: Automatic
+      configs:
+        # Ohne diese Angabe versucht Xcode beim Archivieren ein
+        # Entwicklerprofil zu erzeugen. Das ist an registrierte Geraete
+        # gebunden - fuer TestFlight braucht es ein Verteilungsprofil.
+        Release:
+          CODE_SIGN_IDENTITY: "Apple Distribution"
     preBuildScripts:
       - name: Kotlin-Framework bauen
         basedOnDependencyAnalysis: false
