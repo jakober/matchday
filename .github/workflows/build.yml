@@ -45,6 +45,12 @@ jobs:
 
   ios:
     name: iOS (Simulator)
+    # Nur auf Anforderung. Grund: macOS-Laeufer zaehlen zehnfach gegen das
+    # Kontingent - ein Durchlauf von neun Minuten kostet neunzig. Der
+    # gemeinsame Code wird ohnehin vom Android-Job mitgeprueft; iOS-eigene
+    # Fehler treten selten auf und werden vor jedem TestFlight-Upload
+    # abgefangen, weil der ohnehin auf macOS baut.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
