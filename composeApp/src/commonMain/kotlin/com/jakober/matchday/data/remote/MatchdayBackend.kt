@@ -28,9 +28,29 @@ class MatchdayBackend {
         supabaseUrl = SupabaseConfig.URL,
         supabaseKey = SupabaseConfig.PUBLISHABLE_KEY,
     ) {
-        install(Auth)
+        install(Auth) {
+            // Ausdruecklich: Die Sitzung muss App-Neustarts ueberleben. Geht
+            // sie verloren, meldet sich das Geraet als neuer anonymer Nutzer
+            // an - und verliert damit lautlos seine Gruppenzugehoerigkeit.
+            autoLoadFromStorage = true
+            alwaysAutoRefresh = true
+        }
         install(Postgrest)
         install(Functions)
+    }
+
+    /** Kennung des angemeldeten Geraets, sofern eine Sitzung besteht. */
+    fun currentUserId(): String? = client.auth.currentSessionOrNull()?.user?.id
+
+    /** Prueft, ob diese Kennung Mitglied der Gruppe ist. */
+    suspend fun isMemberOf(groupId: String): Boolean {
+        val userId = currentUserId() ?: return false
+        return client.from("members").select {
+            filter {
+                eq("group_id", groupId)
+                eq("user_id", userId)
+            }
+        }.decodeList<MemberDto>().isNotEmpty()
     }
 
     /** Meldet das Geraet an, falls noch keine Sitzung besteht. */

@@ -74,6 +74,7 @@ private fun Root() {
     val reminders by Container.store.reminders.collectAsState()
     val membership by Container.store.membership.collectAsState()
     val groupSnapshot by Container.group.collectAsState()
+    val membershipLost by Container.membershipLost.collectAsState()
 
     val activeProfile = profile ?: return
     val scope = rememberCoroutineScope()
@@ -215,10 +216,16 @@ private fun Root() {
             membership = membership,
             members = groupSnapshot.members,
             busy = groupBusy,
-            error = groupError,
+            error = groupError ?: if (membershipLost) {
+                "Deine bisherige Gruppe gehört zu einer früheren Installation der App " +
+                    "und ist nicht mehr erreichbar. Lege eine neue an oder lass dich neu einladen."
+            } else {
+                null
+            },
             onCreate = { name ->
                 groupBusy = true
                 groupError = null
+                Container.acknowledgeMembershipLoss()
                 scope.launch {
                     runCatching {
                         Container.backend.createGroup(
@@ -242,6 +249,7 @@ private fun Root() {
             onJoin = { code ->
                 groupBusy = true
                 groupError = null
+                Container.acknowledgeMembershipLoss()
                 scope.launch {
                     runCatching {
                         Container.backend.joinGroup(

@@ -58,6 +58,15 @@ object Container {
     /** Mitglieder und deren Antworten, Stand des letzten Abgleichs. */
     val group: StateFlow<GroupSnapshot> = _group.asStateFlow()
 
+    private val _membershipLost = MutableStateFlow(false)
+
+    /** Wird gesetzt, wenn die gespeicherte Gruppe nicht mehr zu dieser App-Installation gehoert. */
+    val membershipLost: StateFlow<Boolean> = _membershipLost.asStateFlow()
+
+    fun acknowledgeMembershipLoss() {
+        _membershipLost.value = false
+    }
+
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     /**
@@ -96,6 +105,20 @@ object Container {
      */
     suspend fun refreshMembership() {
         val current = store.membership.value ?: return
+
+        // Gehoert die gespeicherte Gruppe noch zu dieser Anmeldung? Nach einer
+        // Neuinstallation ist die anonyme Kennung eine andere, und der
+        // Mitgliedseintrag gehoert dann jemand anderem. Ohne diese Pruefung
+        // bliebe eine Gruppe stehen, in der man nichts mehr darf - und der
+        // Grund waere nicht erkennbar.
+        val stillMember = runCatching { backend.isMemberOf(current.groupId) }.getOrNull()
+        if (stillMember == false) {
+            store.clearMembership()
+            clearGroupSnapshot()
+            _membershipLost.value = true
+            return
+        }
+
         runCatching { backend.reloadMembership(current) }
             .onSuccess { store.saveMembership(it) }
     }
