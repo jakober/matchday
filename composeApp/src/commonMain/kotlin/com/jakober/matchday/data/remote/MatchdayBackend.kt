@@ -65,8 +65,17 @@ class MatchdayBackend {
         }.getOrNull()
     }
 
-    /** Meldet das Geraet an, falls noch keine Sitzung besteht. */
+    /**
+     * Meldet das Geraet an, falls noch keine Sitzung besteht.
+     *
+     * Das Warten auf die Initialisierung ist der Kern: Die gespeicherte
+     * Sitzung wird nebenlaeufig geladen. Ohne dieses Warten faellt die
+     * Pruefung zu frueh aus, die App meldet einen neuen anonymen Nutzer an -
+     * und ueberschreibt dabei die gespeicherte Sitzung. Genau daran ging
+     * bisher bei jedem Start die Gruppenzugehoerigkeit verloren.
+     */
     suspend fun signInIfNeeded() {
+        client.auth.awaitInitialization()
         if (client.auth.currentSessionOrNull() == null) {
             client.auth.signInAnonymously()
         }

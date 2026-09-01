@@ -61,6 +61,8 @@ fun SettingsScreen(
     groupName: String?,
     memberCount: Int,
     diagnostics: NotificationDiagnostics?,
+    /** Anmeldekennung des Geraets - aendert sie sich, geht die Gruppe verloren. */
+    deviceId: String?,
     onSendTest: () -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
     onProfileChange: (Profile) -> Unit,
@@ -188,6 +190,17 @@ fun SettingsScreen(
                 title = if (subscriptionCount == 1) "1 Mannschaft" else "$subscriptionCount Mannschaften",
                 subtitle = null,
                 onClick = onOpenSubscriptions,
+            )
+
+            // Bewusst sichtbar: Aendert sich diese Kennung zwischen zwei
+            // Starts, ist die Anmeldesitzung verloren gegangen - und damit die
+            // Gruppenzugehoerigkeit. Ohne Anzeige liesse sich das nur in der
+            // Datenbank nachsehen.
+            Spacer(Modifier.height(28.dp))
+            Text(
+                text = "Gerätekennung: ${deviceId?.take(8) ?: "nicht angemeldet"}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             Spacer(Modifier.height(40.dp))

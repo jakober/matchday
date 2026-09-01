@@ -88,6 +88,7 @@ private fun Root() {
     var groupError by remember { mutableStateOf<String?>(null) }
     var invite by remember { mutableStateOf<Pair<String, String>?>(null) }
     var importantError by remember { mutableStateOf<String?>(null) }
+    var deviceId by remember { mutableStateOf<String?>(null) }
     var diagnostics by remember { mutableStateOf<NotificationDiagnostics?>(null) }
 
     // Beim Oeffnen der Einstellungen neu erheben - die Erlaubnis kann
@@ -106,6 +107,7 @@ private fun Root() {
         // Anonyme Anmeldung: gibt dem Geraet eine dauerhafte Kennung, ohne
         // dass jemand ein Konto anlegen muss.
         runCatching { Container.backend.signInIfNeeded() }
+        deviceId = Container.backend.currentUserId()
         syncing = true
         Container.repository.syncAll()
         Container.rescheduleReminders()
@@ -212,6 +214,7 @@ private fun Root() {
             groupName = membership?.groupName,
             memberCount = groupSnapshot.members.size,
             diagnostics = diagnostics,
+            deviceId = deviceId,
             onSendTest = { Container.scheduler.sendTest() },
             onOpenExactAlarmSettings = { Container.scheduler.openExactAlarmSettings() },
             onProfileChange = { Container.saveProfile(it) },

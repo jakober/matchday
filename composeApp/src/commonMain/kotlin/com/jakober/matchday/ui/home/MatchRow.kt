@@ -84,9 +84,8 @@ fun MatchRow(
     }
     val borderWidth = if (mood == MatchMood.OPEN) 1.dp else 2.dp
 
-    Box(modifier = modifier.fillMaxWidth()) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(CardCorner))
             .background(MaterialTheme.colorScheme.surface)
@@ -100,12 +99,24 @@ fun MatchRow(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         // Wappen statt Farbbalken - auf einen Blick erkennbar, um wessen
-        // Spiel es geht.
-        TeamBadge(
-            team = team,
-            size = 38.dp,
+        // Spiel es geht. Bei hervorgehobenen Spielen steht der Stern darueber
+        // und schiebt das Wappen nach unten; die Begegnung bleibt davon
+        // unberuehrt, weil beides in derselben Spalte liegt.
+        Column(
             modifier = Modifier.padding(start = 14.dp),
-        )
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            if (isImportant) {
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = "Wichtiges Spiel",
+                    tint = StatusOpen,
+                    modifier = Modifier.size(30.dp),
+                )
+                Spacer(Modifier.height(4.dp))
+            }
+            TeamBadge(team = team, size = 38.dp)
+        }
 
         Column(
             modifier = Modifier
@@ -148,31 +159,6 @@ fun MatchRow(
         Spacer(Modifier.width(8.dp))
 
         StatusDot(status)
-    }
-
-    // Eckabzeichen statt Vorsatz vor dem Titel: So bleibt die Begegnung an
-    // ihrem Platz, egal ob ein Spiel hervorgehoben ist oder nicht.
-    if (isImportant) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                // Waagerecht auf die Mitte des Wappens gesetzt: Das beginnt
-                // bei 14 dp und ist 38 dp breit, seine Mitte liegt also bei
-                // 33 dp - abzueglich des halben Abzeichens.
-                .padding(start = 20.dp, top = 4.dp)
-                .size(26.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Star,
-                contentDescription = "Wichtiges Spiel",
-                tint = StatusOpen,
-                modifier = Modifier.size(22.dp),
-            )
-        }
-    }
     }
 }
 
