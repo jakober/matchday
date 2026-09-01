@@ -6,6 +6,8 @@ import com.jakober.matchday.push.PushToken
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.functions.Functions
+import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
@@ -28,6 +30,7 @@ class MatchdayBackend {
     ) {
         install(Auth)
         install(Postgrest)
+        install(Functions)
     }
 
     /** Meldet das Geraet an, falls noch keine Sitzung besteht. */
@@ -173,6 +176,26 @@ class MatchdayBackend {
         ) {
             onConflict = "member_id,calendar_id,match_uid"
         }
+    }
+
+    /**
+     * Bittet den Server, die uebrigen Mitglieder ueber die eigene Antwort zu
+     * benachrichtigen.
+     *
+     * Uebergeben wird nur, WELCHE Antwort gemeint ist. Wer der Absender ist und
+     * was drinsteht, liest die Function selbst aus der Datenbank - so kann sich
+     * niemand als jemand anderes ausgeben.
+     */
+    suspend fun notifyGroup(calendarId: String, matchUid: String) {
+        client.functions.invoke(
+            function = "rsvp-notify",
+            body = JsonObject(
+                mapOf(
+                    "calendar_id" to JsonPrimitive(calendarId),
+                    "match_uid" to JsonPrimitive(matchUid),
+                )
+            ),
+        )
     }
 
     /** Nimmt die eigene Antwort zurueck. */

@@ -95,6 +95,9 @@ object Container {
                     backend.clearRsvp(membership, calendarId, parts.second)
                 } else {
                     backend.setRsvp(membership, calendarId, parts.second, status, comment, title)
+                    // Erst speichern, dann melden: Die Function liest die
+                    // Antwort aus der Datenbank, sie muss also schon dort sein.
+                    backend.notifyGroup(calendarId, parts.second)
                 }
                 refreshGroup()
             }

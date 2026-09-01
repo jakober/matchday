@@ -1,9 +1,15 @@
 // Benachrichtigt die uebrigen Gruppenmitglieder, wenn jemand zu- oder absagt.
 //
-// Wird von einem Datenbank-Webhook auf der Tabelle "rsvps" aufgerufen.
+// Wird von der App aufgerufen, direkt nachdem sie die eigene Antwort
+// gespeichert hat. Bewusst nicht ueber einen Datenbank-Trigger: So laesst sich
+// die Identitaet des Aufrufers aus seinem Anmeldetoken ableiten, statt einem
+// uebergebenen Datensatz zu glauben. Der Aufrufer bestimmt nur, WELCHE seiner
+// Antworten gemeldet wird - Inhalt und Absender liest die Function selbst aus
+// der Datenbank.
+//
 // Der Weg zum Geraet unterscheidet sich je Plattform: Android ueber Firebase
 // Cloud Messaging, iOS direkt ueber Apples Push-Dienst. Fuer iOS brauchen wir
-// Firebase nicht - ein direkt signiertes Token genuegt und spart der App eine
+// Firebase nicht - ein selbst signiertes Token genuegt und spart der App eine
 // Abhaengigkeit.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.47.10";
@@ -16,7 +22,7 @@ const BUNDLE_ID = "com.jakober.matchday";
 
 // TestFlight- und App-Store-Installationen sprechen den Produktivdienst an.
 // Ein Build direkt aus Xcode wuerde die Sandbox brauchen - deshalb der
-// zweite Versuch weiter unten, falls Apple die Kennung ablehnt.
+// zweite Versuch, falls Apple die Kennung ablehnt.
 const APNS_HOSTS = ["api.push.apple.com", "api.sandbox.push.apple.com"];
 
 // -- Hilfen fuer JSON Web Tokens --------------------------------------------
@@ -38,6 +44,26 @@ function pemToBytes(pem: string): Uint8Array {
     .replace(/\s+/g, "");
   const binary = atob(body);
   return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+}
+
+/**
+ * Liest die Nutzerkennung aus dem Anmeldetoken.
+ *
+ * Die Signatur ist bereits geprueft, bevor diese Function ueberhaupt startet -
+ * Supabase laesst nur gueltige Token durch. Hier wird deshalb nur noch der
+ * Inhalt gelesen.
+ */
+function userIdFromToken(authorization: string | null): string | null {
+  const token = authorization?.replace(/^Bearer\s+/i, "");
+  if (!token) return null;
+  const payload = token.split(".")[1];
+  if (!payload) return null;
+  try {
+    const json = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(json).sub ?? null;
+  } catch {
+    return null;
+  }
 }
 
 /** Token fuer Apple: ES256, gueltig eine Stunde. */
@@ -181,15 +207,12 @@ async function sendFcm(token: string, title: string, body: string): Promise<bool
 
 Deno.serve(async (request) => {
   try {
-    const payload = await request.json();
-    const record = payload.record;
-    const oldRecord = payload.old_record;
+    const userId = userIdFromToken(request.headers.get("Authorization"));
+    if (!userId) return new Response("nicht angemeldet", { status: 401 });
 
-    if (!record) return new Response("ohne Datensatz", { status: 200 });
-
-    // Aendert sich nur der Kommentar, ist das keine Nachricht wert.
-    if (payload.type === "UPDATE" && oldRecord?.status === record.status) {
-      return new Response("Status unveraendert", { status: 200 });
+    const { calendar_id, match_uid } = await request.json();
+    if (!calendar_id || !match_uid) {
+      return new Response("calendar_id und match_uid fehlen", { status: 400 });
     }
 
     const supabase = createClient(
@@ -199,27 +222,43 @@ Deno.serve(async (request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    const { data: actor } = await supabase
+    // Wer ruft an? Aus dem Token abgeleitet, nicht aus dem Aufruf uebernommen.
+    const { data: member } = await supabase
       .from("members")
-      .select("display_name")
-      .eq("id", record.member_id)
-      .single();
+      .select("id, group_id, display_name")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (!member) return new Response("keine Mitgliedschaft", { status: 403 });
+
+    // Inhalt ebenfalls aus der Datenbank, nicht aus dem Aufruf.
+    const { data: rsvp } = await supabase
+      .from("rsvps")
+      .select("status, comment, match_title")
+      .eq("member_id", member.id)
+      .eq("calendar_id", calendar_id)
+      .eq("match_uid", match_uid)
+      .maybeSingle();
+
+    // Fehlt sie, wurde die Antwort gerade zurueckgenommen - das ist keine
+    // Nachricht wert, die alle aufschreckt.
+    if (!rsvp) return new Response("keine Antwort vorhanden", { status: 200 });
 
     const { data: tokens } = await supabase
       .from("device_tokens")
       .select("platform, token")
-      .eq("group_id", record.group_id)
+      .eq("group_id", member.group_id)
       // Sich selbst benachrichtigen waere nur laestig.
-      .neq("member_id", record.member_id);
+      .neq("member_id", member.id);
 
     if (!tokens || tokens.length === 0) {
       return new Response("keine Empfaenger", { status: 200 });
     }
 
-    const name = actor?.display_name ?? "Jemand";
-    const title = record.status === "IN" ? `${name} ist dabei` : `${name} kann nicht`;
-    const match = record.match_title ?? "Ein Spiel";
-    const body = record.comment ? `${match} · ${record.comment}` : match;
+    const name = member.display_name ?? "Jemand";
+    const title = rsvp.status === "IN" ? `${name} ist dabei` : `${name} kann nicht`;
+    const match = rsvp.match_title ?? "Ein Spiel";
+    const body = rsvp.comment ? `${match} · ${rsvp.comment}` : match;
 
     const results = await Promise.all(
       tokens.map((entry: { platform: string; token: string }) =>
