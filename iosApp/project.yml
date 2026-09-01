@@ -48,7 +48,10 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jakober.matchday
-        MARKETING_VERSION: "0.6"
+        # Massgebliche Versionsnummer. Der TestFlight-Ablauf liest sie hier,
+        # wenn beim Auslösen keine angegeben wird - also bei jedem Lauf nach
+        # Zeitplan. Bei neuen Funktionen hier hochzaehlen.
+        MARKETING_VERSION: "0.11"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
         # Setzt zugleich CFBundleIconName im Paket - ohne den Eintrag lehnt
