@@ -94,8 +94,8 @@ android {
         applicationId = "com.jakober.matchday"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 20
-        versionName = "0.20"
+        versionCode = 21
+        versionName = "0.21"
     }
 
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
