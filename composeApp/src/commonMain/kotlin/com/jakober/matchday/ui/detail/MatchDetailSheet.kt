@@ -81,6 +81,8 @@ fun MatchDetailSheet(
     isImportant: Boolean,
     /** Nur der Admin darf die Hervorhebung setzen. */
     canEditImportant: Boolean,
+    /** Meldung, falls das Hervorheben scheitert - sonst bliebe es unsichtbar. */
+    importantError: String?,
     onToggleImportant: () -> Unit,
     onSetStatus: (RsvpStatus, String?) -> Unit,
     onDismiss: () -> Unit,
@@ -172,6 +174,15 @@ fun MatchDetailSheet(
                         text = if (isImportant) "Hervorhebung aufheben" else "Als wichtig hervorheben",
                         style = MaterialTheme.typography.labelLarge,
                         color = if (isImportant) StatusOpen else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+
+                importantError?.let { meldung ->
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        text = meldung,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
                     )
                 }
             }

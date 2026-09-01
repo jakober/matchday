@@ -85,6 +85,7 @@ private fun Root() {
     var groupBusy by remember { mutableStateOf(false) }
     var groupError by remember { mutableStateOf<String?>(null) }
     var invite by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var importantError by remember { mutableStateOf<String?>(null) }
     var diagnostics by remember { mutableStateOf<NotificationDiagnostics?>(null) }
 
     // Beim Oeffnen der Einstellungen neu erheben - die Erlaubnis kann
@@ -106,6 +107,9 @@ private fun Root() {
         syncing = true
         Container.repository.syncAll()
         Container.rescheduleReminders()
+        // Repariert Mitgliedschaften aus aelteren App-Fassungen, denen
+        // Adminrolle oder Kalenderzuordnung fehlen.
+        Container.refreshMembership()
         Container.refreshGroup()
         Container.uploadPushToken()
         syncing = false
@@ -157,7 +161,10 @@ private fun Root() {
             importantIds = groupSnapshot.importantMatchIds,
             accentOf = accentOf,
             onViewChange = { view = it },
-            onSelect = { selected = it },
+            onSelect = {
+                importantError = null
+                selected = it
+            },
             onOpenSubscriptions = { screen = Screen.TEAMS },
             onOpenSettings = { screen = Screen.SETTINGS },
             onRefresh = {
@@ -290,8 +297,10 @@ private fun Root() {
             accent = accentOf(match),
             isImportant = match.id in groupSnapshot.importantMatchIds,
             canEditImportant = membership?.isAdmin == true,
+            importantError = importantError,
             onToggleImportant = {
-                Container.toggleImportant(match.id) { groupError = it }
+                importantError = null
+                Container.toggleImportant(match.id) { importantError = it }
             },
             onSetStatus = { status, comment ->
                 Container.setRsvp(match.id, status, comment)

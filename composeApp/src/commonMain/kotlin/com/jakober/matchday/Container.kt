@@ -87,14 +87,48 @@ object Container {
      * Hebt ein Spiel hervor oder nimmt die Hervorhebung zurueck.
      * Nur der Admin darf das; die Datenbank weist alle anderen ab.
      */
+    /**
+     * Holt die eigene Mitgliedschaft neu vom Server und legt sie ab.
+     *
+     * Wichtig fuer Installationen, die aus einer aelteren App-Fassung stammen:
+     * Dort fehlen Adminrolle, Sichtbarkeit und teils die Kalenderzuordnung,
+     * weil es diese Felder damals noch nicht gab.
+     */
+    suspend fun refreshMembership() {
+        val current = store.membership.value ?: return
+        runCatching { backend.reloadMembership(current) }
+            .onSuccess { store.saveMembership(it) }
+    }
+
     fun toggleImportant(matchId: String, onError: (String) -> Unit = {}) {
-        val membership = store.membership.value ?: return
-        val parts = splitMatchId(matchId) ?: return
-        val calendarId = membership.calendarIds[parts.first] ?: return
+        val parts = splitMatchId(matchId)
+        if (parts == null) {
+            onError("Spiel konnte nicht zugeordnet werden")
+            return
+        }
+        if (store.membership.value == null) {
+            onError("Dafür brauchst du eine Gruppe")
+            return
+        }
+
         val isImportant = matchId in _group.value.importantMatchIds
         val title = store.matches.value.firstOrNull { it.id == matchId }?.displayTitle
 
         scope.launch {
+            // Fehlt die Kalenderzuordnung, stammt die gespeicherte
+            // Mitgliedschaft aus einer aelteren Fassung - einmal nachladen
+            // repariert das, statt wortlos nichts zu tun.
+            if (store.membership.value?.calendarIds?.containsKey(parts.first) != true) {
+                refreshMembership()
+            }
+
+            val membership = store.membership.value
+            val calendarId = membership?.calendarIds?.get(parts.first)
+            if (membership == null || calendarId == null) {
+                onError("Kalender der Gruppe nicht gefunden - bitte Gruppe neu betreten")
+                return@launch
+            }
+
             runCatching {
                 if (isImportant) {
                     backend.unmarkImportant(membership, calendarId, parts.second)
@@ -106,7 +140,9 @@ object Container {
                 // eingeschraenktes Mitglied aendert eine Markierung, ob es zu
                 // diesem Spiel ueberhaupt erinnert wird.
                 rescheduleReminders()
-            }.onFailure { onError(it.message ?: "Ändern nicht möglich") }
+            }.onFailure {
+                onError(it.message ?: "Ändern nicht möglich")
+            }
         }
     }
 

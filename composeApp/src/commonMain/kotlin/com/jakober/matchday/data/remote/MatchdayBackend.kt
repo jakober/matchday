@@ -94,6 +94,26 @@ class MatchdayBackend {
     }
 
     /**
+     * Liest die eigene Mitgliedschaft neu vom Server.
+     *
+     * Repariert dabei alles, was in einer aelteren App-Fassung noch nicht
+     * gespeichert wurde - Adminrolle, Sichtbarkeit und vor allem die
+     * Kalenderzuordnung, ohne die sich kein Spiel hervorheben laesst.
+     */
+    suspend fun reloadMembership(existing: GroupMembership): GroupMembership {
+        val group = client.from("groups").select {
+            filter { eq("id", existing.groupId) }
+        }.decodeList<GroupDto>().firstOrNull()
+
+        return finishSetup(
+            groupId = existing.groupId,
+            inviteCode = group?.inviteCode ?: existing.inviteCode,
+            groupName = group?.name ?: existing.groupName,
+            adminMemberId = group?.adminMemberId,
+        )
+    }
+
+    /**
      * Erzeugt eine einmalige Einladung. Die Sichtbarkeit wird dabei
      * festgelegt und beim Beitritt uebernommen.
      */
