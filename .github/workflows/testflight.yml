@@ -9,6 +9,10 @@ on:
       version:
         description: 'Versionsnummer (leer = aus project.yml)'
         required: false
+      force_signing:
+        description: 'Profil neu erzeugen (nach Aenderung der App-Faehigkeiten)'
+        type: boolean
+        default: false
   # Alle zwei Monate ein frischer Build. Grund: TestFlight-Builds laufen 90
   # Tage nach dem Upload ab und lassen sich danach nicht mehr starten. Zwei
   # Monate lassen rund vier Wochen Puffer.
@@ -35,6 +39,7 @@ jobs:
       # verlaesslich und wird nie wiederverwendet.
       BUILD_NUMBER: ${{ github.run_number }}
       FASTLANE_SKIP_UPDATE_CHECK: '1'
+      FORCE_SIGNING: ${{ inputs.force_signing }}
       MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
       # Der eingebaute Token reicht: Es ist dasselbe Repo, ein zusaetzlicher
       # Zugriffsschluessel waere unnoetiges Risiko.

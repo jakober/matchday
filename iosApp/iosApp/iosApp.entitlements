@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!--
+    Ohne diesen Eintrag lehnt iOS die Anmeldung fuer Push ab, und der Rueckruf
+    mit der Geraetekennung kommt nie. Die Faehigkeit bei der App-ID zu
+    aktivieren genuegt nicht - die App selbst muss sie ebenfalls fuehren.
+
+    "production" gilt fuer TestFlight und App Store. Ein Build direkt aus Xcode
+    wuerde "development" brauchen; den gibt es hier nicht.
+  -->
+  <key>aps-environment</key>
+  <string>production</string>
+</dict>
+</plist>

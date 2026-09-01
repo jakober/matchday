@@ -50,6 +50,10 @@ platform :ios do
       git_url: ENV.fetch("MATCH_GIT_URL"),
       git_branch: "certificates",
       readonly: false,
+      # Einmalig erzwingen, wenn sich die Faehigkeiten der App geaendert
+      # haben - ein vorhandenes Profil wird sonst weiterverwendet und
+      # enthaelt die neue Berechtigung nicht.
+      force: ENV["FORCE_SIGNING"] == "true",
       keychain_name: KEYCHAIN_NAME,
       keychain_password: KEYCHAIN_PASSWORD,
     )

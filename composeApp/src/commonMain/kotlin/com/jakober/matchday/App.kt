@@ -76,6 +76,7 @@ private fun Root() {
     val membership by Container.store.membership.collectAsState()
     val groupSnapshot by Container.group.collectAsState()
     val membershipLost by Container.membershipLost.collectAsState()
+    val pushState by Container.pushState.collectAsState()
 
     val activeProfile = profile ?: return
     val scope = rememberCoroutineScope()
@@ -215,6 +216,7 @@ private fun Root() {
             memberCount = groupSnapshot.members.size,
             diagnostics = diagnostics,
             deviceId = deviceId,
+            pushState = pushState,
             onSendTest = { Container.scheduler.sendTest() },
             onOpenExactAlarmSettings = { Container.scheduler.openExactAlarmSettings() },
             onProfileChange = { Container.saveProfile(it) },

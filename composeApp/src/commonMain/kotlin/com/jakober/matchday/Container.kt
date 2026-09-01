@@ -30,6 +30,9 @@ import kotlinx.datetime.Clock
  * Zusammenbau der App. Bewusst schlicht statt mit einem
  * Abhaengigkeits-Container - die App hat vier bewegliche Teile.
  */
+/** Zustand der Erreichbarkeit fuer Benachrichtigungen aus der Gruppe. */
+enum class PushState { UNKNOWN, NO_GROUP, NO_TOKEN, UPLOAD_FAILED, REGISTERED }
+
 object Container {
 
     val store: MatchdayStore by lazy { MatchdayStore(createSettings()) }
@@ -57,6 +60,11 @@ object Container {
 
     /** Mitglieder und deren Antworten, Stand des letzten Abgleichs. */
     val group: StateFlow<GroupSnapshot> = _group.asStateFlow()
+
+    private val _pushState = MutableStateFlow(PushState.UNKNOWN)
+
+    /** Ob dieses Geraet fuer Benachrichtigungen der anderen erreichbar ist. */
+    val pushState: StateFlow<PushState> = _pushState.asStateFlow()
 
     private val _membershipLost = MutableStateFlow(false)
 
@@ -225,10 +233,23 @@ object Container {
      * dazu, dass Benachrichtigungen stillschweigend ins Leere gehen.
      */
     fun uploadPushToken() {
-        val membership = store.membership.value ?: return
+        val membership = store.membership.value
+        if (membership == null) {
+            _pushState.value = PushState.NO_GROUP
+            return
+        }
         scope.launch {
-            val token = runCatching { pushRegistrar.token() }.getOrNull() ?: return@launch
+            val token = runCatching { pushRegistrar.token() }.getOrNull()
+            if (token == null) {
+                // Auf iOS heisst das meist: Die Anmeldung bei Apple ist
+                // fehlgeschlagen, etwa weil der App die Push-Berechtigung
+                // fehlt. Ohne Kennung gibt es keinen Empfaenger.
+                _pushState.value = PushState.NO_TOKEN
+                return@launch
+            }
             runCatching { backend.upsertDeviceToken(membership, token) }
+                .onSuccess { _pushState.value = PushState.REGISTERED }
+                .onFailure { _pushState.value = PushState.UPLOAD_FAILED }
         }
     }
 

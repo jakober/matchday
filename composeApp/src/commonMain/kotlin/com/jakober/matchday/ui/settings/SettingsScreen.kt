@@ -42,6 +42,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.jakober.matchday.PushState
 import com.jakober.matchday.domain.Profile
 import com.jakober.matchday.domain.ReminderSettings
 import com.jakober.matchday.notify.NotificationDiagnostics
@@ -63,6 +64,7 @@ fun SettingsScreen(
     diagnostics: NotificationDiagnostics?,
     /** Anmeldekennung des Geraets - aendert sie sich, geht die Gruppe verloren. */
     deviceId: String?,
+    pushState: PushState,
     onSendTest: () -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
     onProfileChange: (Profile) -> Unit,
@@ -170,6 +172,7 @@ fun SettingsScreen(
 
             NotificationStatus(
                 diagnostics = diagnostics,
+                pushState = pushState,
                 onSendTest = onSendTest,
                 onOpenExactAlarmSettings = onOpenExactAlarmSettings,
             )
@@ -216,6 +219,7 @@ fun SettingsScreen(
 @Composable
 private fun NotificationStatus(
     diagnostics: NotificationDiagnostics?,
+    pushState: PushState,
     onSendTest: () -> Unit,
     onOpenExactAlarmSettings: () -> Unit,
 ) {
@@ -268,6 +272,29 @@ private fun NotificationStatus(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        // Ohne hinterlegte Kennung erreichen einen die Zusagen der anderen
+        // nicht - das ist sonst nicht erkennbar, weil die eigenen
+        // Erinnerungen davon unberuehrt weiterlaufen.
+        Spacer(Modifier.height(8.dp))
+        when (pushState) {
+            PushState.REGISTERED -> StatusLine(
+                ok = true,
+                okText = "Für Meldungen der Gruppe erreichbar",
+                failText = "",
+            )
+            PushState.NO_GROUP -> Text(
+                text = "Ohne Gruppe gibt es keine Meldungen der anderen.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            PushState.NO_TOKEN, PushState.UPLOAD_FAILED -> StatusLine(
+                ok = false,
+                okText = "",
+                failText = "Nicht für Meldungen der Gruppe erreichbar",
+            )
+            PushState.UNKNOWN -> Unit
+        }
 
         Spacer(Modifier.height(12.dp))
         OutlinedButton(
