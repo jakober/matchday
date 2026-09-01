@@ -26,6 +26,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.SportsSoccer
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -53,6 +54,7 @@ import com.jakober.matchday.domain.Rsvp
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.domain.moodOf
 import com.jakober.matchday.theme.StatusIn
+import com.jakober.matchday.theme.StatusOpen
 import com.jakober.matchday.theme.StatusOut
 import com.jakober.matchday.ui.components.DateText
 import com.jakober.matchday.ui.components.local
@@ -76,6 +78,7 @@ fun MonthView(
     matches: List<Match>,
     rsvps: Map<String, Rsvp>,
     participantsOf: ParticipantsSource,
+    importantIds: Set<String>,
     accentOf: (Match) -> Color,
     onSelect: (Match) -> Unit,
     modifier: Modifier = Modifier,
@@ -146,6 +149,7 @@ fun MonthView(
                 byDay = byDay,
                 accentOf = accentOf,
                 participantsOf = participantsOf,
+                importantIds = importantIds,
                 onDayClick = { date ->
                     // Tag aus dem Nachbarmonat: erst dorthin blaettern, sonst
                     // faellt die Auswahl sofort wieder aus dem Raster.
@@ -174,6 +178,7 @@ fun MonthView(
             matches = byDay[day].orEmpty(),
             rsvps = rsvps,
             participantsOf = participantsOf,
+            importantIds = importantIds,
             onSelect = { match ->
                 // Erst schliessen, dann die Detailansicht oeffnen - zwei
                 // uebereinanderliegende Sheets vertragen sich nicht.
@@ -219,6 +224,7 @@ private fun MonthGrid(
     byDay: Map<LocalDate, List<Match>>,
     accentOf: (Match) -> Color,
     participantsOf: ParticipantsSource,
+    importantIds: Set<String>,
     onDayClick: (LocalDate) -> Unit,
 ) {
     val grid = remember(year, month) { DateText.monthGrid(year, month) }
@@ -238,6 +244,7 @@ private fun MonthGrid(
                         matchCount = dayMatches.size,
                         ballColor = dayMatches.firstOrNull()?.let(accentOf),
                         mood = dayMood(dayMatches, participantsOf),
+                        isImportant = dayMatches.any { it.id in importantIds },
                         onClick = { onDayClick(date) },
                         modifier = Modifier.weight(1f).fillMaxHeight(),
                     )
@@ -254,6 +261,7 @@ private fun DaySheet(
     matches: List<Match>,
     rsvps: Map<String, Rsvp>,
     participantsOf: ParticipantsSource,
+    importantIds: Set<String>,
     onSelect: (Match) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -296,6 +304,7 @@ private fun DaySheet(
                     match = match,
                     status = rsvps[match.id]?.status ?: RsvpStatus.UNDECIDED,
                     participants = participantsOf(match.id),
+                    isImportant = match.id in importantIds,
                     onClick = { onSelect(match) },
                 )
             }
@@ -312,6 +321,7 @@ private fun DayCell(
     matchCount: Int,
     ballColor: Color?,
     mood: MatchMood,
+    isImportant: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -326,6 +336,10 @@ private fun DayCell(
             .background(
                 when {
                     !hasMatch -> Color.Transparent
+                    // Hervorgehobene Tage bekommen zusaetzlich einen kraeftigeren
+                    // Grund, damit die Groesse allein nicht die einzige
+                    // Unterscheidung ist.
+                    isImportant && !dimmed -> StatusOpen.copy(alpha = 0.18f)
                     // Nachbarmonat und Vergangenheit blasser, aber sichtbar.
                     dimmed -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
                     else -> MaterialTheme.colorScheme.surfaceVariant
@@ -354,7 +368,11 @@ private fun DayCell(
     ) {
         Text(
             text = date.dayOfMonth.toString(),
-            style = MaterialTheme.typography.bodyMedium,
+            style = if (isImportant) {
+                MaterialTheme.typography.titleMedium
+            } else {
+                MaterialTheme.typography.bodyMedium
+            },
             fontWeight = if (isToday || hasMatch) FontWeight.Bold else FontWeight.Normal,
             color = when {
                 !inCurrentMonth -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f)
@@ -371,11 +389,17 @@ private fun DayCell(
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 Icon(
-                    imageVector = Icons.Filled.SportsSoccer,
-                    contentDescription = if (matchCount == 1) "Spieltag" else "$matchCount Spiele",
-                    tint = (ballColor ?: MaterialTheme.colorScheme.primary)
+                    // Wichtige Spiele bekommen den Stern und mehr Flaeche -
+                    // sie sollen im Raster sofort auffallen.
+                    imageVector = if (isImportant) Icons.Filled.Star else Icons.Filled.SportsSoccer,
+                    contentDescription = when {
+                        isImportant -> "Wichtiges Spiel"
+                        matchCount == 1 -> "Spieltag"
+                        else -> "$matchCount Spiele"
+                    },
+                    tint = (if (isImportant) StatusOpen else ballColor ?: MaterialTheme.colorScheme.primary)
                         .copy(alpha = if (dimmed) 0.45f else 1f),
-                    modifier = Modifier.size(14.dp),
+                    modifier = Modifier.size(if (isImportant) 20.dp else 14.dp),
                 )
                 if (matchCount > 1) {
                     Text(

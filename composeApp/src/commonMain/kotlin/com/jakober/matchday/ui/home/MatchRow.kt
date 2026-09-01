@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -62,6 +65,7 @@ fun MatchRow(
     match: Match,
     status: RsvpStatus,
     participants: List<Participant>,
+    isImportant: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -121,13 +125,24 @@ fun MatchRow(
         }
 
         Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = match.displayTitle,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isImportant) {
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = "Wichtiges Spiel",
+                        tint = StatusOpen,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(Modifier.width(5.dp))
+                }
+                Text(
+                    text = match.displayTitle,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             Spacer(Modifier.height(3.dp))
             Text(
                 text = subtitleOf(match),

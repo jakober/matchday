@@ -31,6 +31,7 @@ fun MatchListView(
     matches: List<Match>,
     rsvps: Map<String, Rsvp>,
     participantsOf: ParticipantsSource,
+    importantIds: Set<String>,
     onSelect: (Match) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -56,6 +57,7 @@ fun MatchListView(
                     match = match,
                     status = rsvps[match.id]?.status ?: RsvpStatus.UNDECIDED,
                     participants = participantsOf(match.id),
+                    isImportant = match.id in importantIds,
                     onClick = { onSelect(match) },
                 )
             }

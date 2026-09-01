@@ -57,7 +57,14 @@ class MatchdayBackend {
             ),
         ).decodeList<CreatedGroupDto>().first()
 
-        return finishSetup(created.groupId, created.inviteCode, groupName)
+        // Wer anlegt, ist Admin - das traegt die Datenbankfunktion selbst ein.
+        return finishSetup(
+            groupId = created.groupId,
+            inviteCode = created.inviteCode,
+            groupName = groupName,
+            adminMemberId = null,
+            forceAdmin = true,
+        )
     }
 
     /** Tritt einer bestehenden Gruppe per Einladungscode bei. */
@@ -74,9 +81,67 @@ class MatchdayBackend {
             ),
         ).decodeAs<String>()
 
-        val group = client.from("groups").select().decodeList<Map<String, String>>()
-            .firstOrNull { it["id"] == groupId }
-        return finishSetup(groupId, group?.get("invite_code") ?: code.uppercase(), group?.get("name") ?: "Gruppe")
+        val group = client.from("groups").select {
+            filter { eq("id", groupId) }
+        }.decodeList<GroupDto>().firstOrNull()
+
+        return finishSetup(
+            groupId = groupId,
+            inviteCode = group?.inviteCode ?: code.uppercase(),
+            groupName = group?.name ?: "Gruppe",
+            adminMemberId = group?.adminMemberId,
+        )
+    }
+
+    /**
+     * Erzeugt eine einmalige Einladung. Die Sichtbarkeit wird dabei
+     * festgelegt und beim Beitritt uebernommen.
+     */
+    suspend fun createInvite(groupId: String, scope: String): String =
+        client.postgrest.rpc(
+            function = "create_invite",
+            parameters = JsonObject(
+                mapOf(
+                    "p_group_id" to JsonPrimitive(groupId),
+                    "p_scope" to JsonPrimitive(scope),
+                )
+            ),
+        ).decodeAs()
+
+    suspend fun importantMatches(groupId: String): List<ImportantMatchDto> =
+        client.from("important_matches").select {
+            filter { eq("group_id", groupId) }
+        }.decodeList()
+
+    /** Hebt ein Spiel hervor. Die Datenbank laesst das nur beim Admin zu. */
+    suspend fun markImportant(
+        membership: GroupMembership,
+        calendarId: String,
+        matchUid: String,
+        matchTitle: String?,
+    ) {
+        client.from("important_matches").insert(
+            ImportantMatchDto(
+                groupId = membership.groupId,
+                calendarId = calendarId,
+                matchUid = matchUid,
+                matchTitle = matchTitle,
+            )
+        )
+    }
+
+    suspend fun unmarkImportant(
+        membership: GroupMembership,
+        calendarId: String,
+        matchUid: String,
+    ) {
+        client.from("important_matches").delete {
+            filter {
+                eq("group_id", membership.groupId)
+                eq("calendar_id", calendarId)
+                eq("match_uid", matchUid)
+            }
+        }
     }
 
     /**
@@ -84,11 +149,25 @@ class MatchdayBackend {
      * und merkt sich das eigene Mitglied. Die Kalender braucht es, weil die
      * Zusagen auf sie verweisen.
      */
-    private suspend fun finishSetup(groupId: String, inviteCode: String, groupName: String): GroupMembership {
+    private suspend fun finishSetup(
+        groupId: String,
+        inviteCode: String,
+        groupName: String,
+        adminMemberId: String?,
+        forceAdmin: Boolean = false,
+    ): GroupMembership {
         val calendarIds = ensureCalendars(groupId)
-        val memberId = ownMemberId(groupId)
+        val me = ownMember(groupId)
             ?: error("Mitgliedschaft konnte nicht gelesen werden")
-        return GroupMembership(groupId, memberId, inviteCode, groupName, calendarIds)
+        return GroupMembership(
+            groupId = groupId,
+            memberId = me.id,
+            inviteCode = inviteCode,
+            groupName = groupName,
+            calendarIds = calendarIds,
+            isAdmin = forceAdmin || adminMemberId == me.id,
+            scope = me.scope,
+        )
     }
 
     /** Legt fehlende Mannschaftskalender an und liefert die Zuordnung. */
@@ -119,15 +198,15 @@ class MatchdayBackend {
         }.toMap()
     }
 
-    /** Eigene Mitglieds-Id in dieser Gruppe. */
-    private suspend fun ownMemberId(groupId: String): String? {
+    /** Eigener Mitgliedseintrag in dieser Gruppe. */
+    private suspend fun ownMember(groupId: String): MemberDto? {
         val userId = client.auth.currentSessionOrNull()?.user?.id ?: return null
         return client.from("members").select {
             filter {
                 eq("group_id", groupId)
                 eq("user_id", userId)
             }
-        }.decodeList<MemberDto>().firstOrNull()?.id
+        }.decodeList<MemberDto>().firstOrNull()
     }
 
     suspend fun members(groupId: String): List<MemberDto> =

@@ -18,6 +18,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,13 +49,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jakober.matchday.data.remote.GroupMembership
 import com.jakober.matchday.data.remote.MemberDto
+import com.jakober.matchday.data.remote.SCOPE_ALL
+import com.jakober.matchday.data.remote.SCOPE_IMPORTANT
 import com.jakober.matchday.theme.CardCorner
 import com.jakober.matchday.theme.ChipCorner
 import com.jakober.matchday.ui.components.Avatar
 
 /**
- * Gruppe anlegen, beitreten und ansehen. Ohne Gruppe bleibt die Zusage privat;
- * mit Gruppe sehen alle, wer mitkommt.
+ * Gruppe anlegen, beitreten und verwalten. Ohne Gruppe bleibt die Zusage
+ * privat; mit Gruppe sehen alle, wer mitkommt.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,8 +66,11 @@ fun GroupScreen(
     members: List<MemberDto>,
     busy: Boolean,
     error: String?,
+    /** Zuletzt erzeugte Einladung, samt gewaehlter Sichtbarkeit. */
+    invite: Pair<String, String>?,
     onCreate: (String) -> Unit,
     onJoin: (String) -> Unit,
+    onCreateInvite: (String) -> Unit,
     onLeave: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -98,6 +104,10 @@ fun GroupScreen(
                 InGroup(
                     membership = membership,
                     members = members,
+                    busy = busy,
+                    error = error,
+                    invite = invite,
+                    onCreateInvite = onCreateInvite,
                     onLeave = onLeave,
                 )
             }
@@ -124,12 +134,7 @@ private fun NoGroup(
     )
 
     Spacer(Modifier.height(28.dp))
-    Text(
-        text = "NEUE GRUPPE",
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Spacer(Modifier.height(10.dp))
+    Label("NEUE GRUPPE")
     OutlinedTextField(
         value = groupName,
         onValueChange = { groupName = it },
@@ -143,6 +148,12 @@ private fun NoGroup(
         ),
         modifier = Modifier.fillMaxWidth(),
     )
+    Spacer(Modifier.height(6.dp))
+    Text(
+        text = "Wer die Gruppe anlegt, verwaltet sie: einladen und Spiele hervorheben.",
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
     Spacer(Modifier.height(10.dp))
     Button(
         onClick = { onCreate(groupName.trim()) },
@@ -150,20 +161,12 @@ private fun NoGroup(
         shape = RoundedCornerShape(ChipCorner),
         modifier = Modifier.fillMaxWidth().height(50.dp),
     ) {
-        if (busy) {
-            CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-        } else {
-            Text("Gruppe erstellen")
-        }
+        if (busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+        else Text("Gruppe erstellen")
     }
 
     Spacer(Modifier.height(32.dp))
-    Text(
-        text = "ODER BEITRETEN",
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Spacer(Modifier.height(10.dp))
+    Label("ODER BEITRETEN")
     OutlinedTextField(
         value = code,
         // Der Code besteht aus Grossbuchstaben und Ziffern; die Umwandlung
@@ -186,38 +189,118 @@ private fun NoGroup(
         Text("Beitreten")
     }
 
-    error?.let {
-        Spacer(Modifier.height(14.dp))
-        Text(
-            text = it,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.error,
-        )
-    }
+    ErrorLine(error)
 }
 
 @Composable
 private fun InGroup(
     membership: GroupMembership,
     members: List<MemberDto>,
+    busy: Boolean,
+    error: String?,
+    invite: Pair<String, String>?,
+    onCreateInvite: (String) -> Unit,
     onLeave: () -> Unit,
 ) {
-    val clipboard = LocalClipboardManager.current
-
     Spacer(Modifier.height(8.dp))
-    Text(
-        text = membership.groupName,
-        style = MaterialTheme.typography.headlineSmall,
-        color = MaterialTheme.colorScheme.onSurface,
-    )
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = membership.groupName,
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+        if (membership.isAdmin) {
+            Text(
+                text = "ADMIN",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
 
-    Spacer(Modifier.height(24.dp))
-    Text(
-        text = "EINLADUNGSCODE",
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-    Spacer(Modifier.height(10.dp))
+    if (membership.seesOnlyImportant) {
+        Spacer(Modifier.height(10.dp))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(ChipCorner))
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                Icons.Filled.Star,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.size(10.dp))
+            Text(
+                text = "Du siehst nur die hervorgehobenen Spiele.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    if (membership.isAdmin) {
+        Spacer(Modifier.height(28.dp))
+        Label("EINLADEN")
+        Text(
+            text = "Jede Einladung gilt einmal. Du legst dabei fest, was der Eingeladene zu sehen bekommt.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(12.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            OutlinedButton(
+                onClick = { onCreateInvite(SCOPE_ALL) },
+                enabled = !busy,
+                shape = RoundedCornerShape(ChipCorner),
+                modifier = Modifier.weight(1f).height(50.dp),
+            ) {
+                Text("Alle Spiele")
+            }
+            OutlinedButton(
+                onClick = { onCreateInvite(SCOPE_IMPORTANT) },
+                enabled = !busy,
+                shape = RoundedCornerShape(ChipCorner),
+                modifier = Modifier.weight(1f).height(50.dp),
+            ) {
+                Text("Nur wichtige")
+            }
+        }
+
+        invite?.let { (code, scope) ->
+            Spacer(Modifier.height(16.dp))
+            InviteCode(code = code, scope = scope)
+        }
+    }
+
+    ErrorLine(error)
+
+    Spacer(Modifier.height(28.dp))
+    Label(if (members.size == 1) "1 MITGLIED" else "${members.size} MITGLIEDER")
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        for (member in members) {
+            MemberRow(
+                member = member,
+                isMe = member.id == membership.memberId,
+                showScope = membership.isAdmin,
+            )
+        }
+    }
+
+    Spacer(Modifier.height(28.dp))
+    TextButton(onClick = onLeave, modifier = Modifier.fillMaxWidth()) {
+        Text("Gruppe verlassen", color = MaterialTheme.colorScheme.error)
+    }
+}
+
+@Composable
+private fun InviteCode(code: String, scope: String) {
+    val clipboard = LocalClipboardManager.current
 
     Column(
         modifier = Modifier
@@ -227,7 +310,7 @@ private fun InGroup(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
-            text = membership.inviteCode,
+            text = code,
             fontSize = 40.sp,
             fontWeight = FontWeight.Bold,
             // Weiter Zeichenabstand: So verwechselt niemand 0 und O beim
@@ -236,64 +319,78 @@ private fun InGroup(
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
-        Spacer(Modifier.height(6.dp))
-        TextButton(onClick = { clipboard.setText(AnnotatedString(membership.inviteCode)) }) {
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = if (scope == SCOPE_IMPORTANT) "sieht nur wichtige Spiele" else "sieht alle Spiele",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onPrimaryContainer,
+        )
+        TextButton(onClick = { clipboard.setText(AnnotatedString(code)) }) {
             Text("Kopieren")
         }
     }
+}
 
-    Spacer(Modifier.height(10.dp))
-    Text(
-        text = "Wer diesen Code eingibt, ist in der Gruppe und sieht die Zusagen aller.",
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
+@Composable
+private fun MemberRow(member: MemberDto, isMe: Boolean, showScope: Boolean) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(CardCorner))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(CardCorner))
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Avatar(
+            initials = member.displayName.trim().split(" ")
+                .filter { it.isNotEmpty() }.take(2)
+                .joinToString("") { it.first().uppercase() }.ifEmpty { "?" },
+            colorArgb = member.color,
+            size = 34.dp,
+        )
+        Spacer(Modifier.size(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = member.displayName,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            if (showScope && member.scope == SCOPE_IMPORTANT) {
+                Text(
+                    text = "nur wichtige Spiele",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (isMe) {
+            Text(
+                text = "Du",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
 
-    Spacer(Modifier.height(28.dp))
+@Composable
+private fun Label(text: String) {
     Text(
-        text = if (members.size == 1) "1 MITGLIED" else "${members.size} MITGLIEDER",
+        text = text,
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Spacer(Modifier.height(10.dp))
+}
 
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        for (member in members) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(CardCorner))
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(CardCorner))
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Avatar(
-                    initials = member.displayName.trim().split(" ")
-                        .filter { it.isNotEmpty() }.take(2)
-                        .joinToString("") { it.first().uppercase() }.ifEmpty { "?" },
-                    colorArgb = member.color,
-                    size = 34.dp,
-                )
-                Spacer(Modifier.size(12.dp))
-                Text(
-                    text = member.displayName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f),
-                )
-                if (member.id == membership.memberId) {
-                    Text(
-                        text = "Du",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-        }
-    }
-
-    Spacer(Modifier.height(28.dp))
-    TextButton(onClick = onLeave, modifier = Modifier.fillMaxWidth()) {
-        Text("Gruppe verlassen", color = MaterialTheme.colorScheme.error)
+@Composable
+private fun ErrorLine(error: String?) {
+    error?.let {
+        Spacer(Modifier.height(14.dp))
+        Text(
+            text = it,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+        )
     }
 }

@@ -244,9 +244,19 @@ Deno.serve(async (request) => {
     // Nachricht wert, die alle aufschreckt.
     if (!rsvp) return new Response("keine Antwort vorhanden", { status: 200 });
 
+    // Ist dieses Spiel hervorgehoben? Danach richtet sich, wer ueberhaupt
+    // benachrichtigt wird.
+    const { data: important } = await supabase
+      .from("important_matches")
+      .select("id")
+      .eq("group_id", member.group_id)
+      .eq("calendar_id", calendar_id)
+      .eq("match_uid", match_uid)
+      .maybeSingle();
+
     const { data: tokens } = await supabase
       .from("device_tokens")
-      .select("platform, token")
+      .select("platform, token, member_id")
       .eq("group_id", member.group_id)
       // Sich selbst benachrichtigen waere nur laestig.
       .neq("member_id", member.id);
@@ -255,13 +265,31 @@ Deno.serve(async (request) => {
       return new Response("keine Empfaenger", { status: 200 });
     }
 
+    // Wer nur die hervorgehobenen Spiele sieht, darf auch nur zu diesen
+    // benachrichtigt werden - sonst kaeme eine Meldung zu einem Spiel, das in
+    // seiner Liste gar nicht auftaucht. Diese Pruefung gehoert auf den Server:
+    // In der App waere sie umgehbar.
+    const { data: alle } = await supabase
+      .from("members")
+      .select("id, scope")
+      .eq("group_id", member.group_id);
+
+    const scopeById = new Map((alle ?? []).map((m: { id: string; scope: string }) => [m.id, m.scope]));
+    const empfaenger = tokens.filter((entry: { member_id: string }) =>
+      important !== null || scopeById.get(entry.member_id) !== "important"
+    );
+
+    if (empfaenger.length === 0) {
+      return new Response("keine passenden Empfaenger", { status: 200 });
+    }
+
     const name = member.display_name ?? "Jemand";
     const title = rsvp.status === "IN" ? `${name} ist dabei` : `${name} kann nicht`;
     const match = rsvp.match_title ?? "Ein Spiel";
     const body = rsvp.comment ? `${match} · ${rsvp.comment}` : match;
 
     const results = await Promise.all(
-      tokens.map((entry: { platform: string; token: string }) =>
+      empfaenger.map((entry: { platform: string; token: string }) =>
         entry.platform === "ios"
           ? sendApns(entry.token, title, body)
           : sendFcm(entry.token, title, body)
@@ -269,7 +297,7 @@ Deno.serve(async (request) => {
     );
 
     const sent = results.filter(Boolean).length;
-    return new Response(`${sent} von ${tokens.length} zugestellt`, { status: 200 });
+    return new Response(`${sent} von ${empfaenger.length} zugestellt`, { status: 200 });
   } catch (error) {
     console.error(error);
     return new Response(String(error), { status: 500 });

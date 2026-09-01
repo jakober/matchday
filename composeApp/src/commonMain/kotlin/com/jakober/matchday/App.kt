@@ -84,6 +84,7 @@ private fun Root() {
     var syncing by remember { mutableStateOf(false) }
     var groupBusy by remember { mutableStateOf(false) }
     var groupError by remember { mutableStateOf<String?>(null) }
+    var invite by remember { mutableStateOf<Pair<String, String>?>(null) }
     var diagnostics by remember { mutableStateOf<NotificationDiagnostics?>(null) }
 
     // Beim Oeffnen der Einstellungen neu erheben - die Erlaubnis kann
@@ -118,8 +119,11 @@ private fun Root() {
             .date
             .atStartOfDayIn(TimeZone.currentSystemDefault())
     }
-    val matches = remember(allMatches, startOfToday) {
-        allMatches.filter { it.start >= startOfToday }
+    val visibleAll = remember(allMatches, membership, groupSnapshot) {
+        Container.visibleMatches(allMatches)
+    }
+    val matches = remember(visibleAll, startOfToday) {
+        visibleAll.filter { it.start >= startOfToday }
     }
 
     val colorBySubscription = remember(subscriptions) {
@@ -144,12 +148,13 @@ private fun Root() {
         Screen.HOME -> HomeScreen(
             profile = activeProfile,
             matches = matches,
-            calendarMatches = allMatches,
+            calendarMatches = visibleAll,
             rsvps = rsvps,
             view = view,
             isSyncing = syncing,
             hasSubscriptions = subscriptions.any { it.enabled },
             participantsOf = participantsOf,
+            importantIds = groupSnapshot.importantMatchIds,
             accentOf = accentOf,
             onViewChange = { view = it },
             onSelect = { selected = it },
@@ -248,9 +253,29 @@ private fun Root() {
                     groupBusy = false
                 }
             },
+            // Der Parameter heisst bewusst nicht "scope" - das waere der
+            // CoroutineScope von oben und wuerde verdeckt.
+            onCreateInvite = { visibility ->
+                val groupId = membership?.groupId
+                if (groupId != null) {
+                    groupBusy = true
+                    groupError = null
+                    invite = null
+                    scope.launch {
+                        runCatching { Container.backend.createInvite(groupId, visibility) }
+                            .onSuccess { code -> invite = code to visibility }
+                            .onFailure {
+                                groupError = it.message ?: "Einladung fehlgeschlagen"
+                            }
+                        groupBusy = false
+                    }
+                }
+            },
+            invite = invite,
             onLeave = {
                 Container.store.clearMembership()
                 Container.clearGroupSnapshot()
+                invite = null
             },
             onBack = { screen = Screen.SETTINGS },
         )
@@ -263,6 +288,11 @@ private fun Root() {
             comment = rsvps[match.id]?.comment,
             participants = participantsOf(match.id),
             accent = accentOf(match),
+            isImportant = match.id in groupSnapshot.importantMatchIds,
+            canEditImportant = membership?.isAdmin == true,
+            onToggleImportant = {
+                Container.toggleImportant(match.id) { groupError = it }
+            },
             onSetStatus = { status, comment ->
                 Container.setRsvp(match.id, status, comment)
             },

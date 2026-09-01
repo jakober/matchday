@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -54,6 +56,7 @@ import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.theme.CardCorner
 import com.jakober.matchday.theme.ChipCorner
 import com.jakober.matchday.theme.StatusIn
+import com.jakober.matchday.theme.StatusOpen
 import com.jakober.matchday.theme.StatusOut
 import com.jakober.matchday.ui.components.AttendanceLine
 import com.jakober.matchday.ui.components.Avatar
@@ -75,6 +78,10 @@ fun MatchDetailSheet(
     comment: String?,
     participants: List<Participant>,
     accent: Color,
+    isImportant: Boolean,
+    /** Nur der Admin darf die Hervorhebung setzen. */
+    canEditImportant: Boolean,
+    onToggleImportant: () -> Unit,
     onSetStatus: (RsvpStatus, String?) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -119,11 +126,55 @@ fun MatchDetailSheet(
                 Spacer(Modifier.height(10.dp))
             }
 
-            Text(
-                text = match.displayTitle,
-                style = MaterialTheme.typography.headlineMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = match.displayTitle,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f),
+                )
+                if (isImportant) {
+                    Spacer(Modifier.size(8.dp))
+                    Icon(
+                        imageVector = Icons.Filled.Star,
+                        contentDescription = "Wichtiges Spiel",
+                        tint = StatusOpen,
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
+            }
+
+            if (canEditImportant) {
+                Spacer(Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(ChipCorner))
+                        .background(
+                            if (isImportant) StatusOpen.copy(alpha = 0.16f) else Color.Transparent
+                        )
+                        .border(
+                            width = 1.dp,
+                            color = if (isImportant) StatusOpen else MaterialTheme.colorScheme.outline,
+                            shape = RoundedCornerShape(ChipCorner),
+                        )
+                        .clickable(onClick = onToggleImportant)
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = if (isImportant) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = null,
+                        tint = if (isImportant) StatusOpen else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Spacer(Modifier.size(8.dp))
+                    Text(
+                        text = if (isImportant) "Hervorhebung aufheben" else "Als wichtig hervorheben",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (isImportant) StatusOpen else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
 
             Spacer(Modifier.height(20.dp))
 

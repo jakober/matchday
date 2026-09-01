@@ -15,6 +15,28 @@ data class MemberDto(
     @SerialName("display_name") val displayName: String,
     val color: Long,
     @SerialName("avatar_url") val avatarUrl: String? = null,
+    /** "all" sieht alle Spiele, "important" nur die markierten. */
+    val scope: String = SCOPE_ALL,
+)
+
+const val SCOPE_ALL = "all"
+const val SCOPE_IMPORTANT = "important"
+
+@Serializable
+data class GroupDto(
+    val id: String,
+    val name: String,
+    @SerialName("invite_code") val inviteCode: String,
+    @SerialName("admin_member_id") val adminMemberId: String? = null,
+)
+
+/** Ein vom Admin hervorgehobenes Spiel. */
+@Serializable
+data class ImportantMatchDto(
+    @SerialName("group_id") val groupId: String,
+    @SerialName("calendar_id") val calendarId: String,
+    @SerialName("match_uid") val matchUid: String,
+    @SerialName("match_title") val matchTitle: String? = null,
 )
 
 @Serializable
@@ -75,4 +97,10 @@ data class GroupMembership(
     val groupName: String,
     /** Kalender-Id je Mannschaft, z.B. "fcbayern" -> UUID. */
     val calendarIds: Map<String, String> = emptyMap(),
-)
+    /** Nur der Ersteller der Gruppe darf einladen und Spiele hervorheben. */
+    val isAdmin: Boolean = false,
+    /** Eigene Sichtbarkeit: "all" oder "important". */
+    val scope: String = SCOPE_ALL,
+) {
+    val seesOnlyImportant: Boolean get() = scope == SCOPE_IMPORTANT
+}

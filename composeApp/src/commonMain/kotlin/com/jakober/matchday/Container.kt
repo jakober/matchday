@@ -66,12 +66,63 @@ object Container {
      */
     suspend fun refreshGroup() {
         val membership = store.membership.value ?: return
+        // Kalender-Id zurueck auf die Mannschaft abbilden, damit sich die
+        // Markierungen den lokalen Spielen zuordnen lassen.
+        val teamByCalendar = membership.calendarIds.entries.associate { (team, cal) -> cal to team }
+
         runCatching {
             GroupSnapshot(
                 members = backend.members(membership.groupId),
                 rsvps = backend.rsvps(membership.groupId),
+                importantMatchIds = backend.importantMatches(membership.groupId)
+                    .mapNotNull { entry ->
+                        teamByCalendar[entry.calendarId]?.let { team -> "$team#${entry.matchUid}" }
+                    }
+                    .toSet(),
             )
         }.onSuccess { _group.value = it }
+    }
+
+    /**
+     * Hebt ein Spiel hervor oder nimmt die Hervorhebung zurueck.
+     * Nur der Admin darf das; die Datenbank weist alle anderen ab.
+     */
+    fun toggleImportant(matchId: String, onError: (String) -> Unit = {}) {
+        val membership = store.membership.value ?: return
+        val parts = splitMatchId(matchId) ?: return
+        val calendarId = membership.calendarIds[parts.first] ?: return
+        val isImportant = matchId in _group.value.importantMatchIds
+        val title = store.matches.value.firstOrNull { it.id == matchId }?.displayTitle
+
+        scope.launch {
+            runCatching {
+                if (isImportant) {
+                    backend.unmarkImportant(membership, calendarId, parts.second)
+                } else {
+                    backend.markImportant(membership, calendarId, parts.second, title)
+                }
+                refreshGroup()
+                // Die Erinnerungen haengen an der Sichtbarkeit: Fuer ein
+                // eingeschraenktes Mitglied aendert eine Markierung, ob es zu
+                // diesem Spiel ueberhaupt erinnert wird.
+                rescheduleReminders()
+            }.onFailure { onError(it.message ?: "Ändern nicht möglich") }
+        }
+    }
+
+    /**
+     * Spiele, die der Nutzer sehen darf. Eingeschraenkte Mitglieder bekommen
+     * nur die hervorgehobenen.
+     *
+     * Das ist Aufraeumen, keine Absperrung: Die Spielplaene stammen aus einem
+     * oeffentlichen Kalenderfeed. Abgesichert sind dagegen die
+     * Benachrichtigungen - darueber entscheidet der Server.
+     */
+    fun visibleMatches(all: List<com.jakober.matchday.domain.Match>): List<com.jakober.matchday.domain.Match> {
+        val membership = store.membership.value ?: return all
+        if (!membership.seesOnlyImportant) return all
+        val important = _group.value.importantMatchIds
+        return all.filter { it.id in important }
     }
 
     /**
@@ -167,7 +218,10 @@ object Container {
      */
     fun rescheduleReminders() {
         val plan = ReminderPlanner.plan(
-            matches = store.matches.value,
+            // Eingeschraenkte Mitglieder werden nur zu hervorgehobenen Spielen
+            // erinnert - sonst kaeme eine Erinnerung zu einem Spiel, das sie
+            // in der Liste gar nicht sehen.
+            matches = visibleMatches(store.matches.value),
             rsvps = store.rsvps.value,
             settings = store.reminders.value,
             now = Clock.System.now(),

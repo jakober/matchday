@@ -59,6 +59,7 @@ fun HomeScreen(
     isSyncing: Boolean,
     hasSubscriptions: Boolean,
     participantsOf: ParticipantsSource,
+    importantIds: Set<String>,
     accentOf: (Match) -> Color,
     onViewChange: (HomeView) -> Unit,
     onSelect: (Match) -> Unit,
@@ -136,6 +137,7 @@ fun HomeScreen(
                             matches = matches,
                             rsvps = rsvps,
                             participantsOf = participantsOf,
+                            importantIds = importantIds,
                             onSelect = onSelect,
                         )
 
@@ -143,6 +145,7 @@ fun HomeScreen(
                             matches = calendarMatches,
                             rsvps = rsvps,
                             participantsOf = participantsOf,
+                            importantIds = importantIds,
                             accentOf = accentOf,
                             onSelect = onSelect,
                         )

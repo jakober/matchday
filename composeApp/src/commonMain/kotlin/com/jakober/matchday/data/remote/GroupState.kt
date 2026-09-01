@@ -11,6 +11,11 @@ import com.jakober.matchday.domain.RsvpStatus
 data class GroupSnapshot(
     val members: List<MemberDto> = emptyList(),
     val rsvps: List<RsvpDto> = emptyList(),
+    /**
+     * Vom Admin hervorgehobene Spiele, bereits auf die lokale Spiel-Id
+     * umgerechnet - so muss die Oberflaeche nichts ueber Kalender-Ids wissen.
+     */
+    val importantMatchIds: Set<String> = emptySet(),
 )
 
 /**
