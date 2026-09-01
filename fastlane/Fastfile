@@ -67,6 +67,9 @@ platform :ios do
       clean: false,
       xcargs: [
         "CODE_SIGN_STYLE=Manual",
+        # Ohne diese Angabe greift Xcode zur Voreinstellung "Apple Development"
+        # und sucht ein Entwicklerzertifikat, das es hier gar nicht gibt.
+        "CODE_SIGN_IDENTITY='Apple Distribution'",
         "DEVELOPMENT_TEAM=#{ENV.fetch('APPLE_TEAM_ID')}",
         "PROVISIONING_PROFILE_SPECIFIER='#{profile_name}'",
         "MARKETING_VERSION=#{ENV.fetch('APP_VERSION')}",
