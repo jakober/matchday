@@ -112,7 +112,7 @@ jobs:
           xcrun simctl boot "$UDID" || true
           xcrun simctl bootstatus "$UDID" -b
 
-          APP=build/DerivedData/Build/Products/Debug-iphonesimulator/iosApp.app
+          APP=build/DerivedData/Build/Products/Release-iphonesimulator/iosApp.app
           xcrun simctl install "$UDID" "$APP"
           xcrun simctl launch "$UDID" com.jakober.matchday
 
@@ -123,6 +123,10 @@ jobs:
 
           # Absturzberichte auswerten - ein leerer Screenshot allein wuerde
           # nicht verraten, warum.
+          # Absturzberichte liegen je nach System an zwei Orten.
+          for d in ~/Library/Logs/DiagnosticReports "$HOME/Library/Logs/CoreSimulator"; do
+            find "$d" -name "*iosApp*" -newermt '-10 minutes' 2>/dev/null | head -5
+          done
           CRASHES=$(ls ~/Library/Logs/DiagnosticReports/ 2>/dev/null | grep -i "iosApp" || true)
           if [ -n "$CRASHES" ]; then
             echo "::error::Die App ist abgestuerzt:"
@@ -148,5 +152,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: matchday-ios-simulator
-          path: build/DerivedData/Build/Products/Debug-iphonesimulator/*.app
+          path: build/DerivedData/Build/Products/Release-iphonesimulator/*.app
           if-no-files-found: error
