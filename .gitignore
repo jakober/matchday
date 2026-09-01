@@ -8,6 +8,9 @@ build/
 local.properties
 secrets.properties
 
+# Enthaelt das Admin-Passwort im Klartext - gehoert nicht in die Historie
+supabase/migrations/*_admin_passwort.sql
+
 # Apple-Signaturmaterial - darf unter keinen Umstaenden eingecheckt werden
 *.p8
 *.p12

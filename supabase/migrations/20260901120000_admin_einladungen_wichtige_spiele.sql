@@ -19,15 +19,10 @@ create table if not exists public.app_config (
 
 alter table public.app_config enable row level security;
 
--- ---------------------------------------------------------------------------
--- HIER DAS ADMIN-PASSWORT EINTRAGEN: "AENDERE-MICH" ersetzen.
---
--- Gespeichert wird nur ein Hash - das Passwort selbst steht nirgends, weder
--- in der Datenbank noch im Repo. Wer eine Gruppe anlegen will, muss es kennen.
--- ---------------------------------------------------------------------------
-insert into public.app_config (key, value)
-values ('admin_password', extensions.crypt('AENDERE-MICH', extensions.gen_salt('bf')))
-on conflict (key) do nothing;
+-- Das Passwort selbst wird hier NICHT gesetzt. Es steht in einer eigenen,
+-- nicht eingecheckten Migration - siehe README. Ein Klartextpasswort in einer
+-- versionierten Datei bliebe fuer immer in der Git-Historie, auch nach dem
+-- Loeschen.
 
 -- ===========================================================================
 -- 2. Sichtbarkeit je Mitglied, Admin je Gruppe
