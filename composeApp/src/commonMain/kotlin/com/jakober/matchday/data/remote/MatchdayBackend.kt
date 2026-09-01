@@ -76,9 +76,20 @@ class MatchdayBackend {
      */
     suspend fun signInIfNeeded() {
         client.auth.awaitInitialization()
-        if (client.auth.currentSessionOrNull() == null) {
-            client.auth.signInAnonymously()
+
+        if (client.auth.currentSessionOrNull() != null) {
+            // Die gespeicherte Sitzung kann auf einen Nutzer verweisen, den es
+            // nicht mehr gibt - etwa nach einem Aufraeumen in der Datenbank.
+            // Das Token bleibt bis zum Ablauf gueltig, der Fehler faellt sonst
+            // erst beim Schreiben auf, als Fremdschluesselverletzung.
+            val stillValid = runCatching {
+                client.auth.retrieveUserForCurrentSession(updateSession = true)
+            }.isSuccess
+            if (stillValid) return
+            runCatching { client.auth.signOut() }
         }
+
+        client.auth.signInAnonymously()
     }
 
     /**
