@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -23,9 +24,11 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -41,8 +44,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.jakober.matchday.domain.Profile
 import com.jakober.matchday.domain.ReminderSettings
+import com.jakober.matchday.notify.NotificationDiagnostics
 import com.jakober.matchday.theme.CardCorner
 import com.jakober.matchday.theme.ChipCorner
+import com.jakober.matchday.theme.StatusIn
+import com.jakober.matchday.theme.StatusOut
 import com.jakober.matchday.ui.components.Avatar
 import com.jakober.matchday.ui.onboarding.ColorPicker
 
@@ -54,6 +60,9 @@ fun SettingsScreen(
     subscriptionCount: Int,
     groupName: String?,
     memberCount: Int,
+    diagnostics: NotificationDiagnostics?,
+    onSendTest: () -> Unit,
+    onOpenExactAlarmSettings: () -> Unit,
     onProfileChange: (Profile) -> Unit,
     onRemindersChange: (ReminderSettings) -> Unit,
     onOpenSubscriptions: () -> Unit,
@@ -155,6 +164,14 @@ fun SettingsScreen(
                 }
             }
 
+            SectionLabel("ZUSTELLUNG")
+
+            NotificationStatus(
+                diagnostics = diagnostics,
+                onSendTest = onSendTest,
+                onOpenExactAlarmSettings = onOpenExactAlarmSettings,
+            )
+
             SectionLabel("OFFENE ZUSAGEN")
 
             SwitchRow(
@@ -175,6 +192,111 @@ fun SettingsScreen(
 
             Spacer(Modifier.height(40.dp))
         }
+    }
+}
+
+/**
+ * Zeigt, ob Erinnerungen ueberhaupt ankommen koennen, und laesst es
+ * nachpruefen. Ohne diese Auskunft ist nicht unterscheidbar, ob keine
+ * Erinnerung kam, weil nichts anstand, oder weil eine Erlaubnis fehlt.
+ */
+@Composable
+private fun NotificationStatus(
+    diagnostics: NotificationDiagnostics?,
+    onSendTest: () -> Unit,
+    onOpenExactAlarmSettings: () -> Unit,
+) {
+    var testSent by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(CardCorner))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(CardCorner))
+            .padding(16.dp),
+    ) {
+        if (diagnostics == null) {
+            Text(
+                text = "Wird geprüft ...",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            return@Column
+        }
+
+        StatusLine(
+            ok = diagnostics.permissionGranted,
+            okText = "Benachrichtigungen erlaubt",
+            failText = "Benachrichtigungen nicht erlaubt - in den Systemeinstellungen freigeben",
+        )
+
+        if (diagnostics.exactAlarmsRelevant) {
+            Spacer(Modifier.height(8.dp))
+            StatusLine(
+                ok = diagnostics.exactAlarmsAllowed,
+                okText = "Erinnerungen kommen auf die Minute genau",
+                failText = "Ohne exakte Alarme kann eine Erinnerung einige Minuten später kommen",
+            )
+            if (!diagnostics.exactAlarmsAllowed) {
+                TextButton(onClick = onOpenExactAlarmSettings) {
+                    Text("Exakte Alarme erlauben")
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+        Text(
+            text = when (diagnostics.pendingCount) {
+                0 -> "Zurzeit keine Erinnerung vorgemerkt"
+                1 -> "1 Erinnerung vorgemerkt"
+                else -> "${diagnostics.pendingCount} Erinnerungen vorgemerkt"
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Spacer(Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = {
+                onSendTest()
+                testSent = true
+            },
+            shape = RoundedCornerShape(ChipCorner),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Testbenachrichtigung senden")
+        }
+        if (testSent) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "Kommt in etwa 10 Sekunden. Schließe die App kurz, dann siehst du sie wie im Alltag.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatusLine(ok: Boolean, okText: String, failText: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            Modifier
+                .size(8.dp)
+                .clip(RoundedCornerShape(50))
+                .background(if (ok) StatusIn else StatusOut),
+        )
+        Spacer(Modifier.size(10.dp))
+        Text(
+            text = if (ok) okText else failText,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (ok) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.error
+            },
+        )
     }
 }
 

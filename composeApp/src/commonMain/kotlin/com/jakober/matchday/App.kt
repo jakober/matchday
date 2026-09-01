@@ -17,6 +17,7 @@ import com.jakober.matchday.data.remote.participantsOfMatch
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.ParticipantsSource
 import com.jakober.matchday.domain.RsvpStatus
+import com.jakober.matchday.notify.NotificationDiagnostics
 import com.jakober.matchday.theme.MatchdayTheme
 import com.jakober.matchday.theme.Pitch
 import com.jakober.matchday.ui.detail.MatchDetailSheet
@@ -83,6 +84,15 @@ private fun Root() {
     var syncing by remember { mutableStateOf(false) }
     var groupBusy by remember { mutableStateOf(false) }
     var groupError by remember { mutableStateOf<String?>(null) }
+    var diagnostics by remember { mutableStateOf<NotificationDiagnostics?>(null) }
+
+    // Beim Oeffnen der Einstellungen neu erheben - die Erlaubnis kann
+    // zwischenzeitlich in den Systemeinstellungen geaendert worden sein.
+    LaunchedEffect(screen, rsvps) {
+        if (screen == Screen.SETTINGS) {
+            diagnostics = runCatching { Container.scheduler.diagnostics() }.getOrNull()
+        }
+    }
 
     LaunchedEffect(Unit) {
         Container.scheduler.ensurePermission()
@@ -173,6 +183,9 @@ private fun Root() {
             subscriptionCount = subscriptions.count { it.enabled },
             groupName = membership?.groupName,
             memberCount = groupSnapshot.members.size,
+            diagnostics = diagnostics,
+            onSendTest = { Container.scheduler.sendTest() },
+            onOpenExactAlarmSettings = { Container.scheduler.openExactAlarmSettings() },
             onProfileChange = { Container.saveProfile(it) },
             onRemindersChange = {
                 Container.store.saveReminders(it)

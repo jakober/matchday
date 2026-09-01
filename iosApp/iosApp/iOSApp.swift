@@ -24,6 +24,9 @@ struct iOSApp: App {
         // Muss noch während des App-Starts passieren - später verweigert iOS
         // die Registrierung der Hintergrundaufgabe.
         BackgroundSync_iosKt.registerBackgroundRefresh()
+        // Ohne diesen Delegaten zeigt iOS Benachrichtigungen nicht an,
+        // solange die App im Vordergrund ist.
+        Reminders_iosKt.configureNotifications()
     }
 
     var body: some Scene {

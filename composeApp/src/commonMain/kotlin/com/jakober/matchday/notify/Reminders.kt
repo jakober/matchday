@@ -16,6 +16,26 @@ data class ScheduledReminder(
 )
 
 /**
+ * Zustand der Benachrichtigungen, wie ihn die Einstellungen anzeigen.
+ *
+ * Ohne diese Auskunft ist fuer den Nutzer nicht unterscheidbar, ob keine
+ * Erinnerung kam, weil nichts anstand, oder weil eine Berechtigung fehlt.
+ */
+data class NotificationDiagnostics(
+    val permissionGranted: Boolean,
+    /** Anzahl der beim System vorgemerkten Erinnerungen. */
+    val pendingCount: Int,
+    /**
+     * Nur Android: Ob die App Alarme auf die Minute genau stellen darf. Fehlt
+     * die Erlaubnis, kann eine Erinnerung im Energiesparmodus einige Minuten
+     * spaeter kommen.
+     */
+    val exactAlarmsAllowed: Boolean = true,
+    /** Ob der Punkt auf dieser Plattform ueberhaupt eine Rolle spielt. */
+    val exactAlarmsRelevant: Boolean = false,
+)
+
+/**
  * Plant lokale Benachrichtigungen ein. Bewusst lokal und nicht per Push-Server:
  * Beide Anlaesse stehen zum Planungszeitpunkt fest, damit braucht es weder
  * Firebase noch APNs-Zertifikate.
@@ -26,9 +46,24 @@ interface ReminderScheduler {
 
     /** Verwirft alle bisherigen Vormerkungen und setzt die uebergebenen neu. */
     fun replaceAll(reminders: List<ScheduledReminder>)
+
+    /** Aktueller Zustand fuer die Anzeige in den Einstellungen. */
+    suspend fun diagnostics(): NotificationDiagnostics
+
+    /**
+     * Merkt eine Testbenachrichtigung in wenigen Sekunden vor. Prueft damit
+     * die gesamte Kette: Erlaubnis, Kanal, Weckmechanismus und Anzeige.
+     */
+    fun sendTest()
+
+    /** Oeffnet die Systemeinstellung fuer exakte Alarme. Nur auf Android wirksam. */
+    fun openExactAlarmSettings()
 }
 
 expect fun createReminderScheduler(): ReminderScheduler
+
+/** Vorlauf der Testbenachrichtigung - genug Zeit, die App zu verlassen. */
+const val TEST_DELAY_SECONDS = 10
 
 /**
  * Berechnet aus Spielplan, Zusagen und Einstellungen die faelligen

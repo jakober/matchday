@@ -8,9 +8,13 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.core.content.ContextCompat
 import com.jakober.matchday.MatchdayApp
+import kotlinx.datetime.Clock
+import kotlin.time.Duration.Companion.seconds
 
 actual fun createReminderScheduler(): ReminderScheduler =
     AndroidReminderScheduler(MatchdayApp.appContext)
@@ -38,42 +42,74 @@ class AndroidReminderScheduler(private val context: Context) : ReminderScheduler
         ) == PackageManager.PERMISSION_GRANTED
     }
 
+    override suspend fun diagnostics(): NotificationDiagnostics =
+        NotificationDiagnostics(
+            permissionGranted = ensurePermission(),
+            pendingCount = prefs.getStringSet(KEY_SCHEDULED, emptySet()).orEmpty().size,
+            exactAlarmsAllowed = canScheduleExact(),
+            exactAlarmsRelevant = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
+        )
+
+    override fun sendTest() {
+        // Bewusst ueber denselben Weckmechanismus wie echte Erinnerungen -
+        // eine sofort angezeigte Benachrichtigung wuerde nur beweisen, dass
+        // der Kanal steht, nicht dass der Alarm ausloest.
+        schedule(
+            ScheduledReminder(
+                id = "test",
+                at = Clock.System.now() + TEST_DELAY_SECONDS.seconds,
+                title = "Testbenachrichtigung",
+                body = "Wenn du das siehst, funktionieren die Erinnerungen.",
+            )
+        )
+    }
+
+    override fun openExactAlarmSettings() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return
+        val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).apply {
+            data = Uri.parse("package:" + context.packageName)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        runCatching { context.startActivity(intent) }
+    }
+
     override fun replaceAll(reminders: List<ScheduledReminder>) {
         cancelPrevious()
 
-        for (reminder in reminders) {
-            val intent = Intent(context, ReminderReceiver::class.java).apply {
-                putExtra(ReminderReceiver.EXTRA_ID, reminder.id)
-                putExtra(ReminderReceiver.EXTRA_TITLE, reminder.title)
-                putExtra(ReminderReceiver.EXTRA_BODY, reminder.body)
-            }
-            val pending = PendingIntent.getBroadcast(
-                context,
-                reminder.id.hashCode(),
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
-
-            val triggerAt = reminder.at.toEpochMilliseconds()
-            try {
-                if (canScheduleExact()) {
-                    alarmManager.setExactAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP, triggerAt, pending,
-                    )
-                } else {
-                    // Ohne die Erlaubnis fuer exakte Alarme bleibt nur ein
-                    // Zeitfenster. Das kann im Doze-Modus einige Minuten
-                    // spaeter feuern - fuer eine Spielerinnerung vertretbar.
-                    alarmManager.setAndAllowWhileIdle(
-                        AlarmManager.RTC_WAKEUP, triggerAt, pending,
-                    )
-                }
-            } catch (_: SecurityException) {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAt, pending)
-            }
-        }
-
+        reminders.forEach(::schedule)
         prefs.edit().putStringSet(KEY_SCHEDULED, reminders.map { it.id }.toSet()).apply()
+    }
+
+    private fun schedule(reminder: ScheduledReminder) {
+        val intent = Intent(context, ReminderReceiver::class.java).apply {
+            putExtra(ReminderReceiver.EXTRA_ID, reminder.id)
+            putExtra(ReminderReceiver.EXTRA_TITLE, reminder.title)
+            putExtra(ReminderReceiver.EXTRA_BODY, reminder.body)
+        }
+        val pending = PendingIntent.getBroadcast(
+            context,
+            reminder.id.hashCode(),
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+
+        val triggerAt = reminder.at.toEpochMilliseconds()
+        try {
+            if (canScheduleExact()) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP, triggerAt, pending,
+                )
+            } else {
+                // Ohne die Erlaubnis fuer exakte Alarme bleibt nur ein
+                // Zeitfenster. Das kann im Doze-Modus einige Minuten
+                // spaeter feuern - fuer eine Spielerinnerung vertretbar.
+                alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP, triggerAt, pending,
+                )
+            }
+        } catch (_: SecurityException) {
+            alarmManager.set(AlarmManager.RTC_WAKEUP, triggerAt, pending)
+        }
     }
 
     /**
