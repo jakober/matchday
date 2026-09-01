@@ -84,8 +84,9 @@ fun MatchRow(
     }
     val borderWidth = if (mood == MatchMood.OPEN) 1.dp else 2.dp
 
+    Box(modifier = modifier.fillMaxWidth()) {
     Row(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(CardCorner))
             .background(MaterialTheme.colorScheme.surface)
@@ -125,24 +126,13 @@ fun MatchRow(
         }
 
         Column(modifier = Modifier.weight(1f)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (isImportant) {
-                    Icon(
-                        imageVector = Icons.Filled.Star,
-                        contentDescription = "Wichtiges Spiel",
-                        tint = StatusOpen,
-                        modifier = Modifier.size(16.dp),
-                    )
-                    Spacer(Modifier.width(5.dp))
-                }
-                Text(
-                    text = match.displayTitle,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            Text(
+                text = match.displayTitle,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
             Spacer(Modifier.height(3.dp))
             Text(
                 text = subtitleOf(match),
@@ -158,6 +148,28 @@ fun MatchRow(
         Spacer(Modifier.width(8.dp))
 
         StatusDot(status)
+    }
+
+    // Eckabzeichen statt Vorsatz vor dem Titel: So bleibt die Begegnung an
+    // ihrem Platz, egal ob ein Spiel hervorgehoben ist oder nicht.
+    if (isImportant) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(start = 6.dp, top = 6.dp)
+                .size(26.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = "Wichtiges Spiel",
+                tint = StatusOpen,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+    }
     }
 }
 
