@@ -33,6 +33,9 @@ Pods/
 .DS_Store
 Thumbs.db
 
+# Zwischenstand der Supabase-CLI
+supabase/.temp/
+
 # Heruntergeladene Werkzeuge (Supabase-CLI) - gross und plattformabhaengig
 .tools/
 
