@@ -14,7 +14,8 @@ on:
 jobs:
   upload:
     name: Bauen und zu TestFlight hochladen
-    runs-on: macos-15
+    # Apple nimmt nur noch Pakete an, die mit dem iOS-26-SDK gebaut wurden.
+    runs-on: macos-26
 
     # match legt Zertifikat und Profil im Zweig "certificates" desselben Repos
     # ab - dafuer braucht der Lauf Schreibrecht.
@@ -52,6 +53,14 @@ jobs:
             exit 1
           fi
           echo "Alle Secrets vorhanden."
+
+      - name: Neuestes Xcode waehlen
+        run: |
+          ls -d /Applications/Xcode*.app
+          LATEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "Verwende $LATEST"
+          sudo xcode-select -s "$LATEST"
+          xcodebuild -version
 
       - name: JDK 17 einrichten
         uses: actions/setup-java@v4
