@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matchday – Datenschutzerklärung</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #16202b;
+    --muted: #5a6775;
+    --line: #e3e9ef;
+    --accent: #dc052d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b0f14;
+      --fg: #e8edf3;
+      --muted: #9aa7b5;
+      --line: #232c37;
+      --accent: #ff2d55;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 3rem 1.25rem 6rem;
+    background: var(--bg);
+    color: var(--fg);
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 44rem; margin: 0 auto; }
+  h1 { font-size: 2rem; letter-spacing: -0.02em; margin: 0 0 .25rem; }
+  h2 {
+    font-size: 1.15rem;
+    margin: 2.5rem 0 .75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+  }
+  .lead { color: var(--muted); margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: .6rem .5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+  code { background: var(--line); padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
+  a { color: var(--accent); }
+  footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Datenschutzerklärung</h1>
+<p class="lead">Matchday – Terminkalender für Fußballspiele. Stand: 1. September 2026</p>
+
+<p>
+Matchday ist eine private App für einen kleinen Freundeskreis. Sie zeigt die
+Spielpläne des FC Bayern München und der deutschen Nationalmannschaft, lässt
+die Teilnahme an Spielen zu- oder absagen und erinnert an anstehende Partien.
+</p>
+
+<h2>Wer verantwortlich ist</h2>
+<p>
+Mathis Jakober<br>
+E-Mail: <a href="mailto:mat.jakober@gmail.com">mat.jakober@gmail.com</a>
+</p>
+
+<h2>Welche Daten verarbeitet werden</h2>
+
+<table>
+  <tr>
+    <th>Daten</th>
+    <th>Wozu</th>
+    <th>Wo gespeichert</th>
+  </tr>
+  <tr>
+    <td>Selbstgewählter Anzeigename und Farbe</td>
+    <td>Damit die Gruppe erkennt, wer zu- oder abgesagt hat</td>
+    <td>Auf dem Gerät; in einer Gruppe zusätzlich beim Anbieter Supabase</td>
+  </tr>
+  <tr>
+    <td>Zu- und Absagen, optionale Begründung bei einer Absage</td>
+    <td>Anzeige für die übrigen Gruppenmitglieder</td>
+    <td>Auf dem Gerät; in einer Gruppe zusätzlich bei Supabase</td>
+  </tr>
+  <tr>
+    <td>Anonyme Nutzerkennung</td>
+    <td>Wiedererkennung des Geräts ohne Konto, Passwort oder E-Mail-Adresse</td>
+    <td>Supabase</td>
+  </tr>
+  <tr>
+    <td>Push-Kennung des Geräts</td>
+    <td>Zustellung von Benachrichtigungen über Zusagen anderer</td>
+    <td>Supabase; zur Zustellung an Apple bzw. Google übermittelt</td>
+  </tr>
+  <tr>
+    <td>Erinnerungseinstellungen, abonnierte Mannschaften</td>
+    <td>Zeitpunkt der Erinnerungen, Auswahl der angezeigten Spiele</td>
+    <td>Nur auf dem Gerät</td>
+  </tr>
+</table>
+
+<p>
+<strong>Ohne Gruppe verlässt nichts das Gerät.</strong> Wer die App allein
+nutzt, dessen Name und Zusagen werden ausschließlich lokal gespeichert.
+</p>
+
+<h2>Was nicht passiert</h2>
+<ul>
+  <li>Keine Werbung und kein Tracking über App-Grenzen hinweg</li>
+  <li>Keine Weitergabe oder kein Verkauf von Daten zu Werbezwecken</li>
+  <li>Keine Standortdaten, keine Kontakte, kein Zugriff auf Fotos</li>
+  <li>Kein Konto, kein Passwort, keine E-Mail-Adresse erforderlich</li>
+</ul>
+
+<h2>Empfänger</h2>
+<ul>
+  <li>
+    <strong>Supabase</strong> – Datenbank und Anmeldung. Serverstandort Irland
+    (EU). Speichert Name, Farbe, Zusagen, Gruppenzugehörigkeit und
+    Push-Kennungen.
+  </li>
+  <li>
+    <strong>Apple</strong> und <strong>Google</strong> – Zustellung der
+    Benachrichtigungen. Sie erhalten die Push-Kennung des Geräts sowie den
+    Text der jeweiligen Benachrichtigung.
+  </li>
+  <li>
+    <strong>calovo</strong> – Quelle der Spielpläne. Die App ruft dort
+    öffentliche Kalenderdateien ab; dabei werden keine Nutzerdaten übermittelt.
+  </li>
+</ul>
+
+<h2>Wer was sehen kann</h2>
+<p>
+Innerhalb einer Gruppe sehen alle Mitglieder gegenseitig Namen, Farbe und
+Zusagen. Außerhalb der eigenen Gruppe ist nichts sichtbar; die Datenbank
+verweigert den Zugriff durch Zugriffsregeln auf Zeilenebene. Push-Kennungen
+sind für kein Mitglied lesbar, auch nicht für den Gruppenersteller.
+</p>
+
+<h2>Speicherdauer und Löschung</h2>
+<p>
+Daten bleiben gespeichert, solange die Gruppenmitgliedschaft besteht. Beim
+Verlassen der Gruppe entfernt die App die lokale Zuordnung; für die
+vollständige Löschung der serverseitigen Daten genügt eine kurze Nachricht an
+die oben genannte Adresse. Wird die App gelöscht, verschwinden alle nur lokal
+gespeicherten Daten mit ihr.
+</p>
+
+<h2>Deine Rechte</h2>
+<p>
+Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
+Datenübertragbarkeit und Widerspruch nach DSGVO. Eine formlose E-Mail an die
+oben genannte Adresse genügt. Außerdem besteht ein Beschwerderecht bei einer
+Datenschutz-Aufsichtsbehörde.
+</p>
+
+<h2>Quelltext</h2>
+<p>
+Die App ist quelloffen. Was tatsächlich gespeichert und übertragen wird, lässt
+sich hier nachlesen:
+<a href="https://github.com/jakober/matchday">github.com/jakober/matchday</a>
+</p>
+
+<footer>
+  Matchday ist ein privates Projekt und steht in keiner Verbindung zum
+  FC Bayern München, zum Deutschen Fußball-Bund oder zu deren Rechteinhabern.
+</footer>
+
+</main>
+</body>
+</html>
