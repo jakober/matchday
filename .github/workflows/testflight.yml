@@ -1,15 +1,19 @@
 name: TestFlight
 
-# Bewusst nur von Hand ausloesbar. Ein Upload bei jedem Commit waere schaedlich:
-# TestFlight-Builds sind 90 Tage gueltig, jeder neue benachrichtigt die Tester,
-# und die Buildnummer laesst sich nicht wiederverwenden.
+# Laeuft von Hand und monatlich nach Zeitplan - aber nicht bei jedem Commit.
+# Das waere schaedlich: Jeder neue Build benachrichtigt alle Tester, und die
+# Buildnummer laesst sich nie wiederverwenden.
 on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Versionsnummer, die den Testern angezeigt wird (z.B. 0.6)'
-        required: true
-        default: '0.6'
+        description: 'Versionsnummer (leer = aus project.yml)'
+        required: false
+  # Monatlich ein frischer Build. Grund: TestFlight-Builds laufen 90 Tage nach
+  # dem Upload ab und lassen sich danach nicht mehr starten. Ein monatlicher
+  # Nachschub haelt die App dauerhaft nutzbar, mit reichlich Sicherheitsabstand.
+  schedule:
+    - cron: '0 4 1 * *'
 
 jobs:
   upload:
@@ -27,7 +31,6 @@ jobs:
       APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
       APPSTORE_PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-      APP_VERSION: ${{ inputs.version }}
       # Muss bei jedem Upload steigen; die Laufnummer der Aktion waechst
       # verlaesslich und wird nie wiederverwendet.
       BUILD_NUMBER: ${{ github.run_number }}
@@ -39,6 +42,20 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      # Bei einem Lauf nach Zeitplan gibt es keine Eingabe - dann gilt die
+      # Version aus project.yml. So gibt es nur eine Quelle der Wahrheit.
+      - name: Version bestimmen
+        run: |
+          VERSION="${{ inputs.version }}"
+          if [ -z "$VERSION" ]; then
+            VERSION=$(grep -m1 'MARKETING_VERSION:' iosApp/project.yml | tr -d ' "' | cut -d: -f2)
+          fi
+          if [ -z "$VERSION" ]; then
+            echo "::error::Keine Versionsnummer gefunden"; exit 1
+          fi
+          echo "Version: $VERSION"
+          echo "APP_VERSION=$VERSION" >> "$GITHUB_ENV"
 
       - name: Secrets pruefen
         run: |
@@ -104,6 +121,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: matchday-ios-${{ inputs.version }}-${{ github.run_number }}
+          name: matchday-ios-${{ github.run_number }}
           path: build/ipa/*.ipa
           if-no-files-found: warn
