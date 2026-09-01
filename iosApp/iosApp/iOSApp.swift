@@ -25,6 +25,16 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(
         _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+    ) -> Bool {
+        // Darf vor der Erlaubnisabfrage passieren: Die Kennung bekommt man
+        // immer, die Erlaubnis entscheidet nur ueber die Anzeige.
+        application.registerForRemoteNotifications()
+        return true
+    }
+
+    func application(
+        _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
         // Apple liefert rohe Bytes; APNs erwartet sie spaeter als Hexfolge.

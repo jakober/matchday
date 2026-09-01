@@ -4,9 +4,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withTimeoutOrNull
-import platform.UIKit.UIApplication
-import platform.darwin.dispatch_async
-import platform.darwin.dispatch_get_main_queue
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -24,13 +21,9 @@ actual fun createPushRegistrar(): PushRegistrar = IosPushRegistrar()
 
 class IosPushRegistrar : PushRegistrar {
     override suspend fun token(): PushToken? {
-        // Muss auf dem Hauptthread passieren, sonst verweigert UIKit den Dienst.
-        dispatch_async(dispatch_get_main_queue()) {
-            UIApplication.sharedApplication.registerForRemoteNotifications()
-        }
-
-        // Apple antwortet ueblicherweise in Sekundenbruchteilen. Kommt nichts -
-        // etwa ohne Netz oder im Simulator -, geht es ohne Push weiter.
+        // Die Anmeldung bei Apple passiert auf der Swift-Seite beim App-Start;
+        // hier wird nur auf die Antwort gewartet. Kommt keine - ohne Netz oder
+        // im Simulator -, geht es ohne Push weiter.
         val value = withTimeoutOrNull(10.seconds) {
             apnsToken.filterNotNull().first()
         }
