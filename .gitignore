@@ -33,6 +33,9 @@ Pods/
 .DS_Store
 Thumbs.db
 
+# Heruntergeladene Werkzeuge (Supabase-CLI) - gross und plattformabhaengig
+.tools/
+
 # Build-Artefakte
 *.apk
 *.aab
