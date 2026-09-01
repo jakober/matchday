@@ -106,6 +106,7 @@ private fun Root() {
         Container.repository.syncAll()
         Container.rescheduleReminders()
         Container.refreshGroup()
+        Container.uploadPushToken()
         syncing = false
     }
 
@@ -219,6 +220,7 @@ private fun Root() {
                             // Was vor dem Beitritt lokal beantwortet wurde,
                             // soll die Gruppe auch sehen.
                             Container.pushLocalRsvps()
+                            Container.uploadPushToken()
                             Container.refreshGroup()
                         }
                         .onFailure { groupError = it.message ?: "Anlegen fehlgeschlagen" }
@@ -239,6 +241,7 @@ private fun Root() {
                         .onSuccess {
                             Container.store.saveMembership(it)
                             Container.pushLocalRsvps()
+                            Container.uploadPushToken()
                             Container.refreshGroup()
                         }
                         .onFailure { groupError = it.message ?: "Code nicht gefunden" }

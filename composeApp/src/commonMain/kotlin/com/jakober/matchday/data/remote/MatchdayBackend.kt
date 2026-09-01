@@ -2,6 +2,7 @@ package com.jakober.matchday.data.remote
 
 import com.jakober.matchday.data.TeamCatalog
 import com.jakober.matchday.domain.RsvpStatus
+import com.jakober.matchday.push.PushToken
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.createSupabaseClient
@@ -136,6 +137,20 @@ class MatchdayBackend {
             filter { eq("group_id", groupId) }
         }.decodeList()
 
+    /** Hinterlegt die Push-Kennung dieses Geraets. */
+    suspend fun upsertDeviceToken(membership: GroupMembership, token: PushToken) {
+        client.from("device_tokens").upsert(
+            DeviceTokenDto(
+                groupId = membership.groupId,
+                memberId = membership.memberId,
+                platform = token.platform,
+                token = token.value,
+            )
+        ) {
+            onConflict = "token"
+        }
+    }
+
     /** Setzt die eigene Antwort. Vorhandene wird ueberschrieben. */
     suspend fun setRsvp(
         membership: GroupMembership,
@@ -143,6 +158,7 @@ class MatchdayBackend {
         matchUid: String,
         status: RsvpStatus,
         comment: String?,
+        matchTitle: String?,
     ) {
         client.from("rsvps").upsert(
             RsvpDto(
@@ -152,6 +168,7 @@ class MatchdayBackend {
                 matchUid = matchUid,
                 status = status.name,
                 comment = comment,
+                matchTitle = matchTitle,
             )
         ) {
             onConflict = "member_id,calendar_id,match_uid"

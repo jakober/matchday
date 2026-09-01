@@ -13,6 +13,8 @@ import com.jakober.matchday.notify.ReminderPlanner
 import com.jakober.matchday.notify.ReminderScheduler
 import com.jakober.matchday.notify.createBackgroundSync
 import com.jakober.matchday.notify.createReminderScheduler
+import com.jakober.matchday.push.PushRegistrar
+import com.jakober.matchday.push.createPushRegistrar
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +48,8 @@ object Container {
     val scheduler: ReminderScheduler by lazy { createReminderScheduler() }
 
     val backgroundSync: BackgroundSync by lazy { createBackgroundSync() }
+
+    private val pushRegistrar: PushRegistrar by lazy { createPushRegistrar() }
 
     val backend: MatchdayBackend by lazy { MatchdayBackend() }
 
@@ -81,16 +85,34 @@ object Container {
         val membership = store.membership.value ?: return
         val parts = splitMatchId(matchId) ?: return
         val calendarId = membership.calendarIds[parts.first] ?: return
+        // Der Titel wandert mit in die Datenbank, damit die Benachrichtigung
+        // an die anderen sagen kann, um welches Spiel es geht.
+        val title = store.matches.value.firstOrNull { it.id == matchId }?.displayTitle
 
         scope.launch {
             runCatching {
                 if (status == RsvpStatus.UNDECIDED) {
                     backend.clearRsvp(membership, calendarId, parts.second)
                 } else {
-                    backend.setRsvp(membership, calendarId, parts.second, status, comment)
+                    backend.setRsvp(membership, calendarId, parts.second, status, comment, title)
                 }
                 refreshGroup()
             }
+        }
+    }
+
+    /**
+     * Hinterlegt die Push-Kennung dieses Geraets in der Gruppe.
+     *
+     * Bei jedem Start erneut: Kennungen aendern sich bei Neuinstallation oder
+     * Wiederherstellung aus einem Backup, und eine veraltete Kennung fuehrt
+     * dazu, dass Benachrichtigungen stillschweigend ins Leere gehen.
+     */
+    fun uploadPushToken() {
+        val membership = store.membership.value ?: return
+        scope.launch {
+            val token = runCatching { pushRegistrar.token() }.getOrNull() ?: return@launch
+            runCatching { backend.upsertDeviceToken(membership, token) }
         }
     }
 
@@ -114,8 +136,11 @@ object Container {
             for ((matchId, rsvp) in local) {
                 val parts = splitMatchId(matchId) ?: continue
                 val calendarId = membership.calendarIds[parts.first] ?: continue
+                val title = store.matches.value.firstOrNull { it.id == matchId }?.displayTitle
                 runCatching {
-                    backend.setRsvp(membership, calendarId, parts.second, rsvp.status, rsvp.comment)
+                    backend.setRsvp(
+                        membership, calendarId, parts.second, rsvp.status, rsvp.comment, title,
+                    )
                 }
             }
             refreshGroup()

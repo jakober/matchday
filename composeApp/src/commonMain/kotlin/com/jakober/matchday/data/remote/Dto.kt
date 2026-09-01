@@ -33,6 +33,21 @@ data class RsvpDto(
     @SerialName("match_uid") val matchUid: String,
     val status: String,
     val comment: String? = null,
+    /**
+     * Titel der Begegnung, mitgeschickt statt nachgeschlagen: Die Datenbank
+     * kennt keine Spielplaene, und die Benachrichtigung soll sagen, um welches
+     * Spiel es geht.
+     */
+    @SerialName("match_title") val matchTitle: String? = null,
+)
+
+/** Adresse, an die ein Geraet Benachrichtigungen empfangen kann. */
+@Serializable
+data class DeviceTokenDto(
+    @SerialName("group_id") val groupId: String,
+    @SerialName("member_id") val memberId: String,
+    val platform: String,
+    val token: String,
 )
 
 /** Neuer Kalendereintrag - ohne id, die vergibt die Datenbank. */

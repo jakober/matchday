@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 import ComposeApp
 
 struct ComposeView: UIViewControllerRepresentable {
@@ -17,8 +18,33 @@ struct ContentView: View {
     }
 }
 
+/// Nimmt die Push-Kennung von Apple entgegen und reicht sie an den
+/// gemeinsamen Code weiter. SwiftUI allein bietet dafuer keinen Haken, deshalb
+/// der klassische App-Delegat.
+class AppDelegate: NSObject, UIApplicationDelegate {
+
+    func application(
+        _ application: UIApplication,
+        didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    ) {
+        // Apple liefert rohe Bytes; APNs erwartet sie spaeter als Hexfolge.
+        let hex = deviceToken.map { String(format: "%02x", $0) }.joined()
+        Push_iosKt.onApnsToken(token: hex)
+    }
+
+    func application(
+        _ application: UIApplication,
+        didFailToRegisterForRemoteNotificationsWithError error: Error
+    ) {
+        // Ohne Kennung laeuft die App weiter, nur eben ohne Push.
+        print("Push-Registrierung fehlgeschlagen: \(error.localizedDescription)")
+    }
+}
+
 @main
 struct iOSApp: App {
+
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     init() {
         // Muss noch während des App-Starts passieren - später verweigert iOS

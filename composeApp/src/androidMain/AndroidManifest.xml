@@ -26,6 +26,15 @@
             </intent-filter>
         </activity>
 
+        <!-- Empfaengt die Benachrichtigungen ueber Zusagen der anderen. -->
+        <service
+            android:name=".push.MatchdayMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <receiver
             android:name=".notify.ReminderReceiver"
             android:exported="false" />

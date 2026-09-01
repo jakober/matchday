@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "341605990638",
+    "project_id": "matchday-bf010",
+    "storage_bucket": "matchday-bf010.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:341605990638:android:61297ee9f8bb0b2039f3ff",
+        "android_client_info": {
+          "package_name": "com.jakober.matchday"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAkfVakn7lqdwElnyOdIEpMylEQi6Ud0vU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
