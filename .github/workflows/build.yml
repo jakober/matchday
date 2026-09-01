@@ -93,12 +93,15 @@ jobs:
           echo "udid=$UDID" >> "$GITHUB_OUTPUT"
           xcrun simctl list devices | grep "$UDID"
 
+      # Bewusst Release: Das ist die Fassung, die zu TestFlight geht. Ein
+      # Debug-Build kann laufen, waehrend Release abstuerzt - Optimierungen
+      # und Fehlerbehandlung unterscheiden sich.
       - name: Fuer den Simulator bauen
         run: |
           xcodebuild \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
-            -configuration Debug \
+            -configuration Release \
             -sdk iphonesimulator \
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath build/DerivedData \
