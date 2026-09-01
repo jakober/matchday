@@ -1,6 +1,7 @@
 package com.jakober.matchday.data.remote
 
 import com.jakober.matchday.data.TeamCatalog
+import com.jakober.matchday.data.createSettings
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.push.PushToken
 import io.github.jan.supabase.auth.Auth
@@ -29,9 +30,11 @@ class MatchdayBackend {
         supabaseKey = SupabaseConfig.PUBLISHABLE_KEY,
     ) {
         install(Auth) {
-            // Ausdruecklich: Die Sitzung muss App-Neustarts ueberleben. Geht
-            // sie verloren, meldet sich das Geraet als neuer anonymer Nutzer
-            // an - und verliert damit lautlos seine Gruppenzugehoerigkeit.
+            // Eigene Ablage statt der Voreinstellung. Die Voreinstellung hat
+            // auf Android nicht gegriffen: Das Geraet meldete sich bei jedem
+            // Start als neuer anonymer Nutzer an und verlor dabei lautlos
+            // seine Gruppenzugehoerigkeit.
+            sessionManager = PersistentSessionManager(createSettings())
             autoLoadFromStorage = true
             alwaysAutoRefresh = true
         }
@@ -42,15 +45,24 @@ class MatchdayBackend {
     /** Kennung des angemeldeten Geraets, sofern eine Sitzung besteht. */
     fun currentUserId(): String? = client.auth.currentSessionOrNull()?.user?.id
 
-    /** Prueft, ob diese Kennung Mitglied der Gruppe ist. */
-    suspend fun isMemberOf(groupId: String): Boolean {
-        val userId = currentUserId() ?: return false
-        return client.from("members").select {
-            filter {
-                eq("group_id", groupId)
-                eq("user_id", userId)
-            }
-        }.decodeList<MemberDto>().isNotEmpty()
+    /**
+     * Prueft, ob diese Kennung Mitglied der Gruppe ist.
+     *
+     * Liefert null, wenn es sich nicht feststellen laesst - etwa ohne Netz
+     * oder solange keine Sitzung geladen ist. Der Unterschied ist wichtig:
+     * "unbekannt" darf niemals dazu fuehren, dass eine Mitgliedschaft
+     * verworfen wird.
+     */
+    suspend fun isMemberOf(groupId: String): Boolean? {
+        val userId = currentUserId() ?: return null
+        return runCatching {
+            client.from("members").select {
+                filter {
+                    eq("group_id", groupId)
+                    eq("user_id", userId)
+                }
+            }.decodeList<MemberDto>().isNotEmpty()
+        }.getOrNull()
     }
 
     /** Meldet das Geraet an, falls noch keine Sitzung besteht. */

@@ -111,7 +111,10 @@ object Container {
         // Mitgliedseintrag gehoert dann jemand anderem. Ohne diese Pruefung
         // bliebe eine Gruppe stehen, in der man nichts mehr darf - und der
         // Grund waere nicht erkennbar.
-        val stillMember = runCatching { backend.isMemberOf(current.groupId) }.getOrNull()
+        // Nur bei einem eindeutigen Nein loesen. Bei "unbekannt" - kein Netz,
+        // Sitzung noch nicht geladen - bleibt die Gruppe unangetastet. Alles
+        // andere waere Datenverlust aus Unwissenheit.
+        val stillMember = backend.isMemberOf(current.groupId)
         if (stillMember == false) {
             store.clearMembership()
             clearGroupSnapshot()
