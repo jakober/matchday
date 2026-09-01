@@ -66,8 +66,32 @@ cd iosApp && xcodegen generate
 open iosApp.xcodeproj
 ```
 
-Für die Installation auf einem echten Gerät oder TestFlight wird das Apple
-Developer Program benötigt.
+### TestFlight
+
+`.github/workflows/testflight.yml` baut, signiert und laedt zu TestFlight hoch.
+Bewusst nur von Hand ausloesbar (Actions -> TestFlight -> Run workflow), weil
+jeder Upload die Tester benachrichtigt und Buildnummern nicht wiederverwendbar
+sind.
+
+Benoetigte Repository-Secrets:
+
+| Secret | Inhalt |
+|---|---|
+| `APPSTORE_KEY_ID` | Key-ID des App-Store-Connect-Schluessels |
+| `APPSTORE_ISSUER_ID` | Issuer-ID des Kontos |
+| `APPSTORE_PRIVATE_KEY` | Inhalt der `.p8`-Datei |
+| `APPLE_TEAM_ID` | Team-ID der Entwicklermitgliedschaft |
+| `MATCH_PASSWORD` | Passphrase, mit der `match` die Zertifikate verschluesselt |
+
+Zur Signierung: Xcodes automatische Signierung baut das Archiv mit einem
+Entwicklerzertifikat und verlangt dafuer ein registriertes Geraet - fuer eine
+reine TestFlight-Verteilung unnoetig. Deshalb signiert `fastlane match`
+manuell und legt Zertifikat und Profil verschluesselt im Zweig `certificates`
+desselben Repos ab. Ohne diese Ablage erzeugt jeder Lauf ein neues Zertifikat,
+und Apple erlaubt davon nur zwei.
+
+Der Upload braucht das jeweils aktuelle iOS-SDK; der Workflow waehlt darum das
+neueste installierte Xcode auf dem Laeufer.
 
 ## CI
 
