@@ -78,6 +78,9 @@ object ReminderPlanner {
 
     const val MAX_PENDING = 60
 
+    /** So viele Tage vor Anpfiff beginnt die Nachfrage. */
+    const val UNDECIDED_LEAD_DAYS = 7
+
     fun plan(
         matches: List<Match>,
         rsvps: Map<String, Rsvp>,
@@ -102,19 +105,33 @@ object ReminderPlanner {
             }
 
             if (settings.undecidedReminderEnabled && rsvps[match.id] == null) {
-                val at = match.start - 7.days
-                if (at > now) {
-                    out += ScheduledReminder(
-                        id = "undecided:${match.id}",
-                        at = at,
-                        title = "Kommst du mit?",
-                        body = "${match.displayTitle} ist in einer Woche - du hast noch nicht geantwortet.",
-                    )
+                // Taeglich nachfragen, bis geantwortet wurde. Sobald eine
+                // Antwort vorliegt, faellt der ganze Block weg und die
+                // Neuplanung zieht die Vormerkungen zurueck.
+                for (daysBefore in UNDECIDED_LEAD_DAYS downTo 1) {
+                    val at = match.start - daysBefore.days
+                    if (at > now) {
+                        out += ScheduledReminder(
+                            id = "undecided:${match.id}:$daysBefore",
+                            at = at,
+                            title = "Kommst du mit?",
+                            body = undecidedBody(daysBefore, match.displayTitle),
+                        )
+                    }
                 }
             }
         }
 
         return out.sortedBy { it.at }.take(MAX_PENDING)
+    }
+
+    private fun undecidedBody(daysBefore: Int, title: String): String {
+        val whenText = when (daysBefore) {
+            1 -> "ist morgen"
+            7 -> "ist in einer Woche"
+            else -> "ist in $daysBefore Tagen"
+        }
+        return "$title $whenText - du hast noch nicht geantwortet."
     }
 
     private fun kickoffBody(minutesBefore: Int, location: String?): String {
