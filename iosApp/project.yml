@@ -56,13 +56,10 @@ targets:
           - "$(inherited)"
           - "-framework"
           - "ComposeApp"
-        CODE_SIGN_STYLE: Automatic
-      configs:
-        # Ohne diese Angabe versucht Xcode beim Archivieren ein
-        # Entwicklerprofil zu erzeugen. Das ist an registrierte Geraete
-        # gebunden - fuer TestFlight braucht es ein Verteilungsprofil.
-        Release:
-          CODE_SIGN_IDENTITY: "Apple Distribution"
+        # Signatur wird beim Bauen gesetzt: Simulator-Builds ohne, der
+        # Verteilungsbuild manuell mit dem Profil, das Fastlane besorgt.
+        # Automatische Signierung scheidet aus - sie verlangt ein
+        # Entwicklerprofil und damit ein registriertes Geraet.
     preBuildScripts:
       - name: Kotlin-Framework bauen
         basedOnDependencyAnalysis: false
