@@ -114,7 +114,7 @@ object ReminderPlanner {
                         out += ScheduledReminder(
                             id = "undecided:${match.id}:$daysBefore",
                             at = at,
-                            title = "Kommst du mit?",
+                            title = "Bist du dabei?",
                             body = undecidedBody(daysBefore, match.displayTitle),
                         )
                     }

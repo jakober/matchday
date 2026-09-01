@@ -28,6 +28,10 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen: {}
+        # Ohne diesen Eintrag bricht Compose Multiplatform beim Start ab -
+        # geprueft wird das nur im Release-Build. iOS zeichnet sonst auf
+        # ProMotion-Geraeten nur mit 60 statt 120 Hz.
+        CADisableMinimumFrameDurationOnPhone: true
         # Die App nutzt nur HTTPS. Ohne diesen Eintrag fragt App Store Connect
         # bei jedem Build nach der Exportregelung fuer Verschluesselung und
         # haelt den Build so lange zurueck.
