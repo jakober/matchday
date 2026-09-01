@@ -1,0 +1,93 @@
+name: Beta-Gruppe anlegen
+
+# Legt die externe Testgruppe ueber die App-Store-Connect-Schnittstelle an.
+#
+# Hintergrund: In der Weboberflaeche fehlt der Abschnitt "Externe Tests"
+# vollstaendig, ohne Begruendung. Die Schnittstelle nennt den Grund im
+# Klartext - entweder die Gruppe entsteht, oder wir wissen endlich, was fehlt.
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Name der Testgruppe'
+        required: true
+        default: 'Freunde'
+
+jobs:
+  anlegen:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Python vorbereiten
+        run: pip install --quiet pyjwt cryptography requests
+
+      - name: Gruppe anlegen
+        env:
+          KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+          GROUP_NAME: ${{ inputs.name }}
+        run: |
+          python - <<'PY'
+          import os, time, json, jwt, requests
+
+          key_id = os.environ["KEY_ID"]
+          issuer = os.environ["ISSUER_ID"]
+          private_key = os.environ["PRIVATE_KEY"]
+          name = os.environ["GROUP_NAME"]
+
+          token = jwt.encode(
+              {"iss": issuer, "iat": int(time.time()),
+               "exp": int(time.time()) + 900, "aud": "appstoreconnect-v1"},
+              private_key,
+              algorithm="ES256",
+              headers={"kid": key_id, "typ": "JWT"},
+          )
+          head = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+          base = "https://api.appstoreconnect.apple.com/v1"
+
+          def zeige(titel, antwort):
+              print(f"\n=== {titel}: HTTP {antwort.status_code} ===")
+              try:
+                  print(json.dumps(antwort.json(), indent=2, ensure_ascii=False)[:3000])
+              except Exception:
+                  print(antwort.text[:2000])
+
+          apps = requests.get(
+              f"{base}/apps",
+              headers=head,
+              params={"filter[bundleId]": "com.jakober.matchday"},
+          )
+          zeige("App suchen", apps)
+          apps.raise_for_status()
+          app_id = apps.json()["data"][0]["id"]
+          print(f"\nApp-Id: {app_id}")
+
+          # Sagt, ob und warum die Verbreitung blockiert ist.
+          zeige("App-Zustand", requests.get(
+              f"{base}/apps/{app_id}",
+              headers=head,
+              params={"fields[apps]": "name,bundleId,contentRightsDeclaration"},
+          ))
+
+          zeige("Vorhandene Testgruppen", requests.get(
+              f"{base}/betaGroups", headers=head,
+              params={"filter[app]": app_id, "fields[betaGroups]": "name,isInternalGroup"},
+          ))
+
+          erstellen = requests.post(
+              f"{base}/betaGroups",
+              headers=head,
+              json={"data": {
+                  "type": "betaGroups",
+                  "attributes": {"name": name, "publicLinkEnabled": False},
+                  "relationships": {"app": {"data": {"type": "apps", "id": app_id}}},
+              }},
+          )
+          zeige("Externe Gruppe anlegen", erstellen)
+
+          if erstellen.status_code in (200, 201):
+              print("\nGruppe angelegt.")
+          else:
+              print("\nApple hat abgelehnt - der Grund steht oben.")
+          PY
