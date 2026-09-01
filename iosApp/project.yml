@@ -51,7 +51,7 @@ targets:
         # Massgebliche Versionsnummer. Der TestFlight-Ablauf liest sie hier,
         # wenn beim Auslösen keine angegeben wird - also bei jedem Lauf nach
         # Zeitplan. Bei neuen Funktionen hier hochzaehlen.
-        MARKETING_VERSION: "0.15"
+        MARKETING_VERSION: "0.20"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
         # Setzt zugleich CFBundleIconName im Paket - ohne den Eintrag lehnt
