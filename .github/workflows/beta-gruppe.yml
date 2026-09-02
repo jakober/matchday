@@ -39,24 +39,37 @@ jobs:
                               params={"filter[bundleId]": "com.jakober.matchday"}).json()
           app_id = apps["data"][0]["id"]
 
+          # Ueber die Beziehung der App, nicht ueber filter[app]: Der Filter
+          # lieferte eine leere Liste, obwohl die Weboberflaeche Gruppen zeigt.
           gruppen = requests.get(
-              f"{base}/betaGroups", headers=head,
-              params={"filter[app]": app_id,
-                      "fields[betaGroups]": "name,isInternalGroup,publicLinkEnabled"},
+              f"{base}/apps/{app_id}/betaGroups", headers=head,
           ).json()
 
           print("=== Testgruppen ===")
+          if "errors" in gruppen:
+              print(gruppen["errors"])
           for g in gruppen.get("data", []):
-              art = "INTERN" if g["attributes"]["isInternalGroup"] else "EXTERN"
+              a = g["attributes"]
+              art = "INTERN" if a.get("isInternalGroup") else "EXTERN"
+              auto = "automatisch" if a.get("hasAccessToAllBuilds") else "manuell"
+              print(f"{art:7} {a.get('name'):22} Verteilung: {auto}")
               tester = requests.get(
                   f"{base}/betaGroups/{g['id']}/betaTesters", headers=head,
                   params={"fields[betaTesters]": "email,firstName,lastName,state"},
               ).json()
-              eintraege = tester.get("data", [])
-              print(f"{art:7} {g['attributes']['name']:22} {len(eintraege)} Tester")
-              for t in eintraege:
-                  a = t["attributes"]
-                  print(f"        {a.get('email')}  Zustand: {a.get('state')}")
+              for t in tester.get("data", []):
+                  ta = t["attributes"]
+                  print(f"        {ta.get('email')}  Zustand: {ta.get('state')}")
+              if not tester.get("data"):
+                  print("        (keine Tester)")
+
+          # Wer ueberhaupt Zugriff auf das Konto hat - nur diese Personen
+          # koennen interne Tester werden.
+          nutzer = requests.get(f"{base}/users", headers=head).json()
+          print("\n=== Konto-Benutzer ===")
+          for u in nutzer.get("data", []):
+              a = u["attributes"]
+              print(f"  {a.get('username')}  Rollen: {','.join(a.get('roles') or [])}")
 
           builds = requests.get(
               f"{base}/builds", headers=head,
