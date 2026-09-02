@@ -1,4 +1,4 @@
-name: Beta-Gruppe anlegen
+name: Testgruppen ansehen
 
 # Legt die externe Testgruppe ueber die App-Store-Connect-Schnittstelle an.
 #
@@ -8,11 +8,6 @@ name: Beta-Gruppe anlegen
 
 on:
   workflow_dispatch:
-    inputs:
-      name:
-        description: 'Name der Testgruppe'
-        required: true
-        default: 'Freunde'
 
 jobs:
   anlegen:
@@ -75,19 +70,25 @@ jobs:
               params={"filter[app]": app_id, "fields[betaGroups]": "name,isInternalGroup"},
           ))
 
-          erstellen = requests.post(
-              f"{base}/betaGroups",
-              headers=head,
-              json={"data": {
-                  "type": "betaGroups",
-                  "attributes": {"name": name, "publicLinkEnabled": False},
-                  "relationships": {"app": {"data": {"type": "apps", "id": app_id}}},
-              }},
-          )
-          zeige("Externe Gruppe anlegen", erstellen)
+          gruppen = requests.get(
+              f"{base}/betaGroups", headers=head,
+              params={"filter[app]": app_id,
+                      "fields[betaGroups]": "name,isInternalGroup,publicLinkEnabled"},
+          ).json()
 
-          if erstellen.status_code in (200, 201):
-              print("\nGruppe angelegt.")
-          else:
-              print("\nApple hat abgelehnt - der Grund steht oben.")
+          print("
+=== Testgruppen ===")
+          for g in gruppen.get("data", []):
+              art = "INTERN" if g["attributes"]["isInternalGroup"] else "EXTERN"
+              tester = requests.get(
+                  f"{base}/betaGroups/{g['id']}/betaTesters",
+                  headers=head, params={"fields[betaTesters]": "email,firstName,inviteType,state"},
+              ).json()
+              namen = [
+                  f"{t['attributes'].get('email')} ({t['attributes'].get('state')})"
+                  for t in tester.get("data", [])
+              ]
+              print(f"  {art:6} {g['attributes']['name']:20} {len(namen)} Tester")
+              for n in namen:
+                  print(f"           {n}")
           PY
