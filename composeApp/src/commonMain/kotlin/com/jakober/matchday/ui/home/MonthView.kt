@@ -64,6 +64,7 @@ import com.jakober.matchday.theme.StatusIn
 import com.jakober.matchday.theme.StatusOpen
 import com.jakober.matchday.theme.StatusOut
 import com.jakober.matchday.ui.components.DateText
+import com.jakober.matchday.ui.components.TeamBadge
 import com.jakober.matchday.ui.components.local
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -249,11 +250,6 @@ private fun MonthGrid(
                         isToday = date == today,
                         isPast = date < today,
                         matchCount = dayMatches.size,
-                        // Die groesste Zusagenzahl des Tages - bei zwei
-                        // Spielen zaehlt das besser besuchte.
-                        attendeeCount = dayMatches.maxOfOrNull { match ->
-                            participantsOf(match.id).count { it.status == RsvpStatus.IN }
-                        } ?: 0,
                         ballColor = dayMatches.firstOrNull()?.let(accentOf),
                         ballTeamId = dayMatches.firstOrNull()?.subscriptionId,
                         mood = dayMood(dayMatches, participantsOf),
@@ -326,63 +322,34 @@ private fun DaySheet(
 }
 
 /**
- * Zeichen fuer einen Spieltag: Stern bei hervorgehobenen Spielen, sonst ein
- * Ball. Bei Laenderspielen bekommt der Ball einen Verlauf in Schwarz-Rot-Gold.
+ * Zeichen fuer einen Spieltag: das Wappen der Mannschaft, bei Laenderspielen
+ * die Flagge. Ein hervorgehobenes Spiel bekommt zusaetzlich den Stern - beides
+ * nebeneinander, damit auch dort erkennbar bleibt, um wen es geht.
  *
- * Der Verlauf entsteht, indem ueber das gezeichnete Symbol ein Rechteck mit
- * dem Farbverlauf gelegt wird, das nur dort wirkt, wo das Symbol Deckung hat.
- * Eine einfache Einfaerbung kann immer nur eine Farbe.
+ * Beides stammt aus derselben Darstellung wie in der Liste; ein eigenes
+ * Symbol nur fuer den Kalender waere unnoetige Doppelung.
  */
 @Composable
 private fun MatchMark(
     isImportant: Boolean,
-    isNational: Boolean,
-    color: Color,
+    teamId: String?,
     dimmed: Boolean,
-    description: String,
 ) {
-    val alpha = if (dimmed) 0.45f else 1f
-
-    if (isImportant) {
-        Icon(
-            imageVector = Icons.Filled.Star,
-            contentDescription = description,
-            tint = StatusOpen.copy(alpha = alpha),
-            modifier = Modifier.size(20.dp),
-        )
-        return
+    Row(
+        modifier = Modifier.graphicsLayer { alpha = if (dimmed) 0.45f else 1f },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        if (isImportant) {
+            Icon(
+                imageVector = Icons.Filled.Star,
+                contentDescription = "Wichtiges Spiel",
+                tint = StatusOpen,
+                modifier = Modifier.size(15.dp),
+            )
+        }
+        TeamBadge(team = teamId?.let { TeamCatalog.byId(it) }, size = 16.dp)
     }
-
-    if (!isNational) {
-        Icon(
-            imageVector = Icons.Filled.SportsSoccer,
-            contentDescription = description,
-            tint = color.copy(alpha = alpha),
-            modifier = Modifier.size(16.dp),
-        )
-        return
-    }
-
-    val flagge = Brush.verticalGradient(
-        listOf(Color(0xFF1A1A1A), Color(0xFFDD0000), Color(0xFFFFCE00)),
-    )
-    Icon(
-        imageVector = Icons.Filled.SportsSoccer,
-        contentDescription = description,
-        tint = Color.Unspecified,
-        modifier = Modifier
-            .size(16.dp)
-            .graphicsLayer {
-                this.alpha = alpha
-                // Ohne eigene Ebene wirkt der Mischmodus auf den ganzen
-                // Hintergrund statt nur auf das Symbol.
-                compositingStrategy = CompositingStrategy.Offscreen
-            }
-            .drawWithContent {
-                drawContent()
-                drawRect(brush = flagge, blendMode = BlendMode.SrcIn)
-            },
-    )
 }
 
 @Composable
@@ -391,7 +358,6 @@ private fun DayCell(
     inCurrentMonth: Boolean,
     isToday: Boolean,
     isPast: Boolean,
-    attendeeCount: Int,
     matchCount: Int,
     ballColor: Color?,
     ballTeamId: String?,
@@ -465,15 +431,8 @@ private fun DayCell(
             ) {
                 MatchMark(
                     isImportant = isImportant,
-                    // Laenderspiele bekommen einen Ball in Schwarz-Rot-Gold.
-                    isNational = ballTeamId == TeamCatalog.NATIONALMANNSCHAFT.id,
-                    color = ballColor ?: MaterialTheme.colorScheme.primary,
+                    teamId = ballTeamId,
                     dimmed = dimmed,
-                    description = when {
-                        isImportant -> "Wichtiges Spiel"
-                        matchCount == 1 -> "Spieltag"
-                        else -> "$matchCount Spiele"
-                    },
                 )
                 if (matchCount > 1) {
                     Text(
@@ -484,25 +443,6 @@ private fun DayCell(
                 }
             }
 
-            // Zusagen als Zahl statt als Punkt: Wie viele mitkommen, ist die
-            // Frage, um die es in der App geht - das gehoert lesbar ins Raster.
-            if (attendeeCount > 0 && !dimmed) {
-                Spacer(Modifier.height(2.dp))
-                Box(
-                    modifier = Modifier
-                        .size(18.dp)
-                        .clip(RoundedCornerShape(50))
-                        .background(StatusIn),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = attendeeCount.toString(),
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF0B0F14),
-                    )
-                }
-            }
         }
     }
 }
