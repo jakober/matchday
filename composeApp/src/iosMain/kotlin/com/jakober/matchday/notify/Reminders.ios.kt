@@ -1,5 +1,6 @@
 package com.jakober.matchday.notify
 
+import com.jakober.matchday.Container
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.datetime.Clock
 import platform.Foundation.NSError
@@ -39,6 +40,10 @@ private class ForegroundPresenter : NSObject(), UNUserNotificationCenterDelegate
         willPresentNotification: UNNotification,
         withCompletionHandler: (UNNotificationPresentationOptions) -> Unit,
     ) {
+        // Eine eintreffende Meldung heisst: In der Gruppe hat sich etwas
+        // geaendert. Die offene Ansicht gleicht sich damit von selbst ab.
+        Container.refreshGroupInBackground()
+
         withCompletionHandler(
             UNNotificationPresentationOptionBanner or
                 UNNotificationPresentationOptionList or
@@ -138,4 +143,9 @@ class IosReminderScheduler : ReminderScheduler {
         )
         center.addNotificationRequest(request, null)
     }
+}
+
+/** Von der Swift-Seite bei Rueckkehr in den Vordergrund aufgerufen. */
+fun refreshGroupOnResume() {
+    Container.refreshGroupInBackground()
 }

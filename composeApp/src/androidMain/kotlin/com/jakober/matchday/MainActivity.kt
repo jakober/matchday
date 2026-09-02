@@ -31,6 +31,8 @@ class MainActivity : ComponentActivity() {
         // Das geplante Fenster laeuft mit der Zeit leer, deshalb bei jeder
         // Rueckkehr in die App nachlegen.
         Container.rescheduleReminders()
+        // Waehrend die App weg war, koennen andere geantwortet haben.
+        Container.refreshGroupInBackground()
     }
 
     /** Seit Android 13 ist das Anzeigen von Benachrichtigungen erlaubnispflichtig. */

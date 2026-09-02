@@ -29,6 +29,11 @@ class MatchdayMessagingService : FirebaseMessagingService() {
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
+        // Die Meldung ist zugleich das Signal, dass sich etwas geaendert hat.
+        // Ist die App gerade offen, aktualisiert sich die Ansicht damit von
+        // selbst, statt eine veraltete Zusage anzuzeigen.
+        Container.refreshGroupInBackground()
+
         val title = message.data["title"] ?: return
         val body = message.data["body"].orEmpty()
 

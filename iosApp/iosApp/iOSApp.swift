@@ -42,6 +42,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         Push_iosKt.onApnsToken(token: hex)
     }
 
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        // Waehrend die App weg war, koennen andere geantwortet haben.
+        Reminders_iosKt.refreshGroupOnResume()
+    }
+
     func application(
         _ application: UIApplication,
         didFailToRegisterForRemoteNotificationsWithError error: Error

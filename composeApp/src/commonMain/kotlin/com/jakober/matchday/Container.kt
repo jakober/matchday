@@ -253,6 +253,18 @@ object Container {
         }
     }
 
+    /**
+     * Stoesst einen Abgleich an, ohne auf das Ergebnis zu warten.
+     *
+     * Gedacht fuer Ausloeser von aussen: eine eintreffende Benachrichtigung
+     * oder die Rueckkehr in die App. Trifft eine Meldung ein, hat sich in der
+     * Gruppe etwas geaendert - dann soll die offene Ansicht das auch zeigen,
+     * ohne dass jemand den Aktualisieren-Knopf sucht.
+     */
+    fun refreshGroupInBackground() {
+        scope.launch { refreshGroup() }
+    }
+
     /** Entfernt ein Mitglied und laedt die Gruppe neu. */
     fun removeMember(memberId: String, onError: (String) -> Unit = {}) {
         scope.launch {
