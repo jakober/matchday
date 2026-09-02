@@ -1,74 +1,43 @@
 name: Testgruppen ansehen
 
-# Legt die externe Testgruppe ueber die App-Store-Connect-Schnittstelle an.
+# Zeigt, welche Testgruppen es gibt und wer darin steht - intern wie extern.
 #
-# Hintergrund: In der Weboberflaeche fehlt der Abschnitt "Externe Tests"
-# vollstaendig, ohne Begruendung. Die Schnittstelle nennt den Grund im
-# Klartext - entweder die Gruppe entsteht, oder wir wissen endlich, was fehlt.
+# Die Weboberflaeche von App Store Connect hat sich hier schon einmal
+# unzuverlaessig gezeigt (der Abschnitt "Externe Tests" fehlte komplett).
+# Die Schnittstelle antwortet verlaesslich.
 
 on:
   workflow_dispatch:
 
 jobs:
-  anlegen:
+  ansehen:
     runs-on: ubuntu-latest
     steps:
       - name: Python vorbereiten
         run: pip install --quiet pyjwt cryptography requests
 
-      - name: Gruppe anlegen
+      - name: Gruppen und Tester auflisten
         env:
           KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
           ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
           PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
-          GROUP_NAME: ${{ inputs.name }}
         run: |
           python - <<'PY'
-          import os, time, json, jwt, requests
-
-          key_id = os.environ["KEY_ID"]
-          issuer = os.environ["ISSUER_ID"]
-          private_key = os.environ["PRIVATE_KEY"]
-          name = os.environ["GROUP_NAME"]
+          import os, time, jwt, requests
 
           token = jwt.encode(
-              {"iss": issuer, "iat": int(time.time()),
+              {"iss": os.environ["ISSUER_ID"], "iat": int(time.time()),
                "exp": int(time.time()) + 900, "aud": "appstoreconnect-v1"},
-              private_key,
+              os.environ["PRIVATE_KEY"],
               algorithm="ES256",
-              headers={"kid": key_id, "typ": "JWT"},
+              headers={"kid": os.environ["KEY_ID"], "typ": "JWT"},
           )
-          head = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+          head = {"Authorization": f"Bearer {token}"}
           base = "https://api.appstoreconnect.apple.com/v1"
 
-          def zeige(titel, antwort):
-              print(f"\n=== {titel}: HTTP {antwort.status_code} ===")
-              try:
-                  print(json.dumps(antwort.json(), indent=2, ensure_ascii=False)[:3000])
-              except Exception:
-                  print(antwort.text[:2000])
-
-          apps = requests.get(
-              f"{base}/apps",
-              headers=head,
-              params={"filter[bundleId]": "com.jakober.matchday"},
-          )
-          zeige("App suchen", apps)
-          apps.raise_for_status()
-          app_id = apps.json()["data"][0]["id"]
-          print(f"\nApp-Id: {app_id}")
-
-          # Sagt, ob und warum die Verbreitung blockiert ist.
-          zeige("App-Zustand", requests.get(
-              f"{base}/apps/{app_id}",
-              headers=head,
-              params={"fields[apps]": "name,bundleId,contentRightsDeclaration"},
-          ))
-
-          zeige("Vorhandene Testgruppen", requests.get(
-              f"{base}/betaGroups", headers=head,
-              params={"filter[app]": app_id, "fields[betaGroups]": "name,isInternalGroup"},
-          ))
+          apps = requests.get(f"{base}/apps", headers=head,
+                              params={"filter[bundleId]": "com.jakober.matchday"}).json()
+          app_id = apps["data"][0]["id"]
 
           gruppen = requests.get(
               f"{base}/betaGroups", headers=head,
@@ -76,19 +45,28 @@ jobs:
                       "fields[betaGroups]": "name,isInternalGroup,publicLinkEnabled"},
           ).json()
 
-          print("
-=== Testgruppen ===")
+          print("=== Testgruppen ===")
           for g in gruppen.get("data", []):
               art = "INTERN" if g["attributes"]["isInternalGroup"] else "EXTERN"
               tester = requests.get(
-                  f"{base}/betaGroups/{g['id']}/betaTesters",
-                  headers=head, params={"fields[betaTesters]": "email,firstName,inviteType,state"},
+                  f"{base}/betaGroups/{g['id']}/betaTesters", headers=head,
+                  params={"fields[betaTesters]": "email,firstName,lastName,state"},
               ).json()
-              namen = [
-                  f"{t['attributes'].get('email')} ({t['attributes'].get('state')})"
-                  for t in tester.get("data", [])
-              ]
-              print(f"  {art:6} {g['attributes']['name']:20} {len(namen)} Tester")
-              for n in namen:
-                  print(f"           {n}")
+              eintraege = tester.get("data", [])
+              print(f"{art:7} {g['attributes']['name']:22} {len(eintraege)} Tester")
+              for t in eintraege:
+                  a = t["attributes"]
+                  print(f"        {a.get('email')}  Zustand: {a.get('state')}")
+
+          builds = requests.get(
+              f"{base}/builds", headers=head,
+              params={"filter[app]": app_id, "limit": 5,
+                      "fields[builds]": "version,processingState,expired",
+                      "sort": "-version"},
+          ).json()
+          print("\n=== Letzte Builds ===")
+          for b in builds.get("data", []):
+              a = b["attributes"]
+              print(f"  Build {a.get('version')}  {a.get('processingState')}"
+                    f"  abgelaufen: {a.get('expired')}")
           PY
