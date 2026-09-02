@@ -58,7 +58,6 @@ import com.jakober.matchday.theme.ChipCorner
 import com.jakober.matchday.theme.StatusIn
 import com.jakober.matchday.theme.StatusOpen
 import com.jakober.matchday.theme.StatusOut
-import com.jakober.matchday.ui.components.AttendanceLine
 import com.jakober.matchday.ui.components.Avatar
 import com.jakober.matchday.ui.components.DateText
 import com.jakober.matchday.ui.components.local
@@ -216,9 +215,7 @@ fun MatchDetailSheet(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(10.dp))
-            AttendanceLine(participants = participants, avatarSize = 28.dp)
-
-            DeclineNotes(participants)
+            PersonList(participants)
 
             Spacer(Modifier.height(24.dp))
 
@@ -306,44 +303,90 @@ fun MatchDetailSheet(
     }
 }
 
-/** Absagen mit Begruendung, damit man den Grund sieht und nicht nur die Zahl. */
+/**
+ * Wer zu- und wer abgesagt hat, mit vollem Namen.
+ *
+ * In der Liste genuegen Initialen in Kreisen als Ueberblick - hier ist Platz,
+ * und hier stellt sich die Frage konkret: Wer genau ist dabei?
+ */
 @Composable
-private fun DeclineNotes(participants: List<Participant>) {
-    val declines = participants.filter {
-        it.status == RsvpStatus.OUT && !it.comment.isNullOrBlank()
-    }
-    if (declines.isEmpty()) return
+private fun PersonList(participants: List<Participant>) {
+    val attending = participants.filter { it.status == RsvpStatus.IN }
+    val declined = participants.filter { it.status == RsvpStatus.OUT }
 
-    Spacer(Modifier.height(14.dp))
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        for (person in declines) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(CardCorner))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(12.dp),
-            ) {
-                Avatar(
-                    initials = person.initials,
-                    colorArgb = person.colorArgb,
-                    size = 26.dp,
-                )
-                Spacer(Modifier.size(10.dp))
-                Column {
-                    Text(
-                        text = if (person.isMe) "Du" else person.name,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = StatusOut,
-                    )
-                    Text(
-                        text = person.comment.orEmpty(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
+    if (attending.isEmpty() && declined.isEmpty()) {
+        Text(
+            text = "Noch hat niemand geantwortet.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        return
+    }
+
+    if (attending.isEmpty()) {
+        Text(
+            text = "Noch keine Zusage.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    } else {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (person in attending) {
+                PersonRow(person = person, accent = StatusIn, icon = Icons.Filled.Check)
             }
         }
+    }
+
+    if (declined.isNotEmpty()) {
+        Spacer(Modifier.height(20.dp))
+        Text(
+            text = if (declined.size == 1) "1 ABSAGE" else "${declined.size} ABSAGEN",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(10.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (person in declined) {
+                PersonRow(person = person, accent = StatusOut, icon = Icons.Filled.Close)
+            }
+        }
+    }
+}
+
+@Composable
+private fun PersonRow(person: Participant, accent: Color, icon: ImageVector) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(CardCorner))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Avatar(initials = person.initials, colorArgb = person.colorArgb, size = 32.dp)
+        Spacer(Modifier.size(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = if (person.isMe) "${person.name} (du)" else person.name,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            // Der Grund einer Absage steht direkt beim Namen - getrennt
+            // davon waere er nicht zuzuordnen.
+            person.comment?.takeIf { it.isNotBlank() }?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = accent,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
