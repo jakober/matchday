@@ -18,7 +18,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.PersonRemove
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -71,6 +73,7 @@ fun GroupScreen(
     onCreate: (String) -> Unit,
     onJoin: (String) -> Unit,
     onCreateInvite: (String) -> Unit,
+    onRemoveMember: (MemberDto) -> Unit,
     onLeave: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -108,6 +111,7 @@ fun GroupScreen(
                     error = error,
                     invite = invite,
                     onCreateInvite = onCreateInvite,
+                    onRemoveMember = onRemoveMember,
                     onLeave = onLeave,
                 )
             }
@@ -200,8 +204,12 @@ private fun InGroup(
     error: String?,
     invite: Pair<String, String>?,
     onCreateInvite: (String) -> Unit,
+    onRemoveMember: (MemberDto) -> Unit,
     onLeave: () -> Unit,
 ) {
+    // Vor dem Entfernen nachfragen: Die Zusagen des Mitglieds verschwinden mit.
+    var zuEntfernen by remember { mutableStateOf<MemberDto?>(null) }
+
     Spacer(Modifier.height(8.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
@@ -288,6 +296,10 @@ private fun InGroup(
                 member = member,
                 isMe = member.id == membership.memberId,
                 showScope = membership.isAdmin,
+                // Der Admin kann alle entfernen ausser sich selbst - sonst
+                // bliebe die Gruppe ohne Verantwortlichen zurueck.
+                canRemove = membership.isAdmin && member.id != membership.memberId,
+                onRemove = { zuEntfernen = member },
             )
         }
     }
@@ -295,6 +307,30 @@ private fun InGroup(
     Spacer(Modifier.height(28.dp))
     TextButton(onClick = onLeave, modifier = Modifier.fillMaxWidth()) {
         Text("Gruppe verlassen", color = MaterialTheme.colorScheme.error)
+    }
+
+    zuEntfernen?.let { member ->
+        AlertDialog(
+            onDismissRequest = { zuEntfernen = null },
+            title = { Text("${member.displayName} entfernen?") },
+            text = {
+                Text(
+                    "Alle Zu- und Absagen dieser Person verschwinden aus der Gruppe. " +
+                        "Für eine Rückkehr braucht sie eine neue Einladung."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onRemoveMember(member)
+                    zuEntfernen = null
+                }) {
+                    Text("Entfernen", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { zuEntfernen = null }) { Text("Abbrechen") }
+            },
+        )
     }
 }
 
@@ -332,7 +368,13 @@ private fun InviteCode(code: String, scope: String) {
 }
 
 @Composable
-private fun MemberRow(member: MemberDto, isMe: Boolean, showScope: Boolean) {
+private fun MemberRow(
+    member: MemberDto,
+    isMe: Boolean,
+    showScope: Boolean,
+    canRemove: Boolean,
+    onRemove: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -369,6 +411,15 @@ private fun MemberRow(member: MemberDto, isMe: Boolean, showScope: Boolean) {
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
+        }
+        if (canRemove) {
+            IconButton(onClick = onRemove) {
+                Icon(
+                    Icons.Filled.PersonRemove,
+                    contentDescription = "${member.displayName} entfernen",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }

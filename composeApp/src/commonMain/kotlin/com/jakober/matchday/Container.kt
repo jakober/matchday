@@ -253,6 +253,15 @@ object Container {
         }
     }
 
+    /** Entfernt ein Mitglied und laedt die Gruppe neu. */
+    fun removeMember(memberId: String, onError: (String) -> Unit = {}) {
+        scope.launch {
+            runCatching { backend.removeMember(memberId) }
+                .onSuccess { refreshGroup() }
+                .onFailure { onError(it.message ?: "Entfernen nicht möglich") }
+        }
+    }
+
     /** Nach dem Verlassen der Gruppe den zwischengespeicherten Stand leeren. */
     fun clearGroupSnapshot() {
         _group.value = GroupSnapshot()

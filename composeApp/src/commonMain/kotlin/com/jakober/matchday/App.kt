@@ -306,6 +306,10 @@ private fun Root() {
                 }
             },
             invite = invite,
+            onRemoveMember = { member ->
+                groupError = null
+                Container.removeMember(member.id) { groupError = it }
+            },
             onLeave = {
                 Container.store.clearMembership()
                 Container.clearGroupSnapshot()

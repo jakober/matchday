@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.QuestionMark
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -174,20 +177,32 @@ private fun subtitleOf(match: Match): String {
  * Eigene Antwort. Bewusst mit Fuellung und Ring statt nur Farbe, damit sich
  * die drei Zustaende auch ohne Farbunterscheidung lesen lassen.
  */
+/**
+ * Eigene Antwort, gross und mit Symbol. Vorher war es ein Punkt von vierzehn
+ * Punkten Groesse - fuer die zentrale Angabe der App zu wenig. Haken, Kreuz
+ * und Fragezeichen unterscheiden sich zudem auch ohne Farbe.
+ */
 @Composable
 private fun StatusDot(status: RsvpStatus) {
     val color = statusColor(status)
-    Box(modifier = Modifier.size(22.dp), contentAlignment = Alignment.Center) {
-        when (status) {
-            RsvpStatus.IN -> Box(Modifier.size(14.dp).clip(CircleShape).background(color))
-            RsvpStatus.OUT -> Box(
-                Modifier.size(14.dp).clip(CircleShape).border(3.dp, color, CircleShape),
-            )
-            RsvpStatus.UNDECIDED -> Box(
-                Modifier.size(14.dp).clip(CircleShape)
-                    .border(2.dp, color.copy(alpha = 0.7f), CircleShape),
-            )
-        }
+    Box(
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape)
+            .background(color.copy(alpha = 0.16f))
+            .border(2.dp, color, CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = when (status) {
+                RsvpStatus.IN -> Icons.Filled.Check
+                RsvpStatus.OUT -> Icons.Filled.Close
+                RsvpStatus.UNDECIDED -> Icons.Filled.QuestionMark
+            },
+            contentDescription = statusLabel(status),
+            tint = color,
+            modifier = Modifier.size(22.dp),
+        )
     }
 }
 

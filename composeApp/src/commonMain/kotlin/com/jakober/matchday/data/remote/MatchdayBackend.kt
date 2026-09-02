@@ -180,6 +180,17 @@ class MatchdayBackend {
             ),
         ).decodeAs()
 
+    /**
+     * Entfernt ein Mitglied aus der Gruppe. Die Datenbank prueft, dass nur der
+     * Admin das darf - und dass er sich nicht selbst entfernt.
+     */
+    suspend fun removeMember(memberId: String) {
+        client.postgrest.rpc(
+            function = "remove_member",
+            parameters = JsonObject(mapOf("p_member_id" to JsonPrimitive(memberId))),
+        )
+    }
+
     suspend fun importantMatches(groupId: String): List<ImportantMatchDto> =
         client.from("important_matches").select {
             filter { eq("group_id", groupId) }

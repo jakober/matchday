@@ -42,11 +42,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import com.jakober.matchday.data.TeamCatalog
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.MatchMood
 import com.jakober.matchday.domain.ParticipantsSource
@@ -242,7 +249,13 @@ private fun MonthGrid(
                         isToday = date == today,
                         isPast = date < today,
                         matchCount = dayMatches.size,
+                        // Die groesste Zusagenzahl des Tages - bei zwei
+                        // Spielen zaehlt das besser besuchte.
+                        attendeeCount = dayMatches.maxOfOrNull { match ->
+                            participantsOf(match.id).count { it.status == RsvpStatus.IN }
+                        } ?: 0,
                         ballColor = dayMatches.firstOrNull()?.let(accentOf),
+                        ballTeamId = dayMatches.firstOrNull()?.subscriptionId,
                         mood = dayMood(dayMatches, participantsOf),
                         isImportant = dayMatches.any { it.id in importantIds },
                         onClick = { onDayClick(date) },
@@ -312,14 +325,76 @@ private fun DaySheet(
     }
 }
 
+/**
+ * Zeichen fuer einen Spieltag: Stern bei hervorgehobenen Spielen, sonst ein
+ * Ball. Bei Laenderspielen bekommt der Ball einen Verlauf in Schwarz-Rot-Gold.
+ *
+ * Der Verlauf entsteht, indem ueber das gezeichnete Symbol ein Rechteck mit
+ * dem Farbverlauf gelegt wird, das nur dort wirkt, wo das Symbol Deckung hat.
+ * Eine einfache Einfaerbung kann immer nur eine Farbe.
+ */
+@Composable
+private fun MatchMark(
+    isImportant: Boolean,
+    isNational: Boolean,
+    color: Color,
+    dimmed: Boolean,
+    description: String,
+) {
+    val alpha = if (dimmed) 0.45f else 1f
+
+    if (isImportant) {
+        Icon(
+            imageVector = Icons.Filled.Star,
+            contentDescription = description,
+            tint = StatusOpen.copy(alpha = alpha),
+            modifier = Modifier.size(20.dp),
+        )
+        return
+    }
+
+    if (!isNational) {
+        Icon(
+            imageVector = Icons.Filled.SportsSoccer,
+            contentDescription = description,
+            tint = color.copy(alpha = alpha),
+            modifier = Modifier.size(16.dp),
+        )
+        return
+    }
+
+    val flagge = Brush.verticalGradient(
+        listOf(Color(0xFF1A1A1A), Color(0xFFDD0000), Color(0xFFFFCE00)),
+    )
+    Icon(
+        imageVector = Icons.Filled.SportsSoccer,
+        contentDescription = description,
+        tint = Color.Unspecified,
+        modifier = Modifier
+            .size(16.dp)
+            .graphicsLayer {
+                this.alpha = alpha
+                // Ohne eigene Ebene wirkt der Mischmodus auf den ganzen
+                // Hintergrund statt nur auf das Symbol.
+                compositingStrategy = CompositingStrategy.Offscreen
+            }
+            .drawWithContent {
+                drawContent()
+                drawRect(brush = flagge, blendMode = BlendMode.SrcIn)
+            },
+    )
+}
+
 @Composable
 private fun DayCell(
     date: LocalDate,
     inCurrentMonth: Boolean,
     isToday: Boolean,
     isPast: Boolean,
+    attendeeCount: Int,
     matchCount: Int,
     ballColor: Color?,
+    ballTeamId: String?,
     mood: MatchMood,
     isImportant: Boolean,
     onClick: () -> Unit,
@@ -388,24 +463,43 @@ private fun DayCell(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Icon(
-                    // Wichtige Spiele bekommen den Stern und mehr Flaeche -
-                    // sie sollen im Raster sofort auffallen.
-                    imageVector = if (isImportant) Icons.Filled.Star else Icons.Filled.SportsSoccer,
-                    contentDescription = when {
+                MatchMark(
+                    isImportant = isImportant,
+                    // Laenderspiele bekommen einen Ball in Schwarz-Rot-Gold.
+                    isNational = ballTeamId == TeamCatalog.NATIONALMANNSCHAFT.id,
+                    color = ballColor ?: MaterialTheme.colorScheme.primary,
+                    dimmed = dimmed,
+                    description = when {
                         isImportant -> "Wichtiges Spiel"
                         matchCount == 1 -> "Spieltag"
                         else -> "$matchCount Spiele"
                     },
-                    tint = (if (isImportant) StatusOpen else ballColor ?: MaterialTheme.colorScheme.primary)
-                        .copy(alpha = if (dimmed) 0.45f else 1f),
-                    modifier = Modifier.size(if (isImportant) 20.dp else 14.dp),
                 )
                 if (matchCount > 1) {
                     Text(
                         text = matchCount.toString(),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            // Zusagen als Zahl statt als Punkt: Wie viele mitkommen, ist die
+            // Frage, um die es in der App geht - das gehoert lesbar ins Raster.
+            if (attendeeCount > 0 && !dimmed) {
+                Spacer(Modifier.height(2.dp))
+                Box(
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clip(RoundedCornerShape(50))
+                        .background(StatusIn),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = attendeeCount.toString(),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF0B0F14),
                     )
                 }
             }

@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.jakober.matchday.domain.Participant
 import com.jakober.matchday.domain.RsvpStatus
+import com.jakober.matchday.theme.StatusIn
 
 /**
  * Ueberlappende Avatare derer, die zugesagt haben, dahinter die Anzahl.
@@ -93,7 +94,7 @@ fun AvatarStack(
 fun AttendanceLine(
     participants: List<Participant>,
     modifier: Modifier = Modifier,
-    avatarSize: Dp = 22.dp,
+    avatarSize: Dp = 30.dp,
 ) {
     val attending = participants.filter { it.status == RsvpStatus.IN }
     val declined = participants.filter { it.status == RsvpStatus.OUT }
@@ -115,16 +116,22 @@ fun AttendanceLine(
 
         AvatarStack(participants = attending, size = avatarSize)
         Spacer(Modifier.width(10.dp))
+        // Die Zusagen sind der Zweck der App - sie bekommen deshalb die
+        // Schriftgroesse eines Titels, nicht die einer Fussnote.
         Text(
-            text = buildString {
-                append(attendanceText(attending))
-                // Absagen nur als Zahl anhaengen; die Gruende stehen in der
-                // Detailansicht, in eine Listenzeile passen sie nicht.
-                if (declined.isNotEmpty()) append(" · ${declined.size} abgesagt")
-            },
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            text = attendanceText(attending),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = StatusIn,
         )
+        if (declined.isNotEmpty()) {
+            // Absagen nur als Zahl; die Gruende stehen in der Detailansicht.
+            Text(
+                text = " · ${declined.size} abgesagt",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
