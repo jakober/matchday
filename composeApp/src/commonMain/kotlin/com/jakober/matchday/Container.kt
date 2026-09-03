@@ -56,7 +56,10 @@ object Container {
 
     val backend: MatchdayBackend by lazy { MatchdayBackend() }
 
-    private val _group = MutableStateFlow(GroupSnapshot())
+    // Aus der Ablage vorbelegt: Beim Start steht damit sofort der letzte
+    // bekannte Stand da, statt einer leeren Gruppe, die sich erst nach der
+    // Abfrage fuellt.
+    private val _group = MutableStateFlow(store.loadGroupSnapshot())
 
     /** Mitglieder und deren Antworten, Stand des letzten Abgleichs. */
     val group: StateFlow<GroupSnapshot> = _group.asStateFlow()
@@ -83,6 +86,9 @@ object Container {
      */
     suspend fun refreshGroup() {
         val membership = store.membership.value ?: return
+        // Ohne gueltiges Token antwortet die Datenbank mit leeren Listen statt
+        // mit einem Fehler - das duerfen wir nicht fuer den neuen Stand halten.
+        if (!backend.ensureFreshSession()) return
         // Kalender-Id zurueck auf die Mannschaft abbilden, damit sich die
         // Markierungen den lokalen Spielen zuordnen lassen.
         val teamByCalendar = membership.calendarIds.entries.associate { (team, cal) -> cal to team }
@@ -97,7 +103,15 @@ object Container {
                     }
                     .toSet(),
             )
-        }.onSuccess { _group.value = it }
+        }.onSuccess { fresh ->
+            // Eine Gruppe ohne Mitglieder gibt es nicht - man selbst ist immer
+            // darin. Eine leere Antwort ist deshalb kein Stand, sondern eine
+            // Frage, die nicht beantwortet wurde. Den alten Stand stehen zu
+            // lassen ist in jedem Fall richtiger, als alles zu verwerfen.
+            if (fresh.members.isEmpty()) return@onSuccess
+            _group.value = fresh
+            store.saveGroupSnapshot(fresh)
+        }
     }
 
     /**
@@ -277,6 +291,7 @@ object Container {
     /** Nach dem Verlassen der Gruppe den zwischengespeicherten Stand leeren. */
     fun clearGroupSnapshot() {
         _group.value = GroupSnapshot()
+        store.clearGroupSnapshot()
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.jakober.matchday.data
 
 import com.jakober.matchday.data.remote.GroupMembership
+import com.jakober.matchday.data.remote.GroupSnapshot
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.Profile
 import com.jakober.matchday.domain.ReminderSettings
@@ -51,6 +52,17 @@ class MatchdayStore(private val settings: Settings) {
     fun saveMembership(value: GroupMembership) {
         _membership.value = value
         settings.putString(KEY_MEMBERSHIP, json.encodeToString(value))
+    }
+
+    /** Letzter bekannter Stand der Gruppe, damit der Start nicht leer beginnt. */
+    fun loadGroupSnapshot(): GroupSnapshot = load<GroupSnapshot>(KEY_SNAPSHOT) ?: GroupSnapshot()
+
+    fun saveGroupSnapshot(value: GroupSnapshot) {
+        settings.putString(KEY_SNAPSHOT, json.encodeToString(value))
+    }
+
+    fun clearGroupSnapshot() {
+        settings.remove(KEY_SNAPSHOT)
     }
 
     /** Gruppe verlassen - nur lokal, der Eintrag in der Datenbank bleibt. */
@@ -199,6 +211,7 @@ class MatchdayStore(private val settings: Settings) {
         const val KEY_REMINDERS = "reminders"
         const val KEY_SEEDED = "subscriptions_seeded"
         const val KEY_MEMBERSHIP = "membership"
+        const val KEY_SNAPSHOT = "group_snapshot"
     }
 }
 

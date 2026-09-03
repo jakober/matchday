@@ -7,13 +7,16 @@ import com.jakober.matchday.push.PushToken
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.functions.Functions
 import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import kotlinx.datetime.Clock
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Anbindung an Supabase.
@@ -54,6 +57,10 @@ class MatchdayBackend {
      * verworfen wird.
      */
     suspend fun isMemberOf(groupId: String): Boolean? {
+        // Ohne gueltige Anmeldung antwortet die Datenbank mit einer leeren
+        // Liste - das saehe aus wie "kein Mitglied" und wuerde die Gruppe
+        // loeschen. Erst ein gueltiges Token macht die Antwort aussagekraeftig.
+        if (!ensureFreshSession()) return null
         val userId = currentUserId() ?: return null
         return runCatching {
             client.from("members").select {
@@ -63,6 +70,29 @@ class MatchdayBackend {
                 }
             }.decodeList<MemberDto>().isNotEmpty()
         }.getOrNull()
+    }
+
+    /**
+     * Sorgt dafuer, dass Anfragen mit einem gueltigen Token hinausgehen.
+     *
+     * Das Zugriffstoken gilt nur eine Stunde. Liegt die App laenger im
+     * Hintergrund, ist es beim Zurueckkommen abgelaufen, und die Anfrage geht
+     * unangemeldet raus. Die Datenbank antwortet darauf nicht mit einem
+     * Fehler, sondern mit einer leeren Liste: Die Zeilenregeln filtern alles
+     * weg, weil auth.uid() null ist. Fuer die App sah das aus wie eine Gruppe,
+     * aus der alle anderen verschwunden sind.
+     *
+     * Liefert false, wenn sich kein gueltiges Token beschaffen laesst - dann
+     * darf der Aufrufer das Ergebnis einer Abfrage nicht glauben.
+     */
+    suspend fun ensureFreshSession(): Boolean {
+        client.auth.awaitInitialization()
+        val session = client.auth.currentSessionOrNull() ?: return false
+        // Etwas Vorlauf: Ein Token, das waehrend der Anfrage ablaeuft, ist so
+        // wertlos wie ein bereits abgelaufenes.
+        if (session.expiresAt > Clock.System.now() + 60.seconds) return true
+        runCatching { client.auth.refreshCurrentSession() }
+        return client.auth.currentSessionOrNull() != null
     }
 
     /**
@@ -78,14 +108,24 @@ class MatchdayBackend {
         client.auth.awaitInitialization()
 
         if (client.auth.currentSessionOrNull() != null) {
+            // Erst auffrischen: Ein bloss abgelaufenes Token wuerde die
+            // folgende Pruefung scheitern lassen und saehe damit aus wie ein
+            // geloeschter Nutzer - die App meldete sich als jemand Neues an
+            // und die Gruppe waere weg.
+            ensureFreshSession()
+
             // Die gespeicherte Sitzung kann auf einen Nutzer verweisen, den es
             // nicht mehr gibt - etwa nach einem Aufraeumen in der Datenbank.
             // Das Token bleibt bis zum Ablauf gueltig, der Fehler faellt sonst
             // erst beim Schreiben auf, als Fremdschluesselverletzung.
-            val stillValid = runCatching {
+            val check = runCatching {
                 client.auth.retrieveUserForCurrentSession(updateSession = true)
-            }.isSuccess
-            if (stillValid) return
+            }
+            // Nur ein klares Nein des Servers beendet die Sitzung. Ein
+            // Netzwerkfehler darf das nicht: Sonst kostet ein Funkloch beim
+            // Start die Gruppenzugehoerigkeit.
+            val serverSaysGone = check.exceptionOrNull() is RestException
+            if (!serverSaysGone) return
             runCatching { client.auth.signOut() }
         }
 

@@ -7,7 +7,12 @@ import com.jakober.matchday.domain.RsvpStatus
 /**
  * Was die App gerade ueber die Gruppe weiss: die Mitglieder und deren
  * Antworten, so wie sie beim letzten Abgleich in der Datenbank standen.
+ *
+ * Wird mitgespeichert, damit nach dem Start sofort der letzte bekannte Stand
+ * dasteht. Ohne das war die Gruppe beim Oeffnen erst einmal leer, bis die
+ * Abfrage zurueckkam - und wirkte, als waeren die anderen verschwunden.
  */
+@kotlinx.serialization.Serializable
 data class GroupSnapshot(
     val members: List<MemberDto> = emptyList(),
     val rsvps: List<RsvpDto> = emptyList(),
