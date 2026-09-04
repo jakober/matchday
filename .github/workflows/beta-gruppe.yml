@@ -84,13 +84,19 @@ jobs:
 
           builds = requests.get(
               f"{base}/builds", headers=head,
-              params={"filter[app]": app_id, "limit": 5,
-                      "fields[builds]": "version,processingState,expired",
+              params={"filter[app]": app_id, "limit": 6,
+                      "fields[builds]": "version,processingState,expired,uploadedDate",
+                      "include": "preReleaseVersion",
+                      "fields[preReleaseVersions]": "version",
                       "sort": "-version"},
           ).json()
+          # Versionsnummer (0.32) und Buildnummer (17) sind zwei Dinge; die
+          # Version haengt am preReleaseVersion-Datensatz.
+          versionen = {v["id"]: v["attributes"]["version"] for v in builds.get("included", [])}
           print("\n=== Letzte Builds ===")
           for b in builds.get("data", []):
               a = b["attributes"]
-              print(f"  Build {a.get('version')}  {a.get('processingState')}"
-                    f"  abgelaufen: {a.get('expired')}")
+              pv = (b.get("relationships", {}).get("preReleaseVersion", {}).get("data") or {}).get("id")
+              print(f"  Version {versionen.get(pv, '?'):6} Build {a.get('version'):3}  {a.get('processingState')}"
+                    f"  hochgeladen: {str(a.get('uploadedDate'))[:16]}  abgelaufen: {a.get('expired')}")
           PY
