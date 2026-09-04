@@ -75,6 +75,12 @@ struct iOSApp: App {
         // Ohne diesen Delegaten zeigt iOS Benachrichtigungen nicht an,
         // solange die App im Vordergrund ist.
         Reminders_iosKt.configureNotifications()
+        // Nur fuer Store-Screenshots (Simulator): --demo [--lang=en]
+        let args = CommandLine.arguments
+        if args.contains("--demo") {
+            let lang = args.first { $0.hasPrefix("--lang=") }?.replacingOccurrences(of: "--lang=", with: "")
+            Reminders_iosKt.enableDemoMode(language: lang)
+        }
     }
 
     var body: some Scene {

@@ -17,7 +17,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -118,21 +122,28 @@ fun AttendanceLine(
         AvatarStack(participants = attending, size = avatarSize)
         Spacer(Modifier.width(10.dp))
         // Die Zusagen sind der Zweck der App - sie bekommen deshalb die
-        // Schriftgroesse eines Titels, nicht die einer Fussnote.
+        // Schriftgroesse eines Titels, nicht die einer Fussnote. Zusage und
+        // Absagen-Zusatz sind EIN Text: Als zwei Texte nebeneinander bekam
+        // der zweite bei langen Namen keinen Platz mehr und brach Buchstabe
+        // fuer Buchstabe um.
+        val muted = MaterialTheme.colorScheme.onSurfaceVariant
         Text(
-            text = attendanceText(attending),
+            text = buildAnnotatedString {
+                withStyle(SpanStyle(color = StatusIn, fontWeight = FontWeight.SemiBold)) {
+                    append(attendanceText(attending))
+                }
+                if (declined.isNotEmpty()) {
+                    // Absagen nur als Zahl; die Gruende stehen in der Detailansicht.
+                    withStyle(SpanStyle(color = muted, fontSize = MaterialTheme.typography.bodySmall.fontSize)) {
+                        append(S.declinedSuffix(declined.size))
+                    }
+                }
+            },
             style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = StatusIn,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f, fill = false),
         )
-        if (declined.isNotEmpty()) {
-            // Absagen nur als Zahl; die Gruende stehen in der Detailansicht.
-            Text(
-                text = S.declinedSuffix(declined.size),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
 

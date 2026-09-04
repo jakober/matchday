@@ -2,6 +2,7 @@ package com.jakober.matchday
 
 import com.jakober.matchday.i18n.S
 import com.jakober.matchday.i18n.currentLocale
+import com.jakober.matchday.data.DemoData
 import com.jakober.matchday.data.FeedPreview
 import com.jakober.matchday.data.MatchdayRepository
 import com.jakober.matchday.data.MatchdayStore
@@ -119,8 +120,30 @@ object Container {
     /** Wo der Nutzer in der Anmeldung steht. Entscheidet, welcher Bildschirm zu sehen ist. */
     val auth: StateFlow<AuthState> = _auth.asStateFlow()
 
+    /**
+     * Demo-Modus fuer Store-Screenshots: erfundene Gruppe, kein Netz, keine
+     * Wappen. Nur ueber einen Startparameter erreichbar, nie ueber die
+     * Oberflaeche. Vor dem ersten Bildschirm zu setzen.
+     */
+    var demoMode: Boolean = false
+
     /** Beim Start: gespeicherte Sitzung wiederherstellen oder zur Anmeldung. */
     fun startSession() {
+        if (demoMode) {
+            store.clearAll()
+            store.saveProfile(DemoData.profile)
+            store.saveMembership(DemoData.membership)
+            store.mergeServerSubscriptions(DemoData.subscriptions)
+            for (sub in DemoData.subscriptions) {
+                store.replaceMatchesOf(sub.id, DemoData.matches().filter { it.subscriptionId == sub.id })
+            }
+            for ((id, status) in DemoData.ownRsvps) store.setRsvp(id, status)
+            _group.value = DemoData.snapshot()
+            _logos.value = emptyMap()
+            _pushState.value = PushState.REGISTERED
+            _auth.value = AuthState.SignedIn
+            return
+        }
         scope.launch {
             if (backend.restoreSession()) {
                 restoreMembership()
@@ -137,6 +160,7 @@ object Container {
      * die Zugehoerigkeit alles, was frueher zum Verlust fuehrte.
      */
     suspend fun restoreMembership() {
+        if (demoMode) return
         if (store.membership.value != null) return
         val membership = runCatching { backend.membershipOfCurrentUser() }.getOrNull() ?: return
         store.saveMembership(membership)
@@ -315,6 +339,7 @@ object Container {
      * Netz bleibt der letzte Stand stehen, das ist besser als eine leere Liste.
      */
     suspend fun refreshGroup() {
+        if (demoMode) return
         val membership = store.membership.value ?: return
         // Ohne gueltiges Token antwortet die Datenbank mit leeren Listen statt
         // mit einem Fehler - das duerfen wir nicht fuer den neuen Stand halten.
@@ -353,6 +378,7 @@ object Container {
      * weil es diese Felder damals noch nicht gab.
      */
     suspend fun refreshMembership() {
+        if (demoMode) return
         val current = store.membership.value ?: return
 
         // Gehoert die gespeicherte Gruppe noch zu dieser Anmeldung? Nach einer
@@ -388,6 +414,7 @@ object Container {
      * samt Spielen und Zusagen loeschen.
      */
     suspend fun refreshCalendars() {
+        if (demoMode) return
         val membership = store.membership.value ?: return
         if (!backend.ensureFreshSession()) return
 
@@ -416,6 +443,7 @@ object Container {
      * danach fast nie wieder.
      */
     suspend fun resolveLogos() {
+        if (demoMode) return
         val names = store.matches.value
             .flatMap { listOfNotNull(it.homeTeam, it.awayTeam) }
             .map { it.trim() }
@@ -554,6 +582,7 @@ object Container {
         store.setRsvp(matchId, status, comment)
         rescheduleReminders()
 
+        if (demoMode) return
         val membership = store.membership.value ?: return
         val parts = splitMatchId(matchId) ?: return
         val calendarId = parts.first
@@ -584,6 +613,7 @@ object Container {
      * dazu, dass Benachrichtigungen stillschweigend ins Leere gehen.
      */
     fun uploadPushToken() {
+        if (demoMode) return
         val membership = store.membership.value
         if (membership == null) {
             _pushState.value = PushState.NO_GROUP
@@ -728,6 +758,11 @@ object Container {
 
     /** Abgleich aller Abos samt anschliessender Neuplanung. */
     fun syncAll(onDone: (List<String>) -> Unit = {}) {
+        if (demoMode) {
+            rescheduleReminders()
+            onDone(emptyList())
+            return
+        }
         scope.launch {
             // Der Admin koennte inzwischen einen Kalender hinzugefuegt haben.
             refreshCalendars()

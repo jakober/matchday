@@ -1,7 +1,7 @@
 """Rahmt rohe Screenshots fuer die Stores.
 
 Legt jedes Bild auf dunklen Grund, skaliert es auf die Zielgroesse und setzt
-oben eine Zeile Text. Rohe Screenshots nach store/screenshots/<plattform>/
+oben eine Zeile Text. Rohe Screenshots nach store/screenshots/<sprache>/
 legen, benannt 1.png ... 5.png; die Zeilen stehen unten in CAPTIONS.
 
 Aufruf: python store/frame.py
@@ -66,20 +66,22 @@ def frame(src, target, caption):
 
 
 def main():
-    for platform, target in TARGETS.items():
-        src_dir = os.path.join(ROOT, "store", "screenshots", platform)
+    # Rohbilder liegen je Sprache getrennt (die App selbst ist ja uebersetzt):
+    # store/screenshots/<sprache>/<n>.png. Daraus entstehen beide Store-Formate.
+    for lang, captions in CAPTIONS.items():
+        src_dir = os.path.join(ROOT, "store", "screenshots", lang)
         if not os.path.isdir(src_dir):
             print(f"kein Ordner {src_dir} - uebersprungen")
             continue
-        out_dir = os.path.join(ROOT, "store", "out", platform)
-        os.makedirs(out_dir, exist_ok=True)
-        for i in range(1, 6):
-            src = os.path.join(src_dir, f"{i}.png")
-            if not os.path.exists(src):
-                continue
-            for lang, captions in CAPTIONS.items():
+        for platform, target in TARGETS.items():
+            out_dir = os.path.join(ROOT, "store", "out", platform)
+            os.makedirs(out_dir, exist_ok=True)
+            for i in range(1, 6):
+                src = os.path.join(src_dir, f"{i}.png")
+                if not os.path.exists(src):
+                    continue
                 frame(src, target, captions[i - 1]).save(os.path.join(out_dir, f"{i}-{lang}.png"))
-            print("gerahmt:", platform, i)
+            print("gerahmt:", platform, lang)
 
 
 if __name__ == "__main__":

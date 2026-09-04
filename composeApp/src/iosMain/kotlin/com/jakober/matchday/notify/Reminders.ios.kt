@@ -159,3 +159,9 @@ fun pauseUsage() {
 fun handleUrl(url: String) {
     Container.handleUrl(url)
 }
+
+/** Nur fuer Store-Screenshots: Startargument "--demo" bzw. "--lang=en". */
+fun enableDemoMode(language: String?) {
+    Container.demoMode = true
+    if (language != null) com.jakober.matchday.i18n.forcedLanguage = language
+}

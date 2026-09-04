@@ -25,6 +25,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         askForNotificationPermission()
         handleLink(intent)
+        // Nur fuer Store-Screenshots: adb shell am start ... --ez demo true --es lang de
+        if (intent.getBooleanExtra("demo", false)) {
+            Container.demoMode = true
+            intent.getStringExtra("lang")?.let { com.jakober.matchday.i18n.forcedLanguage = it }
+        }
         setContent { App() }
     }
 

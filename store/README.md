@@ -12,6 +12,17 @@ Alles, was für die beiden Stores gebraucht wird, liegt hier:
 
 ## Screenshots
 
+**Fertig erzeugt** unter `out/android/` und `out/ios/` (je 5 Bilder, Deutsch
+und Englisch), aufgenommen im Android-Emulator im Demo-Modus - ohne Wappen,
+weil Vereinslogos in Store-Bildern als Markenzeichen zur Ablehnung fuehren.
+Die iOS-Bilder sind dieselben Aufnahmen im 6,9"-Format gerahmt; Apple
+verlangt keine Geraeteaufnahme, nur das richtige Mass. Neu erzeugen:
+
+```
+adb shell am start -n com.jakober.matchday/.MainActivity --ez demo true --es lang de
+python store/frame.py
+```
+
 Beide Stores wollen echte Screenshots mit echtem Inhalt. Die App auf dem
 eigenen Gerät mit einer Gruppe, zwei Kalendern und ein paar Zusagen zeigt
 mehr als jede Attrappe. Fünf Bilder reichen, in dieser Reihenfolge:

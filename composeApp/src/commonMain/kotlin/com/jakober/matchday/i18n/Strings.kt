@@ -11,7 +11,10 @@ expect fun deviceLanguage(): String
  * Composable laeuft - in Benachrichtigungen, Fehlermeldungen des Abrufs und
  * im Container. Deutsch ist die Rueckfallebene, weil die Nutzer Deutsch lesen.
  */
-val S: Strings by lazy { if (deviceLanguage().startsWith("en")) En else De }
+val S: Strings by lazy { if ((forcedLanguage ?: deviceLanguage()).startsWith("en")) En else De }
+
+/** Vor dem ersten Zugriff auf [S] setzbar - fuer Screenshots in beiden Sprachen. */
+var forcedLanguage: String? = null
 
 /** Kuerzel fuer den Server, der Benachrichtigungen in der Sprache des Empfaengers schreibt. */
 val currentLocale: String get() = if (S === En) "en" else "de"
