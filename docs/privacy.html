@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Matchday – Privacy Policy</title>
+<style>
+  :root { --bg: #ffffff; --fg: #16202b; --muted: #5a6775; --line: #e3e9ef; --accent: #1f9d55; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0b0f14; --fg: #e8edf3; --muted: #9aa7b5; --line: #232c37; --accent: #37e27a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 3rem 1.25rem 6rem; background: var(--bg); color: var(--fg);
+         font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 44rem; margin: 0 auto; }
+  h1 { font-size: 2rem; letter-spacing: -0.02em; margin: 0 0 .25rem; }
+  h2 { font-size: 1.15rem; margin: 2.5rem 0 .75rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
+  .lead { color: var(--muted); margin-top: 0; }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+  th, td { text-align: left; padding: .6rem .5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+  a { color: var(--accent); }
+  footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
+  .lang { float: right; font-size: .9rem; }
+</style>
+</head>
+<body>
+<main>
+  <a class="lang" href="index.html">Deutsch</a>
+  <h1>Privacy Policy</h1>
+  <p class="lead">Matchday – Who's In? · Last updated: 4 September 2026</p>
+
+  <p>Matchday is an app for a group to share fixture lists and tell each other who's
+  coming. It processes only what that requires. No ads, no tracking, no selling of data.</p>
+
+  <h2>Who is responsible</h2>
+  <p>Mathis Jakober<br>Email: <a href="mailto:mat.jakober@gmail.com">mat.jakober@gmail.com</a></p>
+
+  <h2>What data is processed</h2>
+  <table>
+    <tr><th>Data</th><th>Purpose</th><th>Where</th></tr>
+    <tr><td>Email address and password</td><td>Account and sign-in. The password is stored as a hash only, never in plain text. The address is confirmed with a code sent by email at sign-up.</td><td>Supabase</td></tr>
+    <tr><td>Chosen display name and colour</td><td>So the group can see who answered</td><td>Device and Supabase</td></tr>
+    <tr><td>Group, membership, chosen calendars</td><td>The group's shared fixture list</td><td>Supabase</td></tr>
+    <tr><td>Answers (in/out), optional reason, highlighted matches</td><td>Shown to the other group members</td><td>Device and Supabase</td></tr>
+    <tr><td>Device push token</td><td>Notification when someone in the group answers</td><td>Supabase; passed to Apple or Google for delivery</td></tr>
+    <tr><td>Device language (de/en)</td><td>Notifications in your language</td><td>Supabase</td></tr>
+    <tr><td>Name and email address of invited people</td><td>Invitation by email; on acceptance they become account and membership</td><td>Supabase; sent via Brevo</td></tr>
+    <tr><td>Reminder settings, hidden calendars, usage time</td><td>Timing of reminders, display, hints</td><td>Device only</td></tr>
+  </table>
+
+  <h2>Legal basis</h2>
+  <p>Processing serves to provide the app, i.e. performance of the usage relationship
+  (Art. 6(1)(b) GDPR). Whoever invites another person enters their name and address; the
+  invitation email contains only the group name and the code, no free text. The invitee
+  may ignore the invitation; the details are then kept until the invitation is deleted
+  and used for nothing else (Art. 6(1)(f) GDPR).</p>
+
+  <h2>What does not happen</h2>
+  <ul>
+    <li>No advertising and no cross-app tracking</li>
+    <li>No sharing or selling of data for advertising</li>
+    <li>No location data, no contacts, no access to photos</li>
+    <li>No analysis of usage behaviour</li>
+  </ul>
+
+  <h2>Recipients</h2>
+  <ul>
+    <li><strong>Supabase</strong> (Supabase Inc.) – database, accounts, sign-in and server functions. Servers located in Ireland (EU).</li>
+    <li><strong>Brevo</strong> (Sendinblue SAS, France) – delivery of confirmation and invitation emails. Receives recipient address and email content.</li>
+    <li><strong>Apple</strong> and <strong>Google</strong> – delivery of notifications. They receive the device push token and the text of each notification.</li>
+    <li><strong>calovo</strong> and <strong>fixtur.es</strong> – sources of fixture lists. The app fetches public calendar files from them; the service sees the device's IP address, nothing else.</li>
+    <li><strong>TheSportsDB</strong> – source of club crests. Queried by the server only, with team names; no user data is sent.</li>
+  </ul>
+
+  <h2>Who can see what</h2>
+  <p>Within a group, all members see each other's name, colour and answers including
+  reasons. The group creator additionally sees whether a member sees all or only
+  highlighted matches. Nothing is visible outside your own group; the database enforces
+  this with row-level access rules. Email addresses and push tokens are not readable by
+  any member, not even the group creator.</p>
+
+  <h2>Retention and deletion</h2>
+  <p>Data is kept as long as the account exists. <strong>Signing out</strong> in the app
+  removes all local data from the device. To delete the account and all associated data
+  on the server, a short message to the address above is enough; deletion happens
+  within 14 days. When someone leaves or is removed from a group, their answers
+  disappear from the group.</p>
+
+  <h2>Your rights</h2>
+  <p>Access, rectification, erasure, restriction of processing, data portability and
+  objection under the GDPR. An informal email to the address above is sufficient. You
+  also have the right to lodge a complaint with a data protection authority.</p>
+
+  <h2>Source code</h2>
+  <p>The app is open source. What is actually stored and transmitted can be read here:
+  <a href="https://github.com/jakober/matchday">github.com/jakober/matchday</a></p>
+
+  <footer>Matchday is a private project with no affiliation to any league, club,
+  association or their rights holders.</footer>
+</main>
+</body>
+</html>

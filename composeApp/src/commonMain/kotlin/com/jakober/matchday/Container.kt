@@ -32,8 +32,12 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.days
 
-/** Nach dieser Frist wird ein Name ohne Wappen erneut nachgeschlagen. */
-private val LOGO_RETRY = 30.days
+/**
+ * Nach dieser Frist wird ein Name ohne Wappen erneut nachgeschlagen. Kurz,
+ * weil ein Fehlschlag oft an einer Luecke auf dem Server liegt, die bald
+ * geschlossen ist - und ein Tag Wartezeit faellt niemandem auf.
+ */
+private val LOGO_RETRY = 1.days
 
 /**
  * Zusammenbau der App. Bewusst schlicht statt mit einem

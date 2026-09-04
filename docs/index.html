@@ -5,168 +5,103 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Matchday – Datenschutzerklärung</title>
 <style>
-  :root {
-    --bg: #ffffff;
-    --fg: #16202b;
-    --muted: #5a6775;
-    --line: #e3e9ef;
-    --accent: #dc052d;
-  }
+  :root { --bg: #ffffff; --fg: #16202b; --muted: #5a6775; --line: #e3e9ef; --accent: #1f9d55; }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --bg: #0b0f14;
-      --fg: #e8edf3;
-      --muted: #9aa7b5;
-      --line: #232c37;
-      --accent: #ff2d55;
-    }
+    :root { --bg: #0b0f14; --fg: #e8edf3; --muted: #9aa7b5; --line: #232c37; --accent: #37e27a; }
   }
   * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    padding: 3rem 1.25rem 6rem;
-    background: var(--bg);
-    color: var(--fg);
-    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  }
+  body { margin: 0; padding: 3rem 1.25rem 6rem; background: var(--bg); color: var(--fg);
+         font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
   main { max-width: 44rem; margin: 0 auto; }
   h1 { font-size: 2rem; letter-spacing: -0.02em; margin: 0 0 .25rem; }
-  h2 {
-    font-size: 1.15rem;
-    margin: 2.5rem 0 .75rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--line);
-  }
+  h2 { font-size: 1.15rem; margin: 2.5rem 0 .75rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
   .lead { color: var(--muted); margin-top: 0; }
   table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
   th, td { text-align: left; padding: .6rem .5rem; border-bottom: 1px solid var(--line); vertical-align: top; }
   th { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
-  code { background: var(--line); padding: .1rem .35rem; border-radius: 4px; font-size: .9em; }
   a { color: var(--accent); }
   footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
+  .lang { float: right; font-size: .9rem; }
 </style>
 </head>
 <body>
 <main>
+  <a class="lang" href="privacy.html">English</a>
+  <h1>Datenschutzerklärung</h1>
+  <p class="lead">Matchday – Wer kommt? · Stand: 4. September 2026</p>
 
-<h1>Datenschutzerklärung</h1>
-<p class="lead">Matchday – Terminkalender für Fußballspiele. Stand: 1. September 2026</p>
+  <p>Matchday ist eine App, mit der eine Gruppe Spielpläne teilt und sich gegenseitig
+  zu- oder absagt. Sie verarbeitet nur, was dafür nötig ist. Keine Werbung, kein
+  Tracking, kein Verkauf von Daten.</p>
 
-<p>
-Matchday ist eine private App für einen kleinen Freundeskreis. Sie zeigt die
-Spielpläne des FC Bayern München und der deutschen Nationalmannschaft, lässt
-die Teilnahme an Spielen zu- oder absagen und erinnert an anstehende Partien.
-</p>
+  <h2>Wer verantwortlich ist</h2>
+  <p>Mathis Jakober<br>E-Mail: <a href="mailto:mat.jakober@gmail.com">mat.jakober@gmail.com</a></p>
 
-<h2>Wer verantwortlich ist</h2>
-<p>
-Mathis Jakober<br>
-E-Mail: <a href="mailto:mat.jakober@gmail.com">mat.jakober@gmail.com</a>
-</p>
+  <h2>Welche Daten verarbeitet werden</h2>
+  <table>
+    <tr><th>Daten</th><th>Wozu</th><th>Wo</th></tr>
+    <tr><td>E-Mail-Adresse und Passwort</td><td>Konto und Anmeldung. Das Passwort wird nur als Prüfsumme gespeichert, nie im Klartext. Die Adresse wird bei der Registrierung mit einem Code per E-Mail bestätigt.</td><td>Supabase</td></tr>
+    <tr><td>Selbstgewählter Name und Farbe</td><td>Damit die Gruppe erkennt, wer zu- oder abgesagt hat</td><td>Gerät und Supabase</td></tr>
+    <tr><td>Gruppe, Mitgliedschaft, gewählte Kalender</td><td>Gemeinsamer Spielplan der Gruppe</td><td>Supabase</td></tr>
+    <tr><td>Zu- und Absagen, optionale Begründung, hervorgehobene Spiele</td><td>Anzeige für die übrigen Gruppenmitglieder</td><td>Gerät und Supabase</td></tr>
+    <tr><td>Push-Kennung des Geräts</td><td>Benachrichtigung, wenn jemand aus der Gruppe antwortet</td><td>Supabase; zur Zustellung an Apple bzw. Google</td></tr>
+    <tr><td>Gerätesprache (de/en)</td><td>Benachrichtigungen in deiner Sprache</td><td>Supabase</td></tr>
+    <tr><td>Name und E-Mail-Adresse eingeladener Personen</td><td>Einladung per E-Mail; beim Annehmen werden daraus Konto und Mitgliedschaft</td><td>Supabase; Versand über Brevo</td></tr>
+    <tr><td>Erinnerungseinstellungen, ausgeblendete Kalender, Nutzungsdauer</td><td>Zeitpunkt der Erinnerungen, Anzeige, Hinweise</td><td>Nur auf dem Gerät</td></tr>
+  </table>
 
-<h2>Welche Daten verarbeitet werden</h2>
+  <h2>Rechtsgrundlage</h2>
+  <p>Die Verarbeitung dient der Bereitstellung der App, also der Erfüllung des
+  Nutzungsverhältnisses (Art. 6 Abs. 1 lit. b DSGVO). Wer eine andere Person einlädt,
+  trägt deren Name und Adresse ein; die Einladungsmail enthält nur den Gruppennamen und
+  den Code, keinen freien Text. Die eingeladene Person kann die Einladung ignorieren;
+  dann bleiben die Angaben bis zur Löschung der Einladung gespeichert und werden zu
+  nichts anderem verwendet (Art. 6 Abs. 1 lit. f DSGVO).</p>
 
-<table>
-  <tr>
-    <th>Daten</th>
-    <th>Wozu</th>
-    <th>Wo gespeichert</th>
-  </tr>
-  <tr>
-    <td>Selbstgewählter Anzeigename und Farbe</td>
-    <td>Damit die Gruppe erkennt, wer zu- oder abgesagt hat</td>
-    <td>Auf dem Gerät; in einer Gruppe zusätzlich beim Anbieter Supabase</td>
-  </tr>
-  <tr>
-    <td>Zu- und Absagen, optionale Begründung bei einer Absage</td>
-    <td>Anzeige für die übrigen Gruppenmitglieder</td>
-    <td>Auf dem Gerät; in einer Gruppe zusätzlich bei Supabase</td>
-  </tr>
-  <tr>
-    <td>Anonyme Nutzerkennung</td>
-    <td>Wiedererkennung des Geräts ohne Konto, Passwort oder E-Mail-Adresse</td>
-    <td>Supabase</td>
-  </tr>
-  <tr>
-    <td>Push-Kennung des Geräts</td>
-    <td>Zustellung von Benachrichtigungen über Zusagen anderer</td>
-    <td>Supabase; zur Zustellung an Apple bzw. Google übermittelt</td>
-  </tr>
-  <tr>
-    <td>Erinnerungseinstellungen, abonnierte Mannschaften</td>
-    <td>Zeitpunkt der Erinnerungen, Auswahl der angezeigten Spiele</td>
-    <td>Nur auf dem Gerät</td>
-  </tr>
-</table>
+  <h2>Was nicht passiert</h2>
+  <ul>
+    <li>Keine Werbung und kein Tracking über App-Grenzen hinweg</li>
+    <li>Keine Weitergabe oder Verkauf von Daten zu Werbezwecken</li>
+    <li>Keine Standortdaten, keine Kontakte, kein Zugriff auf Fotos</li>
+    <li>Keine Analyse des Nutzungsverhaltens</li>
+  </ul>
 
-<p>
-<strong>Ohne Gruppe verlässt nichts das Gerät.</strong> Wer die App allein
-nutzt, dessen Name und Zusagen werden ausschließlich lokal gespeichert.
-</p>
+  <h2>Empfänger</h2>
+  <ul>
+    <li><strong>Supabase</strong> (Supabase Inc.) – Datenbank, Konten, Anmeldung und Serverfunktionen. Serverstandort Irland (EU).</li>
+    <li><strong>Brevo</strong> (Sendinblue SAS, Frankreich) – Versand der Bestätigungs- und Einladungsmails. Erhält Empfängeradresse und Mailinhalt.</li>
+    <li><strong>Apple</strong> und <strong>Google</strong> – Zustellung der Benachrichtigungen. Sie erhalten die Push-Kennung des Geräts und den Text der jeweiligen Benachrichtigung.</li>
+    <li><strong>calovo</strong> und <strong>fixtur.es</strong> – Quellen der Spielpläne. Die App ruft dort öffentliche Kalenderdateien ab; dabei sieht der jeweilige Dienst die IP-Adresse des Geräts, sonst nichts.</li>
+    <li><strong>TheSportsDB</strong> – Quelle der Vereinswappen. Angefragt wird ausschließlich vom Server mit Mannschaftsnamen; Nutzerdaten werden nicht übermittelt.</li>
+  </ul>
 
-<h2>Was nicht passiert</h2>
-<ul>
-  <li>Keine Werbung und kein Tracking über App-Grenzen hinweg</li>
-  <li>Keine Weitergabe oder kein Verkauf von Daten zu Werbezwecken</li>
-  <li>Keine Standortdaten, keine Kontakte, kein Zugriff auf Fotos</li>
-  <li>Kein Konto, kein Passwort, keine E-Mail-Adresse erforderlich</li>
-</ul>
+  <h2>Wer was sehen kann</h2>
+  <p>Innerhalb einer Gruppe sehen alle Mitglieder gegenseitig Name, Farbe und
+  Zu- oder Absagen samt Begründung. Der Gruppenersteller sieht zusätzlich, ob ein
+  Mitglied alle oder nur hervorgehobene Spiele sieht. Außerhalb der eigenen Gruppe ist
+  nichts sichtbar; die Datenbank verweigert den Zugriff durch Zugriffsregeln auf
+  Zeilenebene. E-Mail-Adressen und Push-Kennungen sind für kein Mitglied lesbar, auch
+  nicht für den Gruppenersteller.</p>
 
-<h2>Empfänger</h2>
-<ul>
-  <li>
-    <strong>Supabase</strong> – Datenbank und Anmeldung. Serverstandort Irland
-    (EU). Speichert Name, Farbe, Zusagen, Gruppenzugehörigkeit und
-    Push-Kennungen.
-  </li>
-  <li>
-    <strong>Apple</strong> und <strong>Google</strong> – Zustellung der
-    Benachrichtigungen. Sie erhalten die Push-Kennung des Geräts sowie den
-    Text der jeweiligen Benachrichtigung.
-  </li>
-  <li>
-    <strong>calovo</strong> – Quelle der Spielpläne. Die App ruft dort
-    öffentliche Kalenderdateien ab; dabei werden keine Nutzerdaten übermittelt.
-  </li>
-</ul>
+  <h2>Speicherdauer und Löschung</h2>
+  <p>Daten bleiben gespeichert, solange das Konto besteht. <strong>Abmelden</strong> in
+  der App entfernt alle lokalen Daten vom Gerät. Für die Löschung des Kontos und aller
+  zugehörigen Daten auf dem Server genügt eine kurze Nachricht an die oben genannte
+  Adresse; die Löschung erfolgt innerhalb von 14 Tagen. Verlässt jemand die Gruppe oder
+  wird entfernt, verschwinden seine Zu- und Absagen aus der Gruppe.</p>
 
-<h2>Wer was sehen kann</h2>
-<p>
-Innerhalb einer Gruppe sehen alle Mitglieder gegenseitig Namen, Farbe und
-Zusagen. Außerhalb der eigenen Gruppe ist nichts sichtbar; die Datenbank
-verweigert den Zugriff durch Zugriffsregeln auf Zeilenebene. Push-Kennungen
-sind für kein Mitglied lesbar, auch nicht für den Gruppenersteller.
-</p>
+  <h2>Deine Rechte</h2>
+  <p>Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
+  Datenübertragbarkeit und Widerspruch nach DSGVO. Eine formlose E-Mail an die oben
+  genannte Adresse genügt. Außerdem besteht ein Beschwerderecht bei einer
+  Datenschutz-Aufsichtsbehörde.</p>
 
-<h2>Speicherdauer und Löschung</h2>
-<p>
-Daten bleiben gespeichert, solange die Gruppenmitgliedschaft besteht. Beim
-Verlassen der Gruppe entfernt die App die lokale Zuordnung; für die
-vollständige Löschung der serverseitigen Daten genügt eine kurze Nachricht an
-die oben genannte Adresse. Wird die App gelöscht, verschwinden alle nur lokal
-gespeicherten Daten mit ihr.
-</p>
+  <h2>Quelltext</h2>
+  <p>Die App ist quelloffen. Was tatsächlich gespeichert und übertragen wird, lässt sich
+  hier nachlesen: <a href="https://github.com/jakober/matchday">github.com/jakober/matchday</a></p>
 
-<h2>Deine Rechte</h2>
-<p>
-Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung,
-Datenübertragbarkeit und Widerspruch nach DSGVO. Eine formlose E-Mail an die
-oben genannte Adresse genügt. Außerdem besteht ein Beschwerderecht bei einer
-Datenschutz-Aufsichtsbehörde.
-</p>
-
-<h2>Quelltext</h2>
-<p>
-Die App ist quelloffen. Was tatsächlich gespeichert und übertragen wird, lässt
-sich hier nachlesen:
-<a href="https://github.com/jakober/matchday">github.com/jakober/matchday</a>
-</p>
-
-<footer>
-  Matchday ist ein privates Projekt und steht in keiner Verbindung zum
-  FC Bayern München, zum Deutschen Fußball-Bund oder zu deren Rechteinhabern.
-</footer>
-
+  <footer>Matchday ist ein privates Projekt und steht in keiner Verbindung zu Ligen,
+  Vereinen, Verbänden oder deren Rechteinhabern.</footer>
 </main>
 </body>
 </html>

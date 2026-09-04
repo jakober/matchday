@@ -23,6 +23,10 @@ const RETRY_AFTER_DAYS = 90;
 // des Dienstes. Vereinsnamen findet die Suche meist ueber Zweitnamen selbst.
 const ALIASES: Record<string, string> = {
   "deutschland": "Germany",
+  // Der DFB-Kalender nennt die eigene Mannschaft schlicht "DFB".
+  "dfb": "Germany",
+  "dfb-team": "Germany",
+  "dfb team": "Germany",
   "oesterreich": "Austria",
   "schweiz": "Switzerland",
   "frankreich": "France",

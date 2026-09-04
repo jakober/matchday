@@ -63,7 +63,9 @@ targets:
         # Zeitplan. Bei neuen Funktionen hier hochzaehlen.
         MARKETING_VERSION: "0.33"
         CURRENT_PROJECT_VERSION: "1"
-        TARGETED_DEVICE_FAMILY: "1,2"
+        # Nur iPhone: Fuer den Store entfallen damit iPad-Screenshots und
+        # die Pruefung auf dem iPad. Die App ist fuers Handy gedacht.
+        TARGETED_DEVICE_FAMILY: "1"
         # Setzt zugleich CFBundleIconName im Paket - ohne den Eintrag lehnt
         # App Store Connect den Upload ab.
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
