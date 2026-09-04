@@ -191,6 +191,18 @@ class MatchdayStore(private val settings: Settings) {
 
     fun rsvpOf(matchId: String): Rsvp? = _rsvps.value[matchId]
 
+    /**
+     * Ersetzt die eigenen Antworten durch den Stand des Servers. Der ist die
+     * Wahrheit: Nach einer Neuanmeldung ist lokal nichts mehr da, und was
+     * auf einem anderen Geraet beantwortet wurde, muss hier auch gelten.
+     * Liefert true, wenn sich etwas geaendert hat.
+     */
+    fun replaceRsvps(map: Map<String, Rsvp>): Boolean {
+        if (map == _rsvps.value) return false
+        updateRsvps(map)
+        return true
+    }
+
     private fun updateRsvps(map: Map<String, Rsvp>) {
         _rsvps.value = map
         settings.putString(KEY_RSVPS, json.encodeToString(map))

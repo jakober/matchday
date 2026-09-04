@@ -565,15 +565,29 @@ class MatchdayBackend {
 
     /** Hinterlegt die Push-Kennung dieses Geraets. */
     suspend fun upsertDeviceToken(membership: GroupMembership, token: PushToken) {
-        client.from("device_tokens").upsert(
-            DeviceTokenDto(
-                groupId = membership.groupId,
-                memberId = membership.memberId,
-                platform = token.platform,
-                token = token.value,
-            )
-        ) {
-            onConflict = "token"
+        // Ueber eine Funktion statt Upsert: Nach einem Kontowechsel auf
+        // demselben Geraet gehoert die Kennung noch dem alten Mitglied, und
+        // die RLS liesse das neue sie nicht ueberschreiben.
+        client.postgrest.rpc(
+            function = "claim_device_token",
+            parameters = JsonObject(
+                mapOf(
+                    "p_group_id" to JsonPrimitive(membership.groupId),
+                    "p_member_id" to JsonPrimitive(membership.memberId),
+                    "p_platform" to JsonPrimitive(token.platform),
+                    "p_token" to JsonPrimitive(token.value),
+                )
+            ),
+        )
+    }
+
+    /** Beim Abmelden: Sonst bekaeme dieses Geraet weiter die Meldungen des alten Kontos. */
+    suspend fun deleteDeviceToken(membership: GroupMembership, token: PushToken) {
+        client.from("device_tokens").delete {
+            filter {
+                eq("member_id", membership.memberId)
+                eq("token", token.value)
+            }
         }
     }
 

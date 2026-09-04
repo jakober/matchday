@@ -12,6 +12,7 @@ import com.jakober.matchday.data.remote.MatchdayBackend
 import com.jakober.matchday.data.remote.splitMatchId
 import com.jakober.matchday.domain.LogoEntry
 import com.jakober.matchday.domain.Profile
+import com.jakober.matchday.domain.Rsvp
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.notify.BackgroundSync
 import com.jakober.matchday.notify.ReminderPlanner
@@ -282,6 +283,11 @@ object Container {
     /** Abmelden: Sitzung beenden und alles Lokale verwerfen. */
     fun signOut() {
         scope.launch {
+            // Die Push-Kennung dieses Geraets gehoert nicht mehr zu diesem
+            // Konto - sonst kaemen dessen Meldungen weiter hier an.
+            store.membership.value?.let { membership ->
+                runCatching { pushRegistrar.token()?.let { backend.deleteDeviceToken(membership, it) } }
+            }
             backend.signOut()
             clearLocal()
         }
@@ -371,8 +377,24 @@ object Container {
             if (fresh.members.isEmpty()) return@onSuccess
             _group.value = fresh
             store.saveGroupSnapshot(fresh)
+            // Die eigenen Antworten kommen mit dem Gruppenstand: Nach einer
+            // Neuanmeldung waeren sie sonst weg, obwohl der Server sie hat -
+            // und die Liste zeigt die eigene Antwort aus dem lokalen Stand.
+            if (store.replaceRsvps(ownRsvpsOf(fresh, membership.memberId))) {
+                rescheduleReminders()
+            }
         }
     }
+
+    private fun ownRsvpsOf(snapshot: GroupSnapshot, memberId: String): Map<String, Rsvp> =
+        snapshot.rsvps
+            .filter { it.memberId == memberId }
+            .mapNotNull { dto ->
+                val status = runCatching { RsvpStatus.valueOf(dto.status) }.getOrNull()
+                    ?: return@mapNotNull null
+                "${dto.calendarId}#${dto.matchUid}" to Rsvp(status, dto.comment)
+            }
+            .toMap()
 
     /**
      * Hebt ein Spiel hervor oder nimmt die Hervorhebung zurueck.

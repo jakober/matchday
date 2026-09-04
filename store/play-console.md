@@ -77,11 +77,11 @@ spätere Produktion ebenfalls alle Länder.
    `testers-community@googlegroups.com` eintragen.
 3. **Feedback-Adresse**: mat.jakober@gmail.com
 4. **Länder**: alle.
-5. **Neuen Release erstellen** → App Bundle `out/release/matchday-0.35.aab`
+5. **Neuen Release erstellen** → App Bundle `out/release/matchday-0.37.aab`
    hochladen. Beim ersten Upload fragt Google nach Play App Signing:
    „Von Google generierten Schlüssel verwenden" bestätigen - unser Schlüssel
    ist dann automatisch der Upload-Schlüssel.
-6. Release-Name „0.35", Versionshinweise DE/EN:
+6. Release-Name „0.37", Versionshinweise DE/EN:
    - de-DE: „Erste Testversion."
    - en-US: „First test release."
 7. Prüfen und veröffentlichen. Danach erscheint der **Opt-in-Link** für die
