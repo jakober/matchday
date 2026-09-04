@@ -46,3 +46,6 @@ supabase/.temp/
 *.apk
 *.aab
 *.ipa
+
+# Erzeugt von supabase/deploy-db.sh aus den Migrationsdateien.
+supabase/functions/db-setup/migrations.generated.ts

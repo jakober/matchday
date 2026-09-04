@@ -222,11 +222,23 @@ Deno.serve(async (request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
+    // Zu welcher Gruppe gehoert das Spiel? Ueber den Kalender, nicht ueber die
+    // Mitgliedschaft des Aufrufers: Wer in mehreren Gruppen ist, haette sonst
+    // mehrere Treffer - und maybeSingle() liefert dann gar keinen.
+    const { data: calendar } = await supabase
+      .from("calendars")
+      .select("group_id")
+      .eq("id", calendar_id)
+      .maybeSingle();
+
+    if (!calendar) return new Response("Kalender unbekannt", { status: 404 });
+
     // Wer ruft an? Aus dem Token abgeleitet, nicht aus dem Aufruf uebernommen.
     const { data: member } = await supabase
       .from("members")
       .select("id, group_id, display_name")
       .eq("user_id", userId)
+      .eq("group_id", calendar.group_id)
       .maybeSingle();
 
     if (!member) return new Response("keine Mitgliedschaft", { status: 403 });
