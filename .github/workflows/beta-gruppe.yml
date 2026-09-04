@@ -71,6 +71,18 @@ jobs:
               a = u["attributes"]
               print(f"  {a.get('username')}  Rollen: {','.join(a.get('roles') or [])}")
 
+          # Offene Einladungen: Wer die Mail von Apple nie angenommen hat, ist
+          # noch kein Benutzer - und damit auch kein interner Tester, egal was
+          # die Gruppe in der Weboberflaeche anzeigt.
+          offen = requests.get(f"{base}/userInvitations", headers=head).json()
+          print("
+=== Offene Benutzer-Einladungen ===")
+          for u in offen.get("data", []):
+              a = u["attributes"]
+              print(f"  {a.get('email')}  Rollen: {','.join(a.get('roles') or [])}  laeuft ab: {a.get('expirationDate')}")
+          if not offen.get("data"):
+              print("  (keine)")
+
           builds = requests.get(
               f"{base}/builds", headers=head,
               params={"filter[app]": app_id, "limit": 5,
