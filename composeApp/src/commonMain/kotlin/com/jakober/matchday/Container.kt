@@ -17,6 +17,7 @@ import com.jakober.matchday.notify.createBackgroundSync
 import com.jakober.matchday.notify.createReminderScheduler
 import com.jakober.matchday.push.PushRegistrar
 import com.jakober.matchday.push.createPushRegistrar
+import com.jakober.matchday.ui.components.AvatarColors
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.HttpTimeout
 import kotlinx.coroutines.CoroutineScope
@@ -38,6 +39,16 @@ private val LOGO_RETRY = 30.days
  */
 /** Zustand der Erreichbarkeit fuer Benachrichtigungen aus der Gruppe. */
 enum class PushState { UNKNOWN, NO_GROUP, NO_TOKEN, UPLOAD_FAILED, REGISTERED }
+
+/** Stand der Anmeldung. */
+sealed interface AuthState {
+    /** Gespeicherte Sitzung wird noch geladen. */
+    data object Loading : AuthState
+    data object SignedOut : AuthState
+    /** Konto angelegt, Adresse noch nicht bestaetigt. */
+    data class AwaitingCode(val email: String) : AuthState
+    data object SignedIn : AuthState
+}
 
 object Container {
 
@@ -90,6 +101,119 @@ object Container {
     }
 
     val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    // -- Konto --------------------------------------------------------------
+
+    private val _auth = MutableStateFlow<AuthState>(AuthState.Loading)
+
+    /** Wo der Nutzer in der Anmeldung steht. Entscheidet, welcher Bildschirm zu sehen ist. */
+    val auth: StateFlow<AuthState> = _auth.asStateFlow()
+
+    /** Beim Start: gespeicherte Sitzung wiederherstellen oder zur Anmeldung. */
+    fun startSession() {
+        scope.launch {
+            _auth.value = if (backend.restoreSession()) AuthState.SignedIn else AuthState.SignedOut
+        }
+    }
+
+    /**
+     * Registriert und wechselt zur Code-Eingabe. Name und Farbe werden
+     * vorgemerkt und nach der Bestaetigung zum Profil - wird die App
+     * dazwischen geschlossen, fragt der Einstieg danach noch einmal.
+     */
+    suspend fun signUp(name: String, email: String, password: String): Result<Unit> =
+        runCatching { backend.signUp(email, password) }
+            .onSuccess {
+                pendingName = name
+                _auth.value = AuthState.AwaitingCode(email)
+            }
+
+    suspend fun signIn(email: String, password: String): Result<Unit> =
+        runCatching { backend.signIn(email, password) }
+            .onSuccess { _auth.value = AuthState.SignedIn }
+            .onFailure {
+                // Konto vorhanden, Adresse nie bestaetigt: statt einer
+                // Sackgasse gleich die Code-Eingabe, mit Neu-Senden.
+                if (it.message == MatchdayBackend.UNCONFIRMED) {
+                    _auth.value = AuthState.AwaitingCode(email)
+                }
+            }
+
+    suspend fun confirmEmail(email: String, code: String): Result<Unit> =
+        runCatching { backend.confirmEmail(email, code) }
+            .onSuccess {
+                pendingName?.let { name ->
+                    if (store.profile.value == null) {
+                        store.saveProfile(Profile(id = com.jakober.matchday.domain.newId(), name = name, colorArgb = AvatarColors.first()))
+                    }
+                }
+                pendingName = null
+                _auth.value = AuthState.SignedIn
+            }
+
+    suspend fun resendCode(email: String): Result<Unit> = runCatching { backend.resendCode(email) }
+
+    suspend fun sendPasswordReset(email: String): Result<Unit> = runCatching { backend.sendPasswordReset(email) }
+
+    /** Zurueck zur Anmeldung, ohne Konto - etwa wenn man sich in der Adresse vertippt hat. */
+    fun cancelSignUp() {
+        pendingName = null
+        _auth.value = AuthState.SignedOut
+    }
+
+    /** Abmelden: Sitzung beenden und alles Lokale verwerfen. */
+    fun signOut() {
+        scope.launch {
+            backend.signOut()
+            store.clearAll()
+            _group.value = GroupSnapshot()
+            _logos.value = emptyMap()
+            _pushState.value = PushState.UNKNOWN
+            scheduler.replaceAll(emptyList())
+            _auth.value = AuthState.SignedOut
+        }
+    }
+
+    private var pendingName: String? = null
+
+    // -- Gruppe anlegen und beitreten ---------------------------------------
+
+    private val _groupBusy = MutableStateFlow(false)
+    val groupBusy: StateFlow<Boolean> = _groupBusy.asStateFlow()
+
+    /** Legt eine Gruppe an; das Profil liefert Name und Farbe des Mitglieds. */
+    fun createGroup(groupName: String, profile: Profile, onError: (String) -> Unit) {
+        groupAction(onError) {
+            backend.createGroup(groupName, profile.name, profile.colorArgb)
+        }
+    }
+
+    fun joinGroup(code: String, profile: Profile, onError: (String) -> Unit) {
+        groupAction(onError) {
+            backend.joinGroup(code, profile.name, profile.colorArgb)
+        }
+    }
+
+    private fun groupAction(onError: (String) -> Unit, action: suspend () -> com.jakober.matchday.data.remote.GroupMembership) {
+        _groupBusy.value = true
+        acknowledgeMembershipLoss()
+        scope.launch {
+            runCatching { action() }
+                .onSuccess { membership ->
+                    store.saveMembership(membership)
+                    // Was vor dem Beitritt lokal beantwortet wurde, soll die
+                    // Gruppe auch sehen.
+                    pushLocalRsvps()
+                    uploadPushToken()
+                    refreshGroup()
+                    // Die Kalender der Gruppe uebernehmen und gleich laden.
+                    refreshCalendars()
+                    syncAll()
+                }
+                .onFailure { onError(it.message ?: "Fehlgeschlagen") }
+            _groupBusy.value = false
+        }
+    }
 
     /**
      * Holt Mitglieder und Zusagen der Gruppe. Fehler werden geschluckt: Ohne

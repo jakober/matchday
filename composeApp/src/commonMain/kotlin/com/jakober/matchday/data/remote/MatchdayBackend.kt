@@ -4,7 +4,9 @@ import com.jakober.matchday.data.createSettings
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.push.PushToken
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.functions.Functions
@@ -23,11 +25,14 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlin.time.Duration.Companion.seconds
 
+/** Fehler der Anmeldung, mit einer Meldung fuer den Bildschirm. */
+class AuthException(message: String) : Exception(message)
+
 /**
  * Anbindung an Supabase.
  *
- * Alles laeuft ueber anonyme Anmeldung: Jedes Geraet bekommt eine dauerhafte
- * Kennung, ohne dass jemand ein Konto anlegen muss. Wer was sehen und aendern
+ * Jeder Nutzer hat ein Konto mit E-Mail und Passwort; die Zugehoerigkeit zu
+ * einer Gruppe haengt am Konto, nicht am Geraet. Wer was sehen und aendern
  * darf, entscheiden die Regeln in der Datenbank - der Client kann sie nicht
  * umgehen, auch wenn jemand den Schluessel aus der App liest.
  */
@@ -100,41 +105,120 @@ class MatchdayBackend {
         return client.auth.currentSessionOrNull() != null
     }
 
+    // -- Konto --------------------------------------------------------------
+
     /**
-     * Meldet das Geraet an, falls noch keine Sitzung besteht.
+     * Stellt die gespeicherte Sitzung wieder her. Liefert false, wenn keine
+     * besteht oder der Server sie eindeutig ablehnt - dann muss sich der
+     * Nutzer anmelden.
      *
      * Das Warten auf die Initialisierung ist der Kern: Die gespeicherte
-     * Sitzung wird nebenlaeufig geladen. Ohne dieses Warten faellt die
-     * Pruefung zu frueh aus, die App meldet einen neuen anonymen Nutzer an -
-     * und ueberschreibt dabei die gespeicherte Sitzung. Genau daran ging
-     * bisher bei jedem Start die Gruppenzugehoerigkeit verloren.
+     * Sitzung wird nebenlaeufig geladen; ohne dieses Warten saehe die App
+     * faelschlich "nicht angemeldet".
      */
-    suspend fun signInIfNeeded() {
+    suspend fun restoreSession(): Boolean {
         client.auth.awaitInitialization()
+        if (client.auth.currentSessionOrNull() == null) return false
 
-        if (client.auth.currentSessionOrNull() != null) {
-            // Erst auffrischen: Ein bloss abgelaufenes Token wuerde die
-            // folgende Pruefung scheitern lassen und saehe damit aus wie ein
-            // geloeschter Nutzer - die App meldete sich als jemand Neues an
-            // und die Gruppe waere weg.
-            ensureFreshSession()
+        // Erst auffrischen: Ein bloss abgelaufenes Token wuerde die folgende
+        // Pruefung scheitern lassen und saehe aus wie ein geloeschtes Konto.
+        ensureFreshSession()
 
-            // Die gespeicherte Sitzung kann auf einen Nutzer verweisen, den es
-            // nicht mehr gibt - etwa nach einem Aufraeumen in der Datenbank.
-            // Das Token bleibt bis zum Ablauf gueltig, der Fehler faellt sonst
-            // erst beim Schreiben auf, als Fremdschluesselverletzung.
-            val check = runCatching {
-                client.auth.retrieveUserForCurrentSession(updateSession = true)
-            }
-            // Nur ein klares Nein des Servers beendet die Sitzung. Ein
-            // Netzwerkfehler darf das nicht: Sonst kostet ein Funkloch beim
-            // Start die Gruppenzugehoerigkeit.
-            val serverSaysGone = check.exceptionOrNull() is RestException
-            if (!serverSaysGone) return
-            runCatching { client.auth.signOut() }
+        // Nur ein klares Nein des Servers beendet die Sitzung. Ein
+        // Netzwerkfehler darf das nicht: Sonst wirft ein Funkloch beim Start
+        // den Nutzer aus der App.
+        val check = runCatching {
+            client.auth.retrieveUserForCurrentSession(updateSession = true)
         }
+        if (check.exceptionOrNull() is RestException) {
+            runCatching { client.auth.signOut() }
+            return false
+        }
+        return true
+    }
 
-        client.auth.signInAnonymously()
+    /** E-Mail-Adresse des angemeldeten Kontos. */
+    fun currentEmail(): String? = client.auth.currentUserOrNull()?.email
+
+    /**
+     * Legt ein Konto an. Die Bestaetigung ist auf dem Server Pflicht: Es gibt
+     * danach noch keine Sitzung, erst der Code aus der Mail schaltet sie frei.
+     */
+    suspend fun signUp(email: String, password: String) {
+        authCall {
+            client.auth.signUpWith(Email) {
+                this.email = email
+                this.password = password
+            }
+        }
+    }
+
+    suspend fun signIn(email: String, password: String) {
+        authCall {
+            client.auth.signInWith(Email) {
+                this.email = email
+                this.password = password
+            }
+        }
+    }
+
+    /** Bestaetigt die Adresse mit dem Code aus der Mail; danach besteht eine Sitzung. */
+    suspend fun confirmEmail(email: String, code: String) {
+        authCall {
+            client.auth.verifyEmailOtp(
+                type = OtpType.Email.SIGNUP,
+                email = email,
+                token = code.trim(),
+            )
+        }
+    }
+
+    suspend fun resendCode(email: String) {
+        authCall { client.auth.resendEmail(OtpType.Email.SIGNUP, email) }
+    }
+
+    /** Schickt die Mail zum Zuruecksetzen des Passworts. */
+    suspend fun sendPasswordReset(email: String) {
+        authCall { client.auth.resetPasswordForEmail(email) }
+    }
+
+    suspend fun signOut() {
+        runCatching { client.auth.signOut() }
+    }
+
+    /**
+     * Uebersetzt die Meldungen des Anmeldedienstes. Sie sind englisch und
+     * technisch, landen aber unveraendert auf dem Bildschirm.
+     */
+    private suspend fun authCall(block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (e: RestException) {
+            val raw = (e.message ?: "").lowercase()
+            val friendly = when {
+                "invalid login" in raw || "invalid_credentials" in raw ->
+                    "E-Mail oder Passwort stimmt nicht."
+                "not confirmed" in raw || "email_not_confirmed" in raw ->
+                    UNCONFIRMED
+                "already registered" in raw || "user_already_exists" in raw ->
+                    "Für diese Adresse gibt es schon ein Konto - melde dich an."
+                "at least" in raw || "weak_password" in raw ->
+                    "Das Passwort braucht mindestens 8 Zeichen."
+                "expired" in raw || "invalid" in raw && "token" in raw || "otp_expired" in raw ->
+                    "Der Code ist abgelaufen oder falsch. Fordere einen neuen an."
+                "rate limit" in raw || "over_email_send_rate" in raw ->
+                    "Zu viele Mails in kurzer Zeit - bitte kurz warten."
+                "invalid email" in raw || "validation_failed" in raw ->
+                    "Das ist keine gültige E-Mail-Adresse."
+                else -> "Anmeldung fehlgeschlagen: ${e.message}"
+            }
+            throw AuthException(friendly)
+        }
+    }
+
+    companion object {
+        /** Kennung dafuer, dass das Konto existiert, aber die Adresse noch unbestaetigt ist. */
+        const val UNCONFIRMED = "E-Mail-Adresse noch nicht bestätigt"
     }
 
     /**
@@ -142,7 +226,7 @@ class MatchdayBackend {
      * beides in einem Rutsch, damit keine Gruppe ohne Mitglied entstehen kann.
      */
     suspend fun createGroup(groupName: String, displayName: String, colorArgb: Long): GroupMembership {
-        signInIfNeeded()
+        ensureFreshSession()
         val created = client.postgrest.rpc(
             function = "create_group",
             parameters = JsonObject(
@@ -166,7 +250,7 @@ class MatchdayBackend {
 
     /** Tritt einer bestehenden Gruppe per Einladungscode bei. */
     suspend fun joinGroup(code: String, displayName: String, colorArgb: Long): GroupMembership {
-        signInIfNeeded()
+        ensureFreshSession()
         val groupId = client.postgrest.rpc(
             function = "join_group",
             parameters = JsonObject(

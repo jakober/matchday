@@ -1,6 +1,13 @@
 package com.jakober.matchday
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import com.jakober.matchday.domain.Profile
+import com.jakober.matchday.ui.auth.AuthScreen
+import com.jakober.matchday.ui.auth.CodeScreen
 import com.jakober.matchday.ui.components.SystemBackHandler
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -9,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
@@ -53,21 +61,145 @@ fun App() {
     }
 
     MatchdayTheme {
+        val auth by Container.auth.collectAsState()
         val profile by Container.store.profile.collectAsState()
+        val membership by Container.store.membership.collectAsState()
 
-        if (profile == null) {
-            OnboardingScreen(
-                onDone = { newProfile ->
-                    Container.store.saveProfile(newProfile)
-                    // Beim ersten Start gleich nach der Erlaubnis fragen -
-                    // ohne sie waeren alle Erinnerungen wirkungslos.
-                    Container.requestNotificationPermission()
-                },
-            )
-        } else {
-            Root()
+        LaunchedEffect(Unit) { Container.startSession() }
+
+        // Vier Tore, in dieser Reihenfolge: Konto, Profil, Gruppe, App. Ohne
+        // Gruppe gibt es nichts zu sehen - die Kalender gehoeren der Gruppe.
+        when (val state = auth) {
+            AuthState.Loading -> LoadingScreen()
+            AuthState.SignedOut -> AuthFlow()
+            is AuthState.AwaitingCode -> CodeFlow(state.email)
+            AuthState.SignedIn -> when {
+                profile == null -> OnboardingScreen(
+                    onDone = { newProfile ->
+                        Container.store.saveProfile(newProfile)
+                        // Beim ersten Start gleich nach der Erlaubnis fragen -
+                        // ohne sie waeren alle Erinnerungen wirkungslos.
+                        Container.requestNotificationPermission()
+                    },
+                )
+                membership == null -> GroupGate(profile!!)
+                else -> Root()
+            }
         }
     }
+}
+
+@Composable
+private fun LoadingScreen() {
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        CircularProgressIndicator()
+    }
+}
+
+/** Anmelden und Registrieren, mit dem Zustand, den der Bildschirm braucht. */
+@Composable
+private fun AuthFlow() {
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var notice by remember { mutableStateOf<String?>(null) }
+
+    fun run(block: suspend () -> Result<Unit>, onOk: () -> Unit = {}) {
+        busy = true
+        error = null
+        notice = null
+        scope.launch {
+            block().onSuccess { onOk() }.onFailure { error = it.message ?: "Fehlgeschlagen" }
+            busy = false
+        }
+    }
+
+    AuthScreen(
+        busy = busy,
+        error = error,
+        notice = notice,
+        onSignIn = { email, password -> run({ Container.signIn(email, password) }) },
+        onSignUp = { name, email, password -> run({ Container.signUp(name, email, password) }) },
+        onForgotPassword = { email ->
+            run({ Container.sendPasswordReset(email) }) {
+                notice = "Eine Mail zum Zurücksetzen ist unterwegs an $email."
+            }
+        },
+    )
+}
+
+/** Bestaetigungscode aus der Mail. */
+@Composable
+private fun CodeFlow(email: String) {
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var notice by remember { mutableStateOf<String?>(null) }
+
+    CodeScreen(
+        email = email,
+        busy = busy,
+        error = error,
+        notice = notice,
+        onConfirm = { code ->
+            busy = true
+            error = null
+            scope.launch {
+                Container.confirmEmail(email, code)
+                    .onSuccess { Container.requestNotificationPermission() }
+                    .onFailure { error = it.message ?: "Bestätigung fehlgeschlagen" }
+                busy = false
+            }
+        },
+        onResend = {
+            busy = true
+            error = null
+            notice = null
+            scope.launch {
+                Container.resendCode(email)
+                    .onSuccess { notice = "Ein neuer Code ist unterwegs." }
+                    .onFailure { error = it.message ?: "Senden fehlgeschlagen" }
+                busy = false
+            }
+        },
+        onCancel = { Container.cancelSignUp() },
+    )
+}
+
+/**
+ * Ohne Gruppe geht es nicht weiter: anlegen oder mit Code beitreten. Der
+ * einzige andere Ausweg ist das Abmelden.
+ */
+@Composable
+private fun GroupGate(profile: Profile) {
+    val busy by Container.groupBusy.collectAsState()
+    val membershipLost by Container.membershipLost.collectAsState()
+    var error by remember { mutableStateOf<String?>(null) }
+
+    GroupScreen(
+        membership = null,
+        members = emptyList(),
+        busy = busy,
+        error = error ?: if (membershipLost) {
+            "Du bist nicht mehr Mitglied deiner bisherigen Gruppe. Lege eine neue an oder lass dich neu einladen."
+        } else {
+            null
+        },
+        invite = null,
+        onCreate = { name ->
+            error = null
+            Container.createGroup(name, profile) { error = it }
+        },
+        onJoin = { code ->
+            error = null
+            Container.joinGroup(code, profile) { error = it }
+        },
+        onCreateInvite = { _, _ -> },
+        onRemoveMember = {},
+        onLeave = {},
+        onBack = {},
+        onSignOut = { Container.signOut() },
+    )
 }
 
 @Composable
@@ -91,7 +223,9 @@ private fun Root() {
     var view by remember { mutableStateOf(HomeView.LIST) }
     var selected by remember { mutableStateOf<Match?>(null) }
     var syncing by remember { mutableStateOf(false) }
-    var groupBusy by remember { mutableStateOf(false) }
+    val groupBusy by Container.groupBusy.collectAsState()
+    var inviteBusy by remember { mutableStateOf(false) }
+    var accountNotice by remember { mutableStateOf<String?>(null) }
     var groupError by remember { mutableStateOf<String?>(null) }
     var invite by remember { mutableStateOf<InviteResult?>(null) }
     var importantError by remember { mutableStateOf<String?>(null) }
@@ -116,9 +250,6 @@ private fun Root() {
         // Wiederkehrenden Abgleich einrichten, damit verlegte Anstosszeiten
         // auch ankommen, wenn die App laenger nicht geoeffnet wird.
         Container.backgroundSync.schedulePeriodic()
-        // Anonyme Anmeldung: gibt dem Geraet eine dauerhafte Kennung, ohne
-        // dass jemand ein Konto anlegen muss.
-        runCatching { Container.backend.signInIfNeeded() }
         deviceId = Container.backend.currentUserId()
         syncing = true
         // Erst die Mitgliedschaft, dann die Kalender der Gruppe, dann die
@@ -293,13 +424,26 @@ private fun Root() {
             },
             onOpenSubscriptions = { screen = Screen.TEAMS },
             onOpenGroup = { screen = Screen.GROUP },
+            email = Container.backend.currentEmail(),
+            accountNotice = accountNotice,
+            onChangePassword = {
+                val email = Container.backend.currentEmail()
+                if (email != null) {
+                    scope.launch {
+                        Container.sendPasswordReset(email)
+                            .onSuccess { accountNotice = "Eine Mail zum Ändern des Passworts ist unterwegs an $email." }
+                            .onFailure { accountNotice = it.message }
+                    }
+                }
+            },
+            onSignOut = { Container.signOut() },
             onBack = { screen = Screen.HOME },
         )
 
         Screen.GROUP -> GroupScreen(
             membership = membership,
             members = groupSnapshot.members,
-            busy = groupBusy,
+            busy = groupBusy || inviteBusy,
             error = groupError ?: if (membershipLost) {
                 "Deine bisherige Gruppe gehört zu einer früheren Installation der App " +
                     "und ist nicht mehr erreichbar. Lege eine neue an oder lass dich neu einladen."
@@ -307,62 +451,19 @@ private fun Root() {
                 null
             },
             onCreate = { name ->
-                groupBusy = true
                 groupError = null
-                Container.acknowledgeMembershipLoss()
-                scope.launch {
-                    runCatching {
-                        Container.backend.createGroup(
-                            groupName = name,
-                            displayName = activeProfile.name,
-                            colorArgb = activeProfile.colorArgb,
-                        )
-                    }
-                        .onSuccess {
-                            Container.store.saveMembership(it)
-                            // Was vor dem Beitritt lokal beantwortet wurde,
-                            // soll die Gruppe auch sehen.
-                            Container.pushLocalRsvps()
-                            Container.uploadPushToken()
-                            Container.refreshGroup()
-                            // Die Kalender der Gruppe uebernehmen und gleich laden.
-                            Container.refreshCalendars()
-                            Container.syncAll()
-                        }
-                        .onFailure { groupError = it.message ?: "Anlegen fehlgeschlagen" }
-                    groupBusy = false
-                }
+                Container.createGroup(name, activeProfile) { groupError = it }
             },
             onJoin = { code ->
-                groupBusy = true
                 groupError = null
-                Container.acknowledgeMembershipLoss()
-                scope.launch {
-                    runCatching {
-                        Container.backend.joinGroup(
-                            code = code,
-                            displayName = activeProfile.name,
-                            colorArgb = activeProfile.colorArgb,
-                        )
-                    }
-                        .onSuccess {
-                            Container.store.saveMembership(it)
-                            Container.pushLocalRsvps()
-                            Container.uploadPushToken()
-                            Container.refreshGroup()
-                            Container.refreshCalendars()
-                            Container.syncAll()
-                        }
-                        .onFailure { groupError = it.message ?: "Code nicht gefunden" }
-                    groupBusy = false
-                }
+                Container.joinGroup(code, activeProfile) { groupError = it }
             },
             // Der Parameter heisst bewusst nicht "scope" - das waere der
             // CoroutineScope von oben und wuerde verdeckt.
             onCreateInvite = { visibility, email ->
                 val groupId = membership?.groupId
                 if (groupId != null) {
-                    groupBusy = true
+                    inviteBusy = true
                     groupError = null
                     invite = null
                     scope.launch {
@@ -378,7 +479,7 @@ private fun Root() {
                             .onFailure {
                                 groupError = it.message ?: "Einladung fehlgeschlagen"
                             }
-                        groupBusy = false
+                        inviteBusy = false
                     }
                 }
             },

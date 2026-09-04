@@ -78,15 +78,27 @@ fun GroupScreen(
     onRemoveMember: (MemberDto) -> Unit,
     onLeave: () -> Unit,
     onBack: () -> Unit,
+    /**
+     * Gesetzt, wenn der Bildschirm als Tor dient - ohne Gruppe geht es
+     * nicht weiter, und statt "zurueck" gibt es nur "abmelden".
+     */
+    onSignOut: (() -> Unit)? = null,
 ) {
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Gruppe") },
+                title = { Text(if (onSignOut != null) "Deine Gruppe" else "Gruppe") },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                    if (onSignOut == null) {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        }
+                    }
+                },
+                actions = {
+                    if (onSignOut != null) {
+                        TextButton(onClick = onSignOut) { Text("Abmelden") }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -134,7 +146,8 @@ private fun NoGroup(
 
     Spacer(Modifier.height(8.dp))
     Text(
-        text = "Ohne Gruppe bleibt deine Zusage nur auf diesem Gerät. In einer Gruppe sehen alle, wer zu einem Spiel mitkommt.",
+        text = "Matchday lebt von der Gruppe: Ihr teilt die Kalender und seht, wer zu einem Spiel mitkommt. " +
+            "Lege eine Gruppe an oder tritt mit einem Einladungscode bei.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

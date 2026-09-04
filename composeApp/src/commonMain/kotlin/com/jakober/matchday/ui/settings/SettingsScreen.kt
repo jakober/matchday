@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -71,6 +72,11 @@ fun SettingsScreen(
     onRemindersChange: (ReminderSettings) -> Unit,
     onOpenSubscriptions: () -> Unit,
     onOpenGroup: () -> Unit,
+    /** Adresse des Kontos; null, solange die Sitzung nicht geladen ist. */
+    email: String?,
+    accountNotice: String?,
+    onChangePassword: () -> Unit,
+    onSignOut: () -> Unit,
     onBack: () -> Unit,
 ) {
     var name by remember { mutableStateOf(profile.name) }
@@ -130,6 +136,15 @@ fun SettingsScreen(
             ColorPicker(
                 selected = profile.colorArgb,
                 onSelect = { onProfileChange(profile.copy(colorArgb = it)) },
+            )
+
+            // -- Konto -------------------------------------------------------
+            SectionLabel("KONTO")
+            AccountSection(
+                email = email,
+                notice = accountNotice,
+                onChangePassword = onChangePassword,
+                onSignOut = onSignOut,
             )
 
             // -- Gruppe ------------------------------------------------------
@@ -335,6 +350,78 @@ private fun StatusLine(ok: Boolean, okText: String, failText: String) {
                 MaterialTheme.colorScheme.onSurface
             } else {
                 MaterialTheme.colorScheme.error
+            },
+        )
+    }
+}
+
+/**
+ * Konto: Adresse, Passwort aendern, Abmelden. Das Passwort wird per Mail
+ * geaendert - ein Formular hier muesste das alte Passwort pruefen, und das
+ * kann nur der Server; die Mail ist derselbe Weg wie "Passwort vergessen".
+ */
+@Composable
+private fun AccountSection(
+    email: String?,
+    notice: String?,
+    onChangePassword: () -> Unit,
+    onSignOut: () -> Unit,
+) {
+    var confirmSignOut by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(CardCorner))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(CardCorner))
+            .padding(16.dp),
+    ) {
+        Text(
+            text = email ?: "Nicht angemeldet",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        notice?.let {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Spacer(Modifier.height(6.dp))
+        Row {
+            TextButton(onClick = onChangePassword, enabled = email != null) {
+                Text("Passwort ändern")
+            }
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = { confirmSignOut = true }) {
+                Text("Abmelden", color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+
+    if (confirmSignOut) {
+        AlertDialog(
+            onDismissRequest = { confirmSignOut = false },
+            title = { Text("Abmelden?") },
+            text = {
+                Text(
+                    "Deine Gruppe und deine Zusagen bleiben in deinem Konto erhalten. " +
+                        "Auf diesem Gerät wird alles entfernt, bis du dich wieder anmeldest."
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmSignOut = false
+                    onSignOut()
+                }) {
+                    Text("Abmelden", color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmSignOut = false }) { Text("Abbrechen") }
             },
         )
     }

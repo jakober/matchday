@@ -72,6 +72,22 @@ class MatchdayStore(private val settings: Settings) {
         settings.remove(KEY_MEMBERSHIP)
     }
 
+    /**
+     * Beim Abmelden: alles weg, was zu diesem Konto gehoert. Auf demselben
+     * Geraet kann sich als naechstes jemand anderes anmelden - der darf weder
+     * fremde Zusagen noch eine fremde Gruppe vorfinden.
+     */
+    fun clearAll() {
+        _membership.value = null
+        _subscriptions.value = emptyList()
+        _matches.value = emptyList()
+        _rsvps.value = emptyMap()
+        _profile.value = null
+        for (key in listOf(KEY_MEMBERSHIP, KEY_SUBSCRIPTIONS, KEY_MATCHES, KEY_RSVPS, KEY_PROFILE, KEY_SNAPSHOT, KEY_LOGOS)) {
+            settings.remove(key)
+        }
+    }
+
     // -- Profil -------------------------------------------------------------
 
     fun saveProfile(profile: Profile) {
