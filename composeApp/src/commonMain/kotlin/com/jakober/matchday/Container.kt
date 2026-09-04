@@ -283,13 +283,21 @@ object Container {
     fun signOut() {
         scope.launch {
             backend.signOut()
-            store.clearAll()
-            _group.value = GroupSnapshot()
-            _logos.value = emptyMap()
-            _pushState.value = PushState.UNKNOWN
-            scheduler.replaceAll(emptyList())
-            _auth.value = AuthState.SignedOut
+            clearLocal()
         }
+    }
+
+    /** Konto auf dem Server loeschen; danach wie nach dem Abmelden. */
+    suspend fun deleteAccount(): Result<Unit> =
+        runCatching { backend.deleteAccount() }.onSuccess { clearLocal() }
+
+    private fun clearLocal() {
+        store.clearAll()
+        _group.value = GroupSnapshot()
+        _logos.value = emptyMap()
+        _pushState.value = PushState.UNKNOWN
+        scheduler.replaceAll(emptyList())
+        _auth.value = AuthState.SignedOut
     }
 
     private var pendingName: String? = null

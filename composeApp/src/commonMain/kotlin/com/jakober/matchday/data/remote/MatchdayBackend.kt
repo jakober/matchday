@@ -219,6 +219,21 @@ class MatchdayBackend {
     }
 
     /**
+     * Loescht das Konto auf dem Server. Beide Stores verlangen das fuer
+     * jede App mit Registrierung. Die Function loescht den Nutzer, an dem
+     * das Token haengt; die Datenbank raeumt den Rest per Cascade weg.
+     */
+    suspend fun deleteAccount() {
+        ensureFreshSession()
+        val response = client.functions.invoke(function = "account-delete")
+        val body = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+        if (body["ok"]?.jsonPrimitive?.booleanOrNull != true) {
+            throw IllegalStateException(body["error"]?.jsonPrimitive?.contentOrNull ?: S.errServerNoAnswer)
+        }
+        runCatching { client.auth.signOut() }
+    }
+
+    /**
      * Uebersetzt die Meldungen des Anmeldedienstes. Sie sind englisch und
      * technisch, landen aber unveraendert auf dem Bildschirm.
      */

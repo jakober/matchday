@@ -49,3 +49,6 @@ supabase/.temp/
 
 # Erzeugt von supabase/deploy-db.sh aus den Migrationsdateien.
 supabase/functions/db-setup/migrations.generated.ts
+
+# Signierte Store-Pakete: gross und lokal erzeugt
+store/out/release/

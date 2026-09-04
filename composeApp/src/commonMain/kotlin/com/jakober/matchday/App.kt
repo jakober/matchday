@@ -548,6 +548,11 @@ private fun Root() {
                 }
             },
             onSignOut = { Container.signOut() },
+            onDeleteAccount = {
+                scope.launch {
+                    Container.deleteAccount().onFailure { accountNotice = it.message }
+                }
+            },
             onBack = { screen = Screen.HOME },
         )
 

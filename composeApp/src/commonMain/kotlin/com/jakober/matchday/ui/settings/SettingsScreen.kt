@@ -82,6 +82,7 @@ fun SettingsScreen(
     /** Neues Passwort; die Sitzung besteht, also braucht es das alte nicht. */
     onChangePassword: (String) -> Unit,
     onSignOut: () -> Unit,
+    onDeleteAccount: () -> Unit,
     onBack: () -> Unit,
 ) {
     var name by remember { mutableStateOf(profile.name) }
@@ -150,6 +151,7 @@ fun SettingsScreen(
                 notice = accountNotice,
                 onChangePassword = onChangePassword,
                 onSignOut = onSignOut,
+                onDeleteAccount = onDeleteAccount,
             )
 
             // -- Gruppe ------------------------------------------------------
@@ -370,8 +372,10 @@ private fun AccountSection(
     notice: String?,
     onChangePassword: (String) -> Unit,
     onSignOut: () -> Unit,
+    onDeleteAccount: () -> Unit,
 ) {
     var confirmSignOut by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf(false) }
     var passwordDialog by remember { mutableStateOf(false) }
     var newPassword by remember { mutableStateOf("") }
 
@@ -438,6 +442,30 @@ private fun AccountSection(
                 Text(S.signOut, color = MaterialTheme.colorScheme.error)
             }
         }
+        // Pflicht in beiden Stores: Wer ein Konto anlegen kann, muss es in
+        // der App auch loeschen koennen - nicht nur per Mail an den Betreiber.
+        TextButton(onClick = { confirmDelete = true }, enabled = email != null) {
+            Text(S.deleteAccount, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+
+    if (confirmDelete) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text(S.deleteAccountQuestion) },
+            text = { Text(S.deleteAccountText) },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    onDeleteAccount()
+                }) {
+                    Text(S.deleteAccount, color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDelete = false }) { Text(S.cancel) }
+            },
+        )
     }
 
     if (confirmSignOut) {

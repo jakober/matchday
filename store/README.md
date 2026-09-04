@@ -93,14 +93,15 @@ Store-Größen und schreibt oben eine kurze Zeile dazu.
 | Geräte-Kennung für Push | ja | Benachrichtigungen | ja | nein |
 | Standort, Kontakte, Fotos, Nutzungsdaten, Diagnosedaten | nein | – | – | – |
 
-Verschlüsselung bei der Übertragung: ja (HTTPS). Löschung auf Anfrage: ja
-(E-Mail an den Betreiber; Abmelden in der App entfernt lokale Daten).
+Verschlüsselung bei der Übertragung: ja (HTTPS). Löschung: **in der App**
+(Einstellungen → Konto → Konto löschen) und per Web-Adresse - Google verlangt
+beides: https://jakober.github.io/matchday/konto-loeschen.html
 Kein Verkauf, keine Weitergabe zu Werbezwecken.
 
 ## Was noch fehlt, bevor eingereicht werden kann
 
 - [ ] Demo-Konto anlegen und in eine Gruppe mit Inhalt bringen
-- [ ] Screenshots aufnehmen (5 je Plattform) und mit `frame.py` rahmen
-- [ ] Play: Upload-Keystore erzeugen, als Secret hinterlegen, Release-Workflow
+- [x] Screenshots (liegen in `out/`)
+- [x] Play: Upload-Keystore (`store/upload-key.ps1`, liegt in `~/.matchday` - sichern!), Release-Build `./gradlew :composeApp:bundleRelease`
 - [ ] Play: Entwicklerkonto, geschlossener Test (12 Tester, 14 Tage)
 - [ ] Apple: Name im App-Eintrag ändern, Datenschutz-Angaben ausfüllen

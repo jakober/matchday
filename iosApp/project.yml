@@ -61,7 +61,7 @@ targets:
         # Massgebliche Versionsnummer. Der TestFlight-Ablauf liest sie hier,
         # wenn beim Auslösen keine angegeben wird - also bei jedem Lauf nach
         # Zeitplan. Bei neuen Funktionen hier hochzaehlen.
-        MARKETING_VERSION: "0.34"
+        MARKETING_VERSION: "0.35"
         CURRENT_PROJECT_VERSION: "1"
         # Nur iPhone: Fuer den Store entfallen damit iPad-Screenshots und
         # die Pruefung auf dem iPad. Die App ist fuers Handy gedacht.

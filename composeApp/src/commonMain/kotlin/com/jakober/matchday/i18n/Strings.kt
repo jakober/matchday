@@ -213,6 +213,9 @@ interface Strings {
     val signOut: String
     val signOutQuestion: String
     val signOutText: String
+    val deleteAccount: String
+    val deleteAccountQuestion: String
+    val deleteAccountText: String
     fun daysShort(n: Int): String
     fun hoursShort(n: Int): String
     fun minutesShort(n: Int): String
@@ -474,6 +477,9 @@ object De : Strings {
     override val signOut = "Abmelden"
     override val signOutQuestion = "Abmelden?"
     override val signOutText = "Deine Gruppe und deine Zusagen bleiben in deinem Konto erhalten. Auf diesem Gerät wird alles entfernt, bis du dich wieder anmeldest."
+    override val deleteAccount = "Konto löschen"
+    override val deleteAccountQuestion = "Konto endgültig löschen?"
+    override val deleteAccountText = "E-Mail-Adresse, Name, Zusagen und Gruppenmitgliedschaften werden sofort und dauerhaft gelöscht. Das lässt sich nicht rückgängig machen."
     override fun daysShort(n: Int) = "$n Tag"
     override fun hoursShort(n: Int) = "$n Std"
     override fun minutesShort(n: Int) = "$n Min"
@@ -732,6 +738,9 @@ object En : Strings {
     override val signOut = "Sign out"
     override val signOutQuestion = "Sign out?"
     override val signOutText = "Your group and your answers stay in your account. Everything is removed from this device until you sign in again."
+    override val deleteAccount = "Delete account"
+    override val deleteAccountQuestion = "Delete account permanently?"
+    override val deleteAccountText = "E-mail address, name, answers and group memberships are deleted immediately and permanently. This cannot be undone."
     override fun daysShort(n: Int) = "$n d"
     override fun hoursShort(n: Int) = "$n h"
     override fun minutesShort(n: Int) = "$n min"
