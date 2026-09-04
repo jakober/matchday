@@ -244,9 +244,11 @@ otp_expiry = 3600
 
 # Eigene Vorlagen: Die App verlangt einen sechsstelligen Code ({{ .Token }}),
 # die Standardvorlagen schicken einen Link.
-# Solange kein eigener SMTP-Anbieter eingetragen ist, lehnt Supabase eigene
-# Vorlagen ab (Free Tier). Sobald Brevo als SMTP im Dashboard steht: die
-# sechs Zeilen einkommentieren und "supabase config push" ausfuehren.
+# ACHTUNG: SMTP (Brevo) und die Mailvorlagen mit {{ .Token }} sind im
+# Dashboard gesetzt, nicht hier. "supabase config push" wuerde beides mit dem
+# Stand dieser Datei ueberschreiben - also NICHT mehr ausfuehren, solange der
+# SMTP-Block unten auskommentiert ist. Die Vorlagen liegen zur Ansicht unter
+# supabase/templates/.
 # [auth.email.template.confirmation]
 # subject = "Dein Matchday-Code"
 # content_path = "./supabase/templates/confirmation.html"
