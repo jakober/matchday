@@ -148,9 +148,9 @@ Testen → Geschlossener Test → Track anlegen:
 - Länder/Regionen: **Alle Länder und Regionen hinzufügen** (die Tester sind international)
 
 Neuen Release erstellen:
-- App Bundle hochladen: C:\Users\jakober\matchday\store\out\release\matchday-0.37.aab
+- App Bundle hochladen: C:\Users\jakober\matchday\store\out\release\matchday-0.38.aab
 - Falls die Console nach Play App Signing fragt: „Von Google generierten Schlüssel verwenden" bzw. die Standardeinstellung bestätigen
-- Release-Name: 0.37
+- Release-Name: 0.38
 - Versionshinweise de-DE: Erste Testversion.
 - Versionshinweise en-US: First test release.
 - Release prüfen → Einführung starten (Veröffentlichung im geschlossenen Test)
