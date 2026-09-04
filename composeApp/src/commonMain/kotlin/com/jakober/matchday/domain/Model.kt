@@ -3,18 +3,40 @@ package com.jakober.matchday.domain
 import kotlinx.datetime.Instant
 import kotlinx.serialization.Serializable
 
-/** Ein abonnierter Kalender, z.B. der Spielplan eines Vereins. */
+/**
+ * Ein abonnierter Kalender, z.B. der Spielplan eines Vereins oder einer Liga.
+ *
+ * Die Id ist die Kennung des Kalenders in der Gruppe (calendars.id). Aus ihr
+ * wird die Spiel-Id gebildet, und die muss auf allen Geraeten gleich sein,
+ * damit sich Zusagen ueberhaupt zuordnen lassen. Deshalb vergibt sie der
+ * Server, nicht das Geraet.
+ */
 @Serializable
 data class Subscription(
     val id: String,
     val name: String,
     /** ICS-Adresse. webcal:// wird beim Abruf auf https:// gemappt. */
     val url: String,
-    /** Vereinsfarbe als ARGB-Wert, faerbt die Markierung in Liste und Kalender. */
+    /** Farbe als ARGB-Wert, faerbt die Markierung in Liste und Kalender. */
     val colorArgb: Long,
+    /** Abzeichen des Kalenders, sofern der Admin eines hinterlegt hat. */
+    val logoUrl: String? = null,
+    /** Nur auf diesem Geraet: ob die Spiele angezeigt werden. */
     val lastSyncedAt: Instant? = null,
     val enabled: Boolean = true,
-)
+) {
+    /** Bis zu drei Buchstaben fuer das Ersatzabzeichen: "FC Bayern" -> "FB", "Bundesliga" -> "BUN". */
+    val badgeLabel: String
+        get() {
+            val words = name.trim().split(" ").filter { it.isNotEmpty() }
+            val label = if (words.size >= 2) {
+                words.take(3).joinToString("") { it.first().toString() }
+            } else {
+                name.trim().take(3)
+            }
+            return label.uppercase().ifEmpty { "?" }
+        }
+}
 
 /** Ein Spiel, wie es aus einem ICS-Kalender gelesen wurde. */
 @Serializable

@@ -31,11 +31,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.jakober.matchday.data.TeamCatalog
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.MatchMood
 import com.jakober.matchday.domain.Participant
 import com.jakober.matchday.domain.RsvpStatus
+import com.jakober.matchday.domain.Subscription
 import com.jakober.matchday.domain.moodOf
 import com.jakober.matchday.theme.CardCorner
 import com.jakober.matchday.theme.StatusIn
@@ -66,6 +66,8 @@ fun statusLabel(status: RsvpStatus): String = when (status) {
 @Composable
 fun MatchRow(
     match: Match,
+    /** Der Kalender, aus dem das Spiel stammt - fuer das Abzeichen. */
+    subscription: Subscription?,
     status: RsvpStatus,
     participants: List<Participant>,
     isImportant: Boolean = false,
@@ -74,7 +76,6 @@ fun MatchRow(
 ) {
     val dateTime = match.start.local()
     val date = dateTime.date
-    val team = TeamCatalog.byId(match.subscriptionId)
 
     // Umrandung zeigt das Gesamtbild: gruen ab zwei Zusagen, rot bei einer
     // Absage. Kraeftiger als der normale Rahmen, damit man es beim
@@ -118,7 +119,7 @@ fun MatchRow(
                 )
                 Spacer(Modifier.height(4.dp))
             }
-            TeamBadge(team = team, size = 38.dp)
+            TeamBadge(subscription = subscription, size = 38.dp)
         }
 
         Column(

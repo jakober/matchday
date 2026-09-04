@@ -89,18 +89,15 @@ object Container {
         // Ohne gueltiges Token antwortet die Datenbank mit leeren Listen statt
         // mit einem Fehler - das duerfen wir nicht fuer den neuen Stand halten.
         if (!backend.ensureFreshSession()) return
-        // Kalender-Id zurueck auf die Mannschaft abbilden, damit sich die
-        // Markierungen den lokalen Spielen zuordnen lassen.
-        val teamByCalendar = membership.calendarIds.entries.associate { (team, cal) -> cal to team }
 
         runCatching {
             GroupSnapshot(
                 members = backend.members(membership.groupId),
                 rsvps = backend.rsvps(membership.groupId),
+                // Die lokale Spiel-Id ist Kalender-Id plus Termin-UID - genau
+                // die Felder, unter denen der Server die Markierung fuehrt.
                 importantMatchIds = backend.importantMatches(membership.groupId)
-                    .mapNotNull { entry ->
-                        teamByCalendar[entry.calendarId]?.let { team -> "$team#${entry.matchUid}" }
-                    }
+                    .map { "${it.calendarId}#${it.matchUid}" }
                     .toSet(),
             )
         }.onSuccess { fresh ->
@@ -148,6 +145,34 @@ object Container {
             .onSuccess { store.saveMembership(it) }
     }
 
+    /**
+     * Holt die Kalender der Gruppe und uebernimmt sie in die Abo-Liste.
+     *
+     * Eine leere Antwort wird nur geglaubt, wenn die Mitgliedschaft
+     * ausdruecklich bestaetigt ist: Ohne gueltige Anmeldung liefert die
+     * Datenbank ebenfalls eine leere Liste, und die wuerde hier alle Abos
+     * samt Spielen und Zusagen loeschen.
+     */
+    suspend fun refreshCalendars() {
+        val membership = store.membership.value ?: return
+        if (!backend.ensureFreshSession()) return
+
+        val calendars = runCatching { backend.calendars(membership.groupId) }.getOrNull() ?: return
+        if (calendars.isEmpty() && backend.isMemberOf(membership.groupId) != true) return
+
+        store.mergeServerSubscriptions(
+            calendars.map { cal ->
+                com.jakober.matchday.domain.Subscription(
+                    id = cal.id,
+                    name = cal.name,
+                    url = cal.url,
+                    colorArgb = cal.color,
+                    logoUrl = cal.logoUrl,
+                )
+            }
+        )
+    }
+
     fun toggleImportant(matchId: String, onError: (String) -> Unit = {}) {
         val parts = splitMatchId(matchId)
         if (parts == null) {
@@ -163,19 +188,8 @@ object Container {
         val title = store.matches.value.firstOrNull { it.id == matchId }?.displayTitle
 
         scope.launch {
-            // Fehlt die Kalenderzuordnung, stammt die gespeicherte
-            // Mitgliedschaft aus einer aelteren Fassung - einmal nachladen
-            // repariert das, statt wortlos nichts zu tun.
-            if (store.membership.value?.calendarIds?.containsKey(parts.first) != true) {
-                refreshMembership()
-            }
-
-            val membership = store.membership.value
-            val calendarId = membership?.calendarIds?.get(parts.first)
-            if (membership == null || calendarId == null) {
-                onError("Kalender der Gruppe nicht gefunden - bitte Gruppe neu betreten")
-                return@launch
-            }
+            val membership = store.membership.value ?: return@launch
+            val calendarId = parts.first
 
             runCatching {
                 if (isImportant) {
@@ -219,7 +233,7 @@ object Container {
 
         val membership = store.membership.value ?: return
         val parts = splitMatchId(matchId) ?: return
-        val calendarId = membership.calendarIds[parts.first] ?: return
+        val calendarId = parts.first
         // Der Titel wandert mit in die Datenbank, damit die Benachrichtigung
         // an die anderen sagen kann, um welches Spiel es geht.
         val title = store.matches.value.firstOrNull { it.id == matchId }?.displayTitle
@@ -308,7 +322,7 @@ object Container {
         scope.launch {
             for ((matchId, rsvp) in local) {
                 val parts = splitMatchId(matchId) ?: continue
-                val calendarId = membership.calendarIds[parts.first] ?: continue
+                val calendarId = parts.first
                 val title = store.matches.value.firstOrNull { it.id == matchId }?.displayTitle
                 runCatching {
                     backend.setRsvp(
@@ -356,6 +370,8 @@ object Container {
     /** Abgleich aller Abos samt anschliessender Neuplanung. */
     fun syncAll(onDone: (List<String>) -> Unit = {}) {
         scope.launch {
+            // Der Admin koennte inzwischen einen Kalender hinzugefuegt haben.
+            refreshCalendars()
             val errors = repository.syncAll()
             rescheduleReminders()
             refreshGroup()

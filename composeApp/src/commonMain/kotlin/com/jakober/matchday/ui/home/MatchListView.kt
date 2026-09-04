@@ -17,6 +17,7 @@ import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.ParticipantsSource
 import com.jakober.matchday.domain.Rsvp
 import com.jakober.matchday.domain.RsvpStatus
+import com.jakober.matchday.domain.Subscription
 import com.jakober.matchday.ui.components.DateText
 import com.jakober.matchday.ui.components.local
 
@@ -32,6 +33,7 @@ fun MatchListView(
     rsvps: Map<String, Rsvp>,
     participantsOf: ParticipantsSource,
     importantIds: Set<String>,
+    subscriptionOf: (String) -> Subscription?,
     onSelect: (Match) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -55,6 +57,7 @@ fun MatchListView(
             items(group, key = { it.id }) { match ->
                 MatchRow(
                     match = match,
+                    subscription = subscriptionOf(match.subscriptionId),
                     status = rsvps[match.id]?.status ?: RsvpStatus.UNDECIDED,
                     participants = participantsOf(match.id),
                     isImportant = match.id in importantIds,

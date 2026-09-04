@@ -41,6 +41,7 @@ import com.jakober.matchday.domain.ParticipantsSource
 import com.jakober.matchday.domain.Profile
 import com.jakober.matchday.domain.Rsvp
 import com.jakober.matchday.domain.RsvpStatus
+import com.jakober.matchday.domain.Subscription
 import com.jakober.matchday.theme.ChipCorner
 import com.jakober.matchday.ui.components.Avatar
 
@@ -61,6 +62,7 @@ fun HomeScreen(
     participantsOf: ParticipantsSource,
     importantIds: Set<String>,
     accentOf: (Match) -> Color,
+    subscriptionOf: (String) -> Subscription?,
     onViewChange: (HomeView) -> Unit,
     onSelect: (Match) -> Unit,
     onOpenSubscriptions: () -> Unit,
@@ -86,7 +88,7 @@ fun HomeScreen(
                         }
                     }
                     IconButton(onClick = onOpenSubscriptions) {
-                        Icon(Icons.Filled.Add, contentDescription = "Mannschaften")
+                        Icon(Icons.Filled.Add, contentDescription = "Kalender")
                     }
                     IconButton(onClick = onOpenSettings) {
                         Avatar(profile = profile, size = 32.dp)
@@ -111,9 +113,9 @@ fun HomeScreen(
 
             when {
                 !hasSubscriptions -> EmptyState(
-                    title = "Keine Mannschaft gewählt",
-                    body = "Wähle Bayern München oder die Nationalmannschaft, dann stehen alle Termine automatisch hier drin.",
-                    actionLabel = "Mannschaft wählen",
+                    title = "Noch kein Kalender",
+                    body = "Der Admin eurer Gruppe fügt Kalender hinzu - zum Beispiel den Spielplan der Bundesliga. Danach stehen alle Termine automatisch hier.",
+                    actionLabel = "Kalender ansehen",
                     onAction = onOpenSubscriptions,
                 )
 
@@ -138,6 +140,7 @@ fun HomeScreen(
                             rsvps = rsvps,
                             participantsOf = participantsOf,
                             importantIds = importantIds,
+                            subscriptionOf = subscriptionOf,
                             onSelect = onSelect,
                         )
 
@@ -147,6 +150,7 @@ fun HomeScreen(
                             participantsOf = participantsOf,
                             importantIds = importantIds,
                             accentOf = accentOf,
+                            subscriptionOf = subscriptionOf,
                             onSelect = onSelect,
                         )
                     }

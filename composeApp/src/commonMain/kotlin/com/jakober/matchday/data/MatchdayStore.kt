@@ -32,7 +32,7 @@ class MatchdayStore(private val settings: Settings) {
     private val _profile = MutableStateFlow(load<Profile>(KEY_PROFILE))
     val profile: StateFlow<Profile?> = _profile.asStateFlow()
 
-    private val _subscriptions = MutableStateFlow(loadOrSeedSubscriptions())
+    private val _subscriptions = MutableStateFlow(loadList<Subscription>(KEY_SUBSCRIPTIONS))
     val subscriptions: StateFlow<List<Subscription>> = _subscriptions.asStateFlow()
 
     private val _matches = MutableStateFlow(loadList<Match>(KEY_MATCHES))
@@ -81,17 +81,32 @@ class MatchdayStore(private val settings: Settings) {
     // -- Abos ---------------------------------------------------------------
 
     /**
-     * Beim allerersten Start werden die fest hinterlegten Mannschaften
-     * eingetragen. Der Merker verhindert, dass sie wieder auftauchen, wenn der
-     * Nutzer beide abwaehlt.
+     * Uebernimmt die Kalender der Gruppe in die lokale Abo-Liste.
+     *
+     * Der Server bestimmt, welche Kalender es gibt, wie sie heissen und
+     * aussehen. Ob ein Abo auf diesem Geraet eingeschaltet ist und wann es
+     * zuletzt geladen wurde, bleibt lokal - sonst schaltete jeder Abgleich die
+     * Abwahl eines Mitglieds wieder ein.
+     *
+     * Die Liste bleibt lokal gespeichert, statt bei Bedarf abgefragt zu werden:
+     * Der Hintergrundabgleich laeuft ohne Sitzungspruefung und saehe bei
+     * abgelaufenem Token sonst "keine Abos".
      */
-    private fun loadOrSeedSubscriptions(): List<Subscription> {
-        val stored = loadList<Subscription>(KEY_SUBSCRIPTIONS)
-        if (stored.isNotEmpty() || settings.getBoolean(KEY_SEEDED, false)) return stored
-        val seeded = TeamCatalog.defaultSubscriptions()
-        settings.putBoolean(KEY_SEEDED, true)
-        settings.putString(KEY_SUBSCRIPTIONS, json.encodeToString(seeded))
-        return seeded
+    fun mergeServerSubscriptions(server: List<Subscription>) {
+        val local = _subscriptions.value.associateBy { it.id }
+
+        // Was der Admin entfernt hat, verschwindet samt Spielen und Zusagen -
+        // die Zusagen dazu gibt es serverseitig ohnehin nicht mehr.
+        val serverIds = server.map { it.id }.toSet()
+        for (id in local.keys - serverIds) removeSubscription(id)
+
+        updateSubscriptions(
+            server.map { remote ->
+                val known = local[remote.id]
+                if (known == null) remote
+                else remote.copy(enabled = known.enabled, lastSyncedAt = known.lastSyncedAt)
+            }
+        )
     }
 
     /** Schaltet eine Mannschaft an oder ab. */
@@ -209,7 +224,6 @@ class MatchdayStore(private val settings: Settings) {
         const val KEY_MATCHES = "matches"
         const val KEY_RSVPS = "rsvps"
         const val KEY_REMINDERS = "reminders"
-        const val KEY_SEEDED = "subscriptions_seeded"
         const val KEY_MEMBERSHIP = "membership"
         const val KEY_SNAPSHOT = "group_snapshot"
     }

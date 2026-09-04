@@ -45,6 +45,7 @@ data class CalendarDto(
     val name: String,
     val url: String,
     val color: Long,
+    @SerialName("logo_url") val logoUrl: String? = null,
 )
 
 @Serializable
@@ -79,6 +80,8 @@ data class NewCalendarDto(
     val name: String,
     val url: String,
     val color: Long,
+    @SerialName("logo_url") val logoUrl: String? = null,
+    @SerialName("created_by") val createdBy: String? = null,
 )
 
 /** Rueckgabe von create_group. */
@@ -95,8 +98,6 @@ data class GroupMembership(
     val memberId: String,
     val inviteCode: String,
     val groupName: String,
-    /** Kalender-Id je Mannschaft, z.B. "fcbayern" -> UUID. */
-    val calendarIds: Map<String, String> = emptyMap(),
     /** Nur der Ersteller der Gruppe darf einladen und Spiele hervorheben. */
     val isAdmin: Boolean = false,
     /** Eigene Sichtbarkeit: "all" oder "important". */

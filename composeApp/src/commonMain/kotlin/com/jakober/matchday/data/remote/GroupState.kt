@@ -57,8 +57,9 @@ fun participantsOfMatch(
         }.orEmpty()
     }
 
-    val (teamId, matchUid) = splitMatchId(matchId) ?: return emptyList()
-    val calendarId = membership.calendarIds[teamId]
+    // Der erste Teil der Spiel-Id ist die Kalender-Id der Gruppe - dieselbe,
+    // unter der die Zusagen in der Datenbank liegen.
+    val (calendarId, matchUid) = splitMatchId(matchId) ?: return emptyList()
 
     val byMember = snapshot.members.associateBy { it.id }
     val remote = snapshot.rsvps
@@ -94,7 +95,10 @@ fun participantsOfMatch(
     return if (own == null) others else others + own
 }
 
-/** Zerlegt "fcbayern#68600e4a1ac72@2.calovo" in Mannschaft und Termin-UID. */
+/**
+ * Zerlegt "3f2a…-uuid#68600e4a1ac72@2.calovo" in Kalender-Id und Termin-UID.
+ * Getrennt wird am ersten #; eine UUID enthaelt keines, die UID darf welche haben.
+ */
 fun splitMatchId(matchId: String): Pair<String, String>? {
     val index = matchId.indexOf('#')
     if (index <= 0 || index == matchId.lastIndex) return null

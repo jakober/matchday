@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,8 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.jakober.matchday.data.TeamCatalog
-import com.jakober.matchday.data.TeamFeed
 import com.jakober.matchday.domain.Subscription
 import com.jakober.matchday.theme.CardCorner
 import com.jakober.matchday.ui.components.DateText
@@ -36,8 +36,8 @@ import com.jakober.matchday.ui.components.TeamBadge
 import com.jakober.matchday.ui.components.local
 
 /**
- * Auswahl der Mannschaften. Die App deckt bewusst nur Bayern und die
- * Nationalmannschaft ab, deshalb eine feste Liste statt einer Suche.
+ * Die Kalender der Gruppe. Welche es gibt, bestimmt der Admin; jedes
+ * Mitglied entscheidet nur fuer sich, welche davon es sehen will.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +51,7 @@ fun TeamsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Mannschaften") },
+                title = { Text("Kalender") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
@@ -67,19 +67,27 @@ fun TeamsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            for (team in TeamCatalog.ALL) {
-                val subscription = subscriptions.firstOrNull { it.id == team.id }
-                TeamRow(
-                    team = team,
-                    enabled = subscription?.enabled ?: false,
-                    matchCount = matchCountOf(team.id),
-                    lastSynced = subscription?.lastSyncedAt?.let {
+            if (subscriptions.isEmpty()) {
+                Text(
+                    text = "Eure Gruppe hat noch keinen Kalender. Der Admin kann einen hinzufügen - zum Beispiel den Spielplan der Bundesliga.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+            }
+
+            for (subscription in subscriptions) {
+                SubscriptionRow(
+                    subscription = subscription,
+                    matchCount = matchCountOf(subscription.id),
+                    lastSynced = subscription.lastSyncedAt?.let {
                         "${DateText.fullDate(it.local().date)}, ${DateText.time(it.local())} Uhr"
                     },
-                    onToggle = { onToggle(team.id, it) },
+                    onToggle = { onToggle(subscription.id, it) },
                 )
             }
 
@@ -89,14 +97,14 @@ fun TeamsScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            Spacer(Modifier.height(24.dp))
         }
     }
 }
 
 @Composable
-private fun TeamRow(
-    team: TeamFeed,
-    enabled: Boolean,
+private fun SubscriptionRow(
+    subscription: Subscription,
     matchCount: Int,
     lastSynced: String?,
     onToggle: (Boolean) -> Unit,
@@ -109,18 +117,18 @@ private fun TeamRow(
             .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        TeamBadge(team = team, size = 44.dp)
+        TeamBadge(subscription = subscription, size = 44.dp)
         Spacer(Modifier.size(14.dp))
 
         Column(Modifier.weight(1f)) {
             Text(
-                text = team.name,
+                text = subscription.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
                 text = when {
-                    !enabled -> "Nicht abonniert"
+                    !subscription.enabled -> "Ausgeblendet"
                     matchCount == 0 -> "Noch keine Spiele geladen"
                     lastSynced == null -> "$matchCount Spiele"
                     else -> "$matchCount Spiele · Stand $lastSynced"
@@ -130,6 +138,6 @@ private fun TeamRow(
             )
         }
 
-        Switch(checked = enabled, onCheckedChange = onToggle)
+        Switch(checked = subscription.enabled, onCheckedChange = onToggle)
     }
 }

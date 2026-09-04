@@ -18,6 +18,7 @@ import com.jakober.matchday.data.remote.participantsOfMatch
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.ParticipantsSource
 import com.jakober.matchday.domain.RsvpStatus
+import com.jakober.matchday.domain.Subscription
 import com.jakober.matchday.notify.NotificationDiagnostics
 import com.jakober.matchday.theme.MatchdayTheme
 import com.jakober.matchday.theme.Pitch
@@ -110,11 +111,14 @@ private fun Root() {
         runCatching { Container.backend.signInIfNeeded() }
         deviceId = Container.backend.currentUserId()
         syncing = true
+        // Erst die Mitgliedschaft, dann die Kalender der Gruppe, dann die
+        // Spielplaene - die Abos kommen vom Server. In anderer Reihenfolge
+        // zeigte die App nach einer Neuinstallation beim ersten Start einen
+        // leeren Kalender und fuellte sich erst beim zweiten.
+        Container.refreshMembership()
+        Container.refreshCalendars()
         Container.repository.syncAll()
         Container.rescheduleReminders()
-        // Repariert Mitgliedschaften aus aelteren App-Fassungen, denen
-        // Adminrolle oder Kalenderzuordnung fehlen.
-        Container.refreshMembership()
         Container.refreshGroup()
         Container.uploadPushToken()
         syncing = false
@@ -135,10 +139,11 @@ private fun Root() {
         visibleAll.filter { it.start >= startOfToday }
     }
 
-    val colorBySubscription = remember(subscriptions) {
-        subscriptions.associate { it.id to Color(it.colorArgb) }
+    val subscriptionById = remember(subscriptions) { subscriptions.associateBy { it.id } }
+    val accentOf: (Match) -> Color = {
+        subscriptionById[it.subscriptionId]?.let { sub -> Color(sub.colorArgb) } ?: Pitch
     }
-    val accentOf: (Match) -> Color = { colorBySubscription[it.subscriptionId] ?: Pitch }
+    val subscriptionOf: (String) -> Subscription? = { subscriptionById[it] }
 
     val participantsOf = remember(rsvps, membership, groupSnapshot, activeProfile) {
         ParticipantsSource { matchId ->
@@ -178,6 +183,7 @@ private fun Root() {
             participantsOf = participantsOf,
             importantIds = groupSnapshot.importantMatchIds,
             accentOf = accentOf,
+            subscriptionOf = subscriptionOf,
             onViewChange = { view = it },
             onSelect = {
                 importantError = null
@@ -260,6 +266,9 @@ private fun Root() {
                             Container.pushLocalRsvps()
                             Container.uploadPushToken()
                             Container.refreshGroup()
+                            // Die Kalender der Gruppe uebernehmen und gleich laden.
+                            Container.refreshCalendars()
+                            Container.syncAll()
                         }
                         .onFailure { groupError = it.message ?: "Anlegen fehlgeschlagen" }
                     groupBusy = false
@@ -282,6 +291,8 @@ private fun Root() {
                             Container.pushLocalRsvps()
                             Container.uploadPushToken()
                             Container.refreshGroup()
+                            Container.refreshCalendars()
+                            Container.syncAll()
                         }
                         .onFailure { groupError = it.message ?: "Code nicht gefunden" }
                     groupBusy = false

@@ -15,15 +15,15 @@ import kotlin.test.assertTrue
 
 class ParticipantsTest {
 
-    private val matchId = "fcbayern#68600e4a1ac72@2.calovo"
+    // Die Spiel-Id beginnt mit der Kalender-Id der Gruppe.
     private val calendarId = "cal-fcb"
+    private val matchId = "$calendarId#68600e4a1ac72@2.calovo"
 
     private val membership = GroupMembership(
         groupId = "g1",
         memberId = "m-max",
         inviteCode = "ABC123",
         groupName = "Stammtisch",
-        calendarIds = mapOf("fcbayern" to calendarId, "dfb" to "cal-dfb"),
     )
 
     private val snapshot = GroupSnapshot(
@@ -38,9 +38,9 @@ class ParticipantsTest {
     )
 
     @Test
-    fun `zerlegt die Spiel-Id in Mannschaft und Termin`() {
+    fun `zerlegt die Spiel-Id in Kalender und Termin`() {
         val parts = splitMatchId(matchId)
-        assertEquals("fcbayern", parts?.first)
+        assertEquals(calendarId, parts?.first)
         assertEquals("68600e4a1ac72@2.calovo", parts?.second)
     }
 

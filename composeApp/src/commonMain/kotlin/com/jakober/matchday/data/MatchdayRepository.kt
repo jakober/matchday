@@ -79,7 +79,9 @@ class MatchdayRepository(
     }
 
     private suspend fun fetch(url: String): String {
-        val response = http.get(url)
+        // Auch hier normalisieren: Die Adresse kommt kuenftig vom Server, so
+        // wie der Admin sie eingegeben hat - womoeglich als webcal://.
+        val response = http.get(normalizeUrl(url))
         if (!response.status.isSuccess()) {
             error("Server antwortete mit ${response.status.value}")
         }

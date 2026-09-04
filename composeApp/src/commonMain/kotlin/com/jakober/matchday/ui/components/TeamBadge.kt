@@ -1,6 +1,5 @@
 package com.jakober.matchday.ui.components
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
@@ -18,79 +17,74 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.SubcomposeAsyncImage
-import com.jakober.matchday.data.TeamCatalog
-import com.jakober.matchday.data.TeamFeed
+import com.jakober.matchday.domain.Subscription
 
 /**
- * Abzeichen einer Mannschaft. Gibt es ein Wappen als Bild, wird es geladen;
- * sonst zeichnen wir ein Ersatzabzeichen. Beides ist rund und gleich gross,
- * damit die Liste ruhig bleibt.
+ * Rundes Abzeichen. Gibt es ein Wappen als Bild, wird es geladen; sonst
+ * zeichnen wir ein Ersatzabzeichen aus Farbe und Kuerzel. Beides ist gleich
+ * gross, damit die Liste ruhig bleibt.
+ *
+ * Bewusst ohne Wissen darueber, was es zeigt - Mannschaft oder Kalender
+ * entscheidet der Aufrufer. Ein leeres Kuerzel ergibt einen grauen Kreis,
+ * den der Monatskalender fuer Tage ohne Spiel braucht.
  */
 @Composable
 fun TeamBadge(
-    team: TeamFeed?,
+    logoUrl: String?,
+    fallbackLabel: String,
+    fallbackColor: Long,
     size: Dp = 40.dp,
     modifier: Modifier = Modifier,
 ) {
     val shell = modifier.size(size).clip(CircleShape)
 
     when {
-        team == null -> Box(shell.background(MaterialTheme.colorScheme.surfaceVariant))
+        fallbackLabel.isEmpty() && logoUrl == null ->
+            Box(shell.background(MaterialTheme.colorScheme.surfaceVariant))
 
-        team.logoUrl != null -> SubcomposeAsyncImage(
-            model = team.logoUrl,
-            contentDescription = team.name,
+        logoUrl != null -> SubcomposeAsyncImage(
+            model = logoUrl,
+            contentDescription = fallbackLabel,
             contentScale = ContentScale.Fit,
             // Solange das Wappen laedt - und falls es gar nicht kommt - steht
             // das Ersatzabzeichen an seiner Stelle. Ohne das blinkt die Liste
             // beim Scrollen mit leeren Kreisen.
-            loading = { FallbackBadge(team, size) },
-            error = { FallbackBadge(team, size) },
+            loading = { FallbackBadge(fallbackLabel, fallbackColor, size) },
+            error = { FallbackBadge(fallbackLabel, fallbackColor, size) },
             modifier = shell,
         )
 
-        else -> Box(shell) { FallbackBadge(team, size) }
+        else -> Box(shell) { FallbackBadge(fallbackLabel, fallbackColor, size) }
     }
 }
 
+/** Abzeichen eines Kalender-Abos: dessen Bild, sonst Farbe und Kuerzel. */
 @Composable
-private fun FallbackBadge(team: TeamFeed, size: Dp) {
-    if (team.id == TeamCatalog.NATIONALMANNSCHAFT.id) {
-        GermanFlagBadge(size)
-    } else {
-        Box(
-            modifier = Modifier.size(size).clip(CircleShape).background(Color(team.colorArgb)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = team.shortName.take(3).uppercase(),
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                fontSize = (size.value * 0.3f).sp,
-            )
-        }
-    }
+fun TeamBadge(
+    subscription: Subscription?,
+    size: Dp = 40.dp,
+    modifier: Modifier = Modifier,
+) {
+    TeamBadge(
+        logoUrl = subscription?.logoUrl,
+        fallbackLabel = subscription?.badgeLabel ?: "",
+        fallbackColor = subscription?.colorArgb ?: 0xFF888888,
+        size = size,
+        modifier = modifier,
+    )
 }
 
-/** Schwarz-Rot-Gold als liegende Streifen im Kreis. */
 @Composable
-private fun GermanFlagBadge(size: Dp) {
-    Canvas(modifier = Modifier.size(size).clip(CircleShape)) {
-        val stripe = this.size.height / 3f
-        drawRect(
-            color = Color(0xFF1A1A1A),
-            topLeft = androidx.compose.ui.geometry.Offset(0f, 0f),
-            size = androidx.compose.ui.geometry.Size(this.size.width, stripe),
-        )
-        drawRect(
-            color = Color(0xFFDD0000),
-            topLeft = androidx.compose.ui.geometry.Offset(0f, stripe),
-            size = androidx.compose.ui.geometry.Size(this.size.width, stripe),
-        )
-        drawRect(
-            color = Color(0xFFFFCE00),
-            topLeft = androidx.compose.ui.geometry.Offset(0f, stripe * 2f),
-            size = androidx.compose.ui.geometry.Size(this.size.width, stripe),
+private fun FallbackBadge(label: String, colorArgb: Long, size: Dp) {
+    Box(
+        modifier = Modifier.size(size).clip(CircleShape).background(Color(colorArgb)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label.take(3),
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            fontSize = (size.value * 0.3f).sp,
         )
     }
 }

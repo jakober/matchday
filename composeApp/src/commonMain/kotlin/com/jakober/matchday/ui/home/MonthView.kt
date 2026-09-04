@@ -53,12 +53,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
-import com.jakober.matchday.data.TeamCatalog
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.MatchMood
 import com.jakober.matchday.domain.ParticipantsSource
 import com.jakober.matchday.domain.Rsvp
 import com.jakober.matchday.domain.RsvpStatus
+import com.jakober.matchday.domain.Subscription
 import com.jakober.matchday.domain.moodOf
 import com.jakober.matchday.theme.StatusIn
 import com.jakober.matchday.theme.StatusOpen
@@ -88,6 +88,7 @@ fun MonthView(
     participantsOf: ParticipantsSource,
     importantIds: Set<String>,
     accentOf: (Match) -> Color,
+    subscriptionOf: (String) -> Subscription?,
     onSelect: (Match) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -156,6 +157,7 @@ fun MonthView(
                 today = today,
                 byDay = byDay,
                 accentOf = accentOf,
+                subscriptionOf = subscriptionOf,
                 participantsOf = participantsOf,
                 importantIds = importantIds,
                 onDayClick = { date ->
@@ -187,6 +189,7 @@ fun MonthView(
             rsvps = rsvps,
             participantsOf = participantsOf,
             importantIds = importantIds,
+            subscriptionOf = subscriptionOf,
             onSelect = { match ->
                 // Erst schliessen, dann die Detailansicht oeffnen - zwei
                 // uebereinanderliegende Sheets vertragen sich nicht.
@@ -231,6 +234,7 @@ private fun MonthGrid(
     today: LocalDate,
     byDay: Map<LocalDate, List<Match>>,
     accentOf: (Match) -> Color,
+    subscriptionOf: (String) -> Subscription?,
     participantsOf: ParticipantsSource,
     importantIds: Set<String>,
     onDayClick: (LocalDate) -> Unit,
@@ -251,7 +255,7 @@ private fun MonthGrid(
                         isPast = date < today,
                         matchCount = dayMatches.size,
                         ballColor = dayMatches.firstOrNull()?.let(accentOf),
-                        ballTeamId = dayMatches.firstOrNull()?.subscriptionId,
+                        ballSubscription = dayMatches.firstOrNull()?.let { subscriptionOf(it.subscriptionId) },
                         mood = dayMood(dayMatches, participantsOf),
                         isImportant = dayMatches.any { it.id in importantIds },
                         onClick = { onDayClick(date) },
@@ -271,6 +275,7 @@ private fun DaySheet(
     rsvps: Map<String, Rsvp>,
     participantsOf: ParticipantsSource,
     importantIds: Set<String>,
+    subscriptionOf: (String) -> Subscription?,
     onSelect: (Match) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -311,6 +316,7 @@ private fun DaySheet(
             for (match in matches) {
                 MatchRow(
                     match = match,
+                    subscription = subscriptionOf(match.subscriptionId),
                     status = rsvps[match.id]?.status ?: RsvpStatus.UNDECIDED,
                     participants = participantsOf(match.id),
                     isImportant = match.id in importantIds,
@@ -332,7 +338,7 @@ private fun DaySheet(
 @Composable
 private fun MatchMark(
     isImportant: Boolean,
-    teamId: String?,
+    subscription: Subscription?,
     dimmed: Boolean,
 ) {
     Row(
@@ -348,7 +354,7 @@ private fun MatchMark(
                 modifier = Modifier.size(15.dp),
             )
         }
-        TeamBadge(team = teamId?.let { TeamCatalog.byId(it) }, size = 16.dp)
+        TeamBadge(subscription = subscription, size = 16.dp)
     }
 }
 
@@ -360,7 +366,7 @@ private fun DayCell(
     isPast: Boolean,
     matchCount: Int,
     ballColor: Color?,
-    ballTeamId: String?,
+    ballSubscription: Subscription?,
     mood: MatchMood,
     isImportant: Boolean,
     onClick: () -> Unit,
@@ -431,7 +437,7 @@ private fun DayCell(
             ) {
                 MatchMark(
                     isImportant = isImportant,
-                    teamId = ballTeamId,
+                    subscription = ballSubscription,
                     dimmed = dimmed,
                 )
                 if (matchCount > 1) {

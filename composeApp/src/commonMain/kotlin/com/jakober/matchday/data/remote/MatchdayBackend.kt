@@ -1,6 +1,5 @@
 package com.jakober.matchday.data.remote
 
-import com.jakober.matchday.data.TeamCatalog
 import com.jakober.matchday.data.createSettings
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.push.PushToken
@@ -267,11 +266,7 @@ class MatchdayBackend {
         }
     }
 
-    /**
-     * Sorgt dafuer, dass beide Mannschaftskalender in der Gruppe angelegt sind,
-     * und merkt sich das eigene Mitglied. Die Kalender braucht es, weil die
-     * Zusagen auf sie verweisen.
-     */
+    /** Merkt sich das eigene Mitglied samt Rolle und Sichtbarkeit. */
     private suspend fun finishSetup(
         groupId: String,
         inviteCode: String,
@@ -279,7 +274,6 @@ class MatchdayBackend {
         adminMemberId: String?,
         forceAdmin: Boolean = false,
     ): GroupMembership {
-        val calendarIds = ensureCalendars(groupId)
         val me = ownMember(groupId)
             ?: error("Mitgliedschaft konnte nicht gelesen werden")
         return GroupMembership(
@@ -287,38 +281,47 @@ class MatchdayBackend {
             memberId = me.id,
             inviteCode = inviteCode,
             groupName = groupName,
-            calendarIds = calendarIds,
             isAdmin = forceAdmin || adminMemberId == me.id,
             scope = me.scope,
         )
     }
 
-    /** Legt fehlende Mannschaftskalender an und liefert die Zuordnung. */
-    private suspend fun ensureCalendars(groupId: String): Map<String, String> {
-        val existing = client.from("calendars").select {
+    /**
+     * Die Kalender der Gruppe. Sie sind die gemeinsame Wahrheit darueber, was
+     * die Gruppe schaut; jedes Geraet uebernimmt sie in seine Abo-Liste.
+     */
+    suspend fun calendars(groupId: String): List<CalendarDto> =
+        client.from("calendars").select {
             filter { eq("group_id", groupId) }
-        }.decodeList<CalendarDto>()
+        }.decodeList()
 
-        val missing = TeamCatalog.ALL.filter { team ->
-            existing.none { it.url == team.url }
-        }
-        if (missing.isNotEmpty()) {
-            client.from("calendars").insert(
-                missing.map { team ->
-                    NewCalendarDto(groupId, team.name, team.url, team.colorArgb)
-                }
+    /**
+     * Legt einen Kalender in der Gruppe an. Die Datenbank laesst das nur beim
+     * Admin zu und vergibt die Id - sie muss auf allen Geraeten gleich sein.
+     */
+    suspend fun addCalendar(
+        membership: GroupMembership,
+        name: String,
+        url: String,
+        colorArgb: Long,
+    ): CalendarDto =
+        client.from("calendars").insert(
+            NewCalendarDto(
+                groupId = membership.groupId,
+                name = name,
+                url = url,
+                color = colorArgb,
+                createdBy = membership.memberId,
             )
+        ) {
+            select()
+        }.decodeSingle()
+
+    /** Entfernt einen Kalender. Zusagen und Markierungen dazu verschwinden mit. */
+    suspend fun removeCalendar(calendarId: String) {
+        client.from("calendars").delete {
+            filter { eq("id", calendarId) }
         }
-
-        val all = client.from("calendars").select {
-            filter { eq("group_id", groupId) }
-        }.decodeList<CalendarDto>()
-
-        // Zuordnung ueber die Adresse - der Name koennte sich aendern, die
-        // Kalenderquelle nicht.
-        return TeamCatalog.ALL.mapNotNull { team ->
-            all.firstOrNull { it.url == team.url }?.let { team.id to it.id }
-        }.toMap()
     }
 
     /** Eigener Mitgliedseintrag in dieser Gruppe. */
