@@ -1,4 +1,4 @@
-# Matchday
+# Matchday – Wer kommt?
 
 Gemeinsam Fußball schauen: Eine Gruppe teilt sich Spielplan-Kalender, jeder
 sagt zu oder ab, alle sehen, wer dabei ist. Eine Codebasis für Android und iOS
