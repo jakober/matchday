@@ -47,6 +47,11 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         Reminders_iosKt.refreshGroupOnResume()
     }
 
+    func applicationWillResignActive(_ application: UIApplication) {
+        // Nutzungszeit festhalten.
+        Reminders_iosKt.pauseUsage()
+    }
+
     func application(
         _ application: UIApplication,
         didFailToRegisterForRemoteNotificationsWithError error: Error

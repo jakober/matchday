@@ -208,6 +208,22 @@ class MatchdayStore(private val settings: Settings) {
         settings.putString(KEY_LOGOS, json.encodeToString(map))
     }
 
+    // -- Nutzung ------------------------------------------------------------
+
+    /** Sekunden, die die App bisher im Vordergrund war - fuer Hinweise, die erst nach einer Weile sinnvoll sind. */
+    val usageSeconds: Long get() = settings.getLong(KEY_USAGE_SECONDS, 0L)
+
+    fun saveUsageSeconds(seconds: Long) {
+        settings.putLong(KEY_USAGE_SECONDS, seconds)
+    }
+
+    /** Der Nutzer will den Hinweis auf exakte Alarme nicht mehr sehen. */
+    val exactAlarmPromptDismissed: Boolean get() = settings.getBoolean(KEY_EXACT_PROMPT_OFF, false)
+
+    fun dismissExactAlarmPrompt() {
+        settings.putBoolean(KEY_EXACT_PROMPT_OFF, true)
+    }
+
     // -- Erinnerungen -------------------------------------------------------
 
     fun saveReminders(value: ReminderSettings) {
@@ -256,6 +272,8 @@ class MatchdayStore(private val settings: Settings) {
         const val KEY_MEMBERSHIP = "membership"
         const val KEY_SNAPSHOT = "group_snapshot"
         const val KEY_LOGOS = "team_logos"
+        const val KEY_USAGE_SECONDS = "usage_seconds"
+        const val KEY_EXACT_PROMPT_OFF = "exact_alarm_prompt_off"
     }
 }
 

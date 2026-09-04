@@ -136,7 +136,15 @@ object IcsParser {
         val uid = fields["UID"]?.value?.trim()
             ?: "${start.toEpochMilliseconds()}-${summary.hashCode()}"
 
-        val teams = splitTeams(summary)
+        // Die Ligakalender von calovo haengen Wettbewerb und Spieltag an den
+        // Titel: "FC Bayern München - Hamburger SV | Bundesliga | 3. Spieltag".
+        // Ohne diese Trennung hiesse die Gastmannschaft "Hamburger SV |
+        // Bundesliga | 3. Spieltag" - kein Wappen, unsinniges Kuerzel.
+        val segments = summary.split(" | ").map { it.trim() }.filter { it.isNotEmpty() }
+        val title = segments.firstOrNull() ?: summary
+        val suffix = segments.drop(1).joinToString(" · ").ifEmpty { null }
+
+        val teams = splitTeams(title)
 
         return Match(
             id = "$subscriptionId#$uid",
@@ -144,12 +152,13 @@ object IcsParser {
             start = start,
             end = end,
             isAllDay = dtStart.params["VALUE"].equals("DATE", ignoreCase = true),
-            title = summary,
+            title = title,
             homeTeam = teams.first,
             awayTeam = teams.second,
             location = fields["LOCATION"]?.value?.let(::unescape)?.trim()?.ifEmpty { null },
             competition = fields["CATEGORIES"]?.value?.let(::unescape)?.trim()?.ifEmpty { null }
-                ?: competitionFromDescription(fields["DESCRIPTION"]?.value?.let(::unescape)),
+                ?: competitionFromDescription(fields["DESCRIPTION"]?.value?.let(::unescape))
+                ?: suffix,
         )
     }
 

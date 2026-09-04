@@ -35,6 +35,11 @@ class MainActivity : ComponentActivity() {
         Container.onResume()
     }
 
+    override fun onPause() {
+        super.onPause()
+        Container.onPause()
+    }
+
     /** Seit Android 13 ist das Anzeigen von Benachrichtigungen erlaubnispflichtig. */
     private fun askForNotificationPermission() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return

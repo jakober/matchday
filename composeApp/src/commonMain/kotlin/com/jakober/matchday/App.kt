@@ -2,8 +2,13 @@ package com.jakober.matchday
 
 import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import com.jakober.matchday.domain.Profile
@@ -49,6 +54,9 @@ import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 
 private enum class Screen { HOME, TEAMS, IMPORT, SETTINGS, GROUP }
+
+/** Ab dieser Nutzungsdauer darf die App um exakte Alarme bitten. */
+private const val EXACT_ALARM_PROMPT_AFTER_SECONDS = 5 * 60L
 
 @Composable
 fun App() {
@@ -297,6 +305,47 @@ private fun Root() {
         if (screen == Screen.SETTINGS) {
             diagnostics = runCatching { Container.scheduler.diagnostics() }.getOrNull()
         }
+    }
+
+    // Hinweis auf exakte Alarme, aber erst nach fuenf Minuten Nutzung: Beim
+    // ersten Start prasseln ohnehin Erlaubnisfragen auf den Nutzer ein. Wer
+    // "nicht mehr fragen" waehlt, sieht ihn nie wieder; wer "spaeter" waehlt,
+    // beim naechsten Oeffnen der App.
+    var exactAlarmPrompt by remember { mutableStateOf(false) }
+    var exactAlarmAsked by remember { mutableStateOf(false) }
+    LaunchedEffect(resumeTick) {
+        while (!exactAlarmAsked && !Container.store.exactAlarmPromptDismissed) {
+            if (Container.usageSeconds() >= EXACT_ALARM_PROMPT_AFTER_SECONDS) {
+                val current = runCatching { Container.scheduler.diagnostics() }.getOrNull()
+                if (current == null || !current.exactAlarmsRelevant || current.exactAlarmsAllowed) break
+                exactAlarmPrompt = true
+                exactAlarmAsked = true
+                break
+            }
+            delay(30_000)
+        }
+    }
+    if (exactAlarmPrompt) {
+        AlertDialog(
+            onDismissRequest = { exactAlarmPrompt = false },
+            title = { Text(S.exactPromptTitle) },
+            text = { Text(S.exactPromptText) },
+            confirmButton = {
+                TextButton(onClick = {
+                    exactAlarmPrompt = false
+                    Container.scheduler.openExactAlarmSettings()
+                }) { Text(S.exactPromptAllow) }
+            },
+            dismissButton = {
+                Row {
+                    TextButton(onClick = {
+                        Container.store.dismissExactAlarmPrompt()
+                        exactAlarmPrompt = false
+                    }) { Text(S.exactPromptNever) }
+                    TextButton(onClick = { exactAlarmPrompt = false }) { Text(S.exactPromptLater) }
+                }
+            },
+        )
     }
 
     LaunchedEffect(Unit) {

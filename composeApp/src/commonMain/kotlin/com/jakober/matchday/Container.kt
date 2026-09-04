@@ -363,11 +363,17 @@ object Container {
         if (missing.isEmpty()) return
         if (!backend.ensureFreshSession()) return
 
-        val found = runCatching { backend.resolveLogos(missing.take(50)) }.getOrNull() ?: return
-        val now = Clock.System.now()
-        val merged = known + found.mapValues { (_, url) -> LogoEntry(url, now) }
-        _logos.value = merged
-        store.saveLogos(merged)
+        // In Haeppchen: Der Server nimmt hoechstens 50 Namen je Aufruf, ein
+        // Ligakalender bringt mehr mit - sonst blieben die uebrigen bis zum
+        // naechsten Abgleich ohne Wappen.
+        var merged = known
+        for (batch in missing.chunked(50).take(4)) {
+            val found = runCatching { backend.resolveLogos(batch) }.getOrNull() ?: break
+            val now = Clock.System.now()
+            merged = merged + found.mapValues { (_, url) -> LogoEntry(url, now) }
+            _logos.value = merged
+            store.saveLogos(merged)
+        }
     }
 
     /** Laedt einen Kalender probeweise, ohne etwas zu speichern. */
@@ -553,8 +559,28 @@ object Container {
 
     /** Von beiden Plattformen bei Rueckkehr in den Vordergrund aufgerufen. */
     fun onResume() {
+        if (foregroundSince == null) foregroundSince = Clock.System.now()
         _resumeTick.value += 1
         refreshGroupInBackground()
+    }
+
+    /** Beim Verlassen des Vordergrunds: die Nutzungszeit festhalten. */
+    fun onPause() {
+        val since = foregroundSince ?: return
+        val elapsed = (Clock.System.now() - since).inWholeSeconds
+        store.saveUsageSeconds(store.usageSeconds + elapsed)
+        foregroundSince = null
+    }
+
+    private var foregroundSince: kotlinx.datetime.Instant? = null
+
+    /**
+     * Wie lange die App insgesamt benutzt wurde. Hinweise, die beim ersten
+     * Start nur stoeren wuerden, haengen daran - etwa der auf exakte Alarme.
+     */
+    fun usageSeconds(): Long {
+        val current = foregroundSince?.let { (Clock.System.now() - it).inWholeSeconds } ?: 0L
+        return store.usageSeconds + current
     }
 
     /** Entfernt ein Mitglied und laedt die Gruppe neu. */

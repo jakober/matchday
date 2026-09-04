@@ -149,3 +149,8 @@ class IosReminderScheduler : ReminderScheduler {
 fun refreshGroupOnResume() {
     Container.onResume()
 }
+
+/** Von der Swift-Seite beim Verlassen des Vordergrunds aufgerufen. */
+fun pauseUsage() {
+    Container.onPause()
+}

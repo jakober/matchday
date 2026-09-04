@@ -227,4 +227,13 @@ class IcsParserTest {
         assertEquals("Arsenal", match.homeTeam)
         assertEquals("Chelsea", match.awayTeam)
     }
+
+    @Test
+    fun `trennt Wettbewerb und Spieltag vom Titel der Ligakalender`() {
+        val match = IcsParser.parse(icsWith("FC Bayern München - Hamburger SV | Bundesliga | 3. Spieltag"), "s", berlin).single()
+        assertEquals("FC Bayern München", match.homeTeam)
+        assertEquals("Hamburger SV", match.awayTeam)
+        assertEquals("FC Bayern München - Hamburger SV", match.title)
+        assertEquals("Bundesliga · 3. Spieltag", match.competition)
+    }
 }

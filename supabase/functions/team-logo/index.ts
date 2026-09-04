@@ -84,7 +84,9 @@ function isExact(team: Team, query: string): boolean {
 async function searchSportsDb(query: string): Promise<Team[]> {
   const url = `https://www.thesportsdb.com/api/v1/json/${SPORTSDB_KEY}/searchteams.php?t=${encodeURIComponent(query)}`;
   const response = await fetch(url);
-  if (!response.ok) return [];
+  if (!response.ok) throw new Error(`Wappendienst antwortete ${response.status}`);
+  // Bei Drosselung kommt HTML statt JSON - das soll als Fehler gelten, nicht
+  // als "nichts gefunden", sonst wuerde der Fehlschlag gespeichert.
   const json = await response.json();
   return (json?.teams ?? []) as Team[];
 }
@@ -166,7 +168,17 @@ Deno.serve(async (request) => {
         continue;
       }
 
-      const badge = await lookup(name, key);
+      // Ein einzelner Fehlschlag - etwa eine Drosselung des Wappendienstes -
+      // darf nicht die ganze Anfrage kippen. Dann bleibt dieser Name offen
+      // und wird beim naechsten Mal erneut versucht; gespeichert wird nichts.
+      let badge: string | null;
+      try {
+        badge = await lookup(name, key);
+      } catch (error) {
+        console.error(`Wappen fuer "${name}": ${error}`);
+        logos[name] = null;
+        continue;
+      }
       logos[name] = badge;
       await supabase.from("team_logos").upsert({
         key,

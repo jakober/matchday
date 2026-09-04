@@ -185,6 +185,11 @@ interface Strings {
     val exactOk: String
     val exactFail: String
     val allowExact: String
+    val exactPromptTitle: String
+    val exactPromptText: String
+    val exactPromptAllow: String
+    val exactPromptLater: String
+    val exactPromptNever: String
     val pendingNone: String
     val pendingOne: String
     fun pendingN(n: Int): String
@@ -435,6 +440,11 @@ object De : Strings {
     override val exactOk = "Erinnerungen kommen auf die Minute genau"
     override val exactFail = "Ohne exakte Alarme kann eine Erinnerung einige Minuten später kommen"
     override val allowExact = "Exakte Alarme erlauben"
+    override val exactPromptTitle = "Erinnerungen auf die Minute?"
+    override val exactPromptText = "Android darf Erinnerungen ohne diese Erlaubnis um einige Minuten verschieben. Für „Anpfiff in einer Stunde“ ist das ungünstig. Die Erlaubnis gibst du einmal in den Systemeinstellungen."
+    override val exactPromptAllow = "Erlauben"
+    override val exactPromptLater = "Später"
+    override val exactPromptNever = "Nicht mehr fragen"
     override val pendingNone = "Zurzeit keine Erinnerung vorgemerkt"
     override val pendingOne = "1 Erinnerung vorgemerkt"
     override fun pendingN(n: Int) = "$n Erinnerungen vorgemerkt"
@@ -682,6 +692,11 @@ object En : Strings {
     override val exactOk = "Reminders arrive to the minute"
     override val exactFail = "Without exact alarms a reminder can arrive a few minutes late"
     override val allowExact = "Allow exact alarms"
+    override val exactPromptTitle = "Reminders to the minute?"
+    override val exactPromptText = "Without this permission Android may delay reminders by a few minutes - not ideal for \"kick-off in one hour\". You grant it once in the system settings."
+    override val exactPromptAllow = "Allow"
+    override val exactPromptLater = "Later"
+    override val exactPromptNever = "Don't ask again"
     override val pendingNone = "No reminder scheduled right now"
     override val pendingOne = "1 reminder scheduled"
     override fun pendingN(n: Int) = "$n reminders scheduled"
