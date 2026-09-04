@@ -147,5 +147,5 @@ class IosReminderScheduler : ReminderScheduler {
 
 /** Von der Swift-Seite bei Rueckkehr in den Vordergrund aufgerufen. */
 fun refreshGroupOnResume() {
-    Container.refreshGroupInBackground()
+    Container.onResume()
 }

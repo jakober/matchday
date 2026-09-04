@@ -2,7 +2,9 @@ package com.jakober.matchday.ui.subs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,12 +39,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.jakober.matchday.data.CatalogFeed
+import com.jakober.matchday.data.FeedCatalog
 import com.jakober.matchday.data.FeedPreview
 import com.jakober.matchday.theme.CardCorner
 import com.jakober.matchday.theme.ChipCorner
@@ -69,11 +76,20 @@ fun ImportScreen(
     var name by remember { mutableStateOf("") }
     var colorArgb by remember { mutableStateOf(AvatarColors.first()) }
     var helpOpen by remember { mutableStateOf(false) }
+    var query by remember { mutableStateOf("") }
+    // Name aus der eingebauten Liste, wenn von dort gewaehlt - der ist
+    // kuerzer als das, was der Kalender selbst mitbringt.
+    var pickedName by remember { mutableStateOf<String?>(null) }
 
     // Den Namensvorschlag uebernehmen, sobald die Vorschau da ist - aber nur
     // dann, sonst wuerde jede Eingabe des Nutzers wieder ueberschrieben.
     LaunchedEffect(preview) {
-        preview?.let { name = it.suggestedName }
+        preview?.let { name = pickedName ?: it.suggestedName }
+    }
+
+    val suggestions = remember(query) {
+        if (query.isBlank()) FeedCatalog.ALL.filter { it.name.contains("alle Spiele") || it.league == "DFB" }
+        else FeedCatalog.search(query).take(10)
     }
 
     val canCheck = url.isNotBlank() && !busy
@@ -105,6 +121,51 @@ fun ImportScreen(
         ) {
             Spacer(Modifier.height(8.dp))
             Text(
+                text = "VEREIN ODER LIGA SUCHEN",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(10.dp))
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                label = { Text("z.B. Bayern, Dortmund, 2. Bundesliga") },
+                singleLine = true,
+                shape = RoundedCornerShape(ChipCorner),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(8.dp))
+            if (suggestions.isEmpty()) {
+                Text(
+                    text = "Nichts gefunden - unten kannst du die Adresse selbst eingeben.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 6.dp),
+                )
+            }
+            for (feed in suggestions) {
+                SuggestionRow(
+                    feed = feed,
+                    selected = url == feed.url,
+                    onClick = {
+                        url = feed.url
+                        pickedName = feed.name
+                        name = feed.name
+                        onPreview(feed.url)
+                    },
+                )
+                Spacer(Modifier.height(6.dp))
+            }
+
+            Spacer(Modifier.height(20.dp))
+            Text(
+                text = "ODER ADRESSE EINGEBEN",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
                 text = "Fast jeder Verein und jede Liga veröffentlicht den Spielplan als Kalender zum Abonnieren. " +
                     "Du brauchst dessen Adresse - eine Zeile, die mit https:// oder webcal:// beginnt und meist auf .ics endet.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -122,7 +183,11 @@ fun ImportScreen(
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
                 value = url,
-                onValueChange = { url = it },
+                onValueChange = {
+                    url = it
+                    // Von Hand geaendert: Der Name aus der Liste passt nicht mehr.
+                    pickedName = null
+                },
                 label = { Text("Adresse des Kalenders") },
                 placeholder = { Text("https://…/spielplan.ics") },
                 singleLine = true,
@@ -205,6 +270,41 @@ fun ImportScreen(
 
             Spacer(Modifier.height(40.dp))
         }
+    }
+}
+
+@Composable
+private fun SuggestionRow(feed: CatalogFeed, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(ChipCorner))
+            .background(
+                if (selected) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.surface
+            )
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(ChipCorner))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(
+                text = feed.name,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = feed.league,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        Icon(
+            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

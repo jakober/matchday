@@ -82,6 +82,7 @@ private fun Root() {
     val membershipLost by Container.membershipLost.collectAsState()
     val pushState by Container.pushState.collectAsState()
     val logos by Container.logos.collectAsState()
+    val resumeTick by Container.resumeTick.collectAsState()
 
     val activeProfile = profile ?: return
     val scope = rememberCoroutineScope()
@@ -101,9 +102,10 @@ private fun Root() {
     var deviceId by remember { mutableStateOf<String?>(null) }
     var diagnostics by remember { mutableStateOf<NotificationDiagnostics?>(null) }
 
-    // Beim Oeffnen der Einstellungen neu erheben - die Erlaubnis kann
-    // zwischenzeitlich in den Systemeinstellungen geaendert worden sein.
-    LaunchedEffect(screen, rsvps) {
+    // Beim Oeffnen der Einstellungen und bei jeder Rueckkehr in die App neu
+    // erheben - die Erlaubnis wird in den Systemeinstellungen erteilt, und von
+    // dort kommt man zurueck, ohne dass sich hier sonst etwas aendert.
+    LaunchedEffect(screen, rsvps, resumeTick) {
         if (screen == Screen.SETTINGS) {
             diagnostics = runCatching { Container.scheduler.diagnostics() }.getOrNull()
         }

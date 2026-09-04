@@ -32,7 +32,7 @@ class MainActivity : ComponentActivity() {
         // Rueckkehr in die App nachlegen.
         Container.rescheduleReminders()
         // Waehrend die App weg war, koennen andere geantwortet haben.
-        Container.refreshGroupInBackground()
+        Container.onResume()
     }
 
     /** Seit Android 13 ist das Anzeigen von Benachrichtigungen erlaubnispflichtig. */

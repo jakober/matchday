@@ -387,6 +387,22 @@ object Container {
         scope.launch { refreshGroup() }
     }
 
+    private val _resumeTick = MutableStateFlow(0)
+
+    /**
+     * Zaehlt hoch, sobald die App in den Vordergrund kommt. Die Oberflaeche
+     * haengt Pruefungen daran, die sich ausserhalb der App aendern koennen -
+     * etwa ob exakte Alarme inzwischen erlaubt sind, nachdem der Nutzer aus
+     * den Systemeinstellungen zurueckkommt.
+     */
+    val resumeTick: StateFlow<Int> = _resumeTick.asStateFlow()
+
+    /** Von beiden Plattformen bei Rueckkehr in den Vordergrund aufgerufen. */
+    fun onResume() {
+        _resumeTick.value += 1
+        refreshGroupInBackground()
+    }
+
     /** Entfernt ein Mitglied und laedt die Gruppe neu. */
     fun removeMember(memberId: String, onError: (String) -> Unit = {}) {
         scope.launch {
