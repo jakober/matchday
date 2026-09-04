@@ -1,5 +1,7 @@
 package com.jakober.matchday
 
+import com.jakober.matchday.i18n.S
+import com.jakober.matchday.i18n.currentLocale
 import com.jakober.matchday.data.FeedPreview
 import com.jakober.matchday.data.MatchdayRepository
 import com.jakober.matchday.data.MatchdayStore
@@ -234,7 +236,7 @@ object Container {
                     refreshCalendars()
                     syncAll()
                 }
-                .onFailure { onError(it.message ?: "Fehlgeschlagen") }
+                .onFailure { onError(it.message ?: S.failed) }
             _groupBusy.value = false
         }
     }
@@ -301,7 +303,11 @@ object Container {
         }
 
         runCatching { backend.reloadMembership(current) }
-            .onSuccess { store.saveMembership(it) }
+            .onSuccess {
+                store.saveMembership(it)
+                // Sprache mitgeben - sie kann sich seit dem Beitritt geaendert haben.
+                runCatching { backend.updateLocale(it, currentLocale) }
+            }
     }
 
     /**
@@ -376,7 +382,7 @@ object Container {
      */
     suspend fun importCalendar(name: String, url: String, colorArgb: Long): Result<Unit> {
         val membership = store.membership.value
-            ?: return Result.failure(IllegalStateException("Dafür brauchst du eine Gruppe"))
+            ?: return Result.failure(IllegalStateException(S.needGroup))
 
         return runCatching {
             backend.ensureFreshSession()
@@ -391,10 +397,10 @@ object Container {
             throw IllegalStateException(
                 when {
                     "23505" in message || "duplicate" in message.lowercase() ->
-                        "Diesen Kalender habt ihr schon."
+                        S.calendarExists
                     "42501" in message || "row-level security" in message ->
-                        "Nur der Admin kann Kalender hinzufügen."
-                    else -> "Hinzufügen fehlgeschlagen: $message"
+                        S.onlyAdminCalendars
+                    else -> S.addFailed(message)
                 }
             )
         }
@@ -411,18 +417,18 @@ object Container {
                     refreshCalendars()
                     rescheduleReminders()
                 }
-                .onFailure { onError(it.message ?: "Entfernen nicht möglich") }
+                .onFailure { onError(it.message ?: S.removeFailed) }
         }
     }
 
     fun toggleImportant(matchId: String, onError: (String) -> Unit = {}) {
         val parts = splitMatchId(matchId)
         if (parts == null) {
-            onError("Spiel konnte nicht zugeordnet werden")
+            onError(S.matchUnknown)
             return
         }
         if (store.membership.value == null) {
-            onError("Dafür brauchst du eine Gruppe")
+            onError(S.needGroup)
             return
         }
 
@@ -445,7 +451,7 @@ object Container {
                 // diesem Spiel ueberhaupt erinnert wird.
                 rescheduleReminders()
             }.onFailure {
-                onError(it.message ?: "Ändern nicht möglich")
+                onError(it.message ?: S.changeFailed)
             }
         }
     }
@@ -556,7 +562,7 @@ object Container {
         scope.launch {
             runCatching { backend.removeMember(memberId) }
                 .onSuccess { refreshGroup() }
-                .onFailure { onError(it.message ?: "Entfernen nicht möglich") }
+                .onFailure { onError(it.message ?: S.removeFailed) }
         }
     }
 

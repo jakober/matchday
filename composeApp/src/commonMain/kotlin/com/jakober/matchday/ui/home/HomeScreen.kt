@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.home
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -76,7 +77,7 @@ fun HomeScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Matchday", style = MaterialTheme.typography.headlineSmall)
+                    Text(S.appName, style = MaterialTheme.typography.headlineSmall)
                 },
                 actions = {
                     if (isSyncing) {
@@ -86,11 +87,11 @@ fun HomeScreen(
                         )
                     } else {
                         IconButton(onClick = onRefresh) {
-                            Icon(Icons.Filled.Refresh, contentDescription = "Aktualisieren")
+                            Icon(Icons.Filled.Refresh, contentDescription = S.refresh)
                         }
                     }
                     IconButton(onClick = onOpenSubscriptions) {
-                        Icon(Icons.Filled.Add, contentDescription = "Kalender")
+                        Icon(Icons.Filled.Add, contentDescription = S.calendars)
                     }
                     IconButton(onClick = onOpenSettings) {
                         Avatar(profile = profile, size = 32.dp)
@@ -115,16 +116,16 @@ fun HomeScreen(
 
             when {
                 !hasSubscriptions -> EmptyState(
-                    title = "Noch kein Kalender",
-                    body = "Der Admin eurer Gruppe fügt Kalender hinzu - zum Beispiel den Spielplan der Bundesliga. Danach stehen alle Termine automatisch hier.",
-                    actionLabel = "Kalender ansehen",
+                    title = S.emptyNoCalendarTitle,
+                    body = S.emptyNoCalendarBody,
+                    actionLabel = S.emptyNoCalendarAction,
                     onAction = onOpenSubscriptions,
                 )
 
                 matches.isEmpty() -> EmptyState(
-                    title = "Keine Spiele gefunden",
-                    body = "Der Kalender ist abonniert, enthält aber keine anstehenden Termine.",
-                    actionLabel = "Neu laden",
+                    title = S.emptyNoMatchesTitle,
+                    body = S.emptyNoMatchesBody,
+                    actionLabel = S.emptyNoMatchesAction,
                     onAction = onRefresh,
                 )
 
@@ -179,8 +180,8 @@ private fun ViewToggle(
             .padding(3.dp),
         horizontalArrangement = Arrangement.spacedBy(3.dp),
     ) {
-        ToggleSegment("Liste", selected == HomeView.LIST, { onSelect(HomeView.LIST) }, Modifier.weight(1f))
-        ToggleSegment("Monat", selected == HomeView.MONTH, { onSelect(HomeView.MONTH) }, Modifier.weight(1f))
+        ToggleSegment(S.list, selected == HomeView.LIST, { onSelect(HomeView.LIST) }, Modifier.weight(1f))
+        ToggleSegment(S.month, selected == HomeView.MONTH, { onSelect(HomeView.MONTH) }, Modifier.weight(1f))
     }
 }
 

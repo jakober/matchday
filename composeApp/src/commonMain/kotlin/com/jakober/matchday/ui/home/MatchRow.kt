@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.home
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -55,9 +56,9 @@ fun statusColor(status: RsvpStatus): Color = when (status) {
 }
 
 fun statusLabel(status: RsvpStatus): String = when (status) {
-    RsvpStatus.IN -> "Dabei"
-    RsvpStatus.OUT -> "Nicht dabei"
-    RsvpStatus.UNDECIDED -> "Offen"
+    RsvpStatus.IN -> S.statusIn
+    RsvpStatus.OUT -> S.statusOut
+    RsvpStatus.UNDECIDED -> S.statusOpen
 }
 
 /**
@@ -117,7 +118,7 @@ fun MatchRow(
             if (isImportant) {
                 Icon(
                     imageVector = Icons.Filled.Star,
-                    contentDescription = "Wichtiges Spiel",
+                    contentDescription = S.importantMatch,
                     tint = StatusOpen,
                     modifier = Modifier.size(30.dp),
                 )
@@ -219,7 +220,7 @@ private fun MatchBadges(
 
 /** Uhrzeit, dahinter Wettbewerb oder Ort, sofern vorhanden. */
 private fun subtitleOf(match: Match): String {
-    val time = if (match.isAllDay) "Ganztägig" else DateText.time(match.start.local())
+    val time = if (match.isAllDay) S.allDay else DateText.time(match.start.local())
     val extra = match.competition?.takeIf { it.isNotBlank() }
         ?: match.location?.takeIf { it.isNotBlank() }
     return if (extra == null) time else "$time · $extra"

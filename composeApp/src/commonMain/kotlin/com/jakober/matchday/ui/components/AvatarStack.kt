@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.components
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -103,10 +104,10 @@ fun AttendanceLine(
         if (attending.isEmpty()) {
             Text(
                 text = when {
-                    declined.isEmpty() -> "Noch keine Zusage"
-                    declined.size == 1 && declined.first().isMe -> "Du hast abgesagt"
-                    declined.size == 1 -> "1 Absage"
-                    else -> "${declined.size} Absagen"
+                    declined.isEmpty() -> S.noAcceptYet
+                    declined.size == 1 && declined.first().isMe -> S.youDeclined
+                    declined.size == 1 -> S.oneDecline
+                    else -> S.nDeclines(declined.size)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -127,7 +128,7 @@ fun AttendanceLine(
         if (declined.isNotEmpty()) {
             // Absagen nur als Zahl; die Gruende stehen in der Detailansicht.
             Text(
-                text = " · ${declined.size} abgesagt",
+                text = S.declinedSuffix(declined.size),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -137,8 +138,8 @@ fun AttendanceLine(
 
 /** "Du bist dabei" liest sich besser als "1 dabei". */
 private fun attendanceText(attending: List<Participant>): String = when {
-    attending.size == 1 && attending.first().isMe -> "Du bist dabei"
-    attending.size == 1 -> "${attending.first().name} ist dabei"
-    attending.any { it.isMe } -> "Du und ${attending.size - 1} weitere"
-    else -> "${attending.size} dabei"
+    attending.size == 1 && attending.first().isMe -> S.youAreIn
+    attending.size == 1 -> S.xIsIn(attending.first().name)
+    attending.any { it.isMe } -> S.youAndN(attending.size - 1)
+    else -> S.nIn(attending.size)
 }

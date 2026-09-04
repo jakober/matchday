@@ -1,5 +1,7 @@
 package com.jakober.matchday.data.remote
 
+import com.jakober.matchday.i18n.S
+import com.jakober.matchday.i18n.currentLocale
 import com.jakober.matchday.data.createSettings
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.push.PushToken
@@ -213,20 +215,20 @@ class MatchdayBackend {
             val raw = (e.message ?: "").lowercase()
             val friendly = when {
                 "invalid login" in raw || "invalid_credentials" in raw ->
-                    "E-Mail oder Passwort stimmt nicht."
+                    S.errInvalidLogin
                 "not confirmed" in raw || "email_not_confirmed" in raw ->
                     UNCONFIRMED
                 "already registered" in raw || "user_already_exists" in raw ->
-                    "Für diese Adresse gibt es schon ein Konto - melde dich an."
+                    S.errAlreadyRegistered
                 "at least" in raw || "weak_password" in raw ->
-                    "Das Passwort braucht mindestens 8 Zeichen."
+                    S.errWeakPassword
                 "expired" in raw || "invalid" in raw && "token" in raw || "otp_expired" in raw ->
-                    "Der Code ist abgelaufen oder falsch. Fordere einen neuen an."
+                    S.errCodeInvalid
                 "rate limit" in raw || "over_email_send_rate" in raw ->
-                    "Zu viele Mails in kurzer Zeit - bitte kurz warten."
+                    S.errRateLimit
                 "invalid email" in raw || "validation_failed" in raw ->
-                    "Das ist keine gültige E-Mail-Adresse."
-                else -> "Anmeldung fehlgeschlagen: ${e.message}"
+                    S.errInvalidEmail
+                else -> S.errAuthGeneric(e.message)
             }
             throw AuthException(friendly)
         }
@@ -341,13 +343,14 @@ class MatchdayBackend {
                     "group_id" to JsonPrimitive(groupId),
                     "scope" to JsonPrimitive(scope),
                     "email" to JsonPrimitive(email),
+                    "locale" to JsonPrimitive(currentLocale),
                 )
             ),
         )
         val json = Json.parseToJsonElement(response.bodyAsText()).jsonObject
         val code = json["code"]?.jsonPrimitive?.contentOrNull
         val error = json["error"]?.jsonPrimitive?.contentOrNull
-        if (code == null) error(error ?: "Einladung fehlgeschlagen")
+        if (code == null) error(error ?: S.errInviteFailed)
         return SentInvite(code = code, sentTo = json["sent_to"]?.jsonPrimitive?.contentOrNull, warning = error)
     }
 
@@ -407,7 +410,7 @@ class MatchdayBackend {
         forceAdmin: Boolean = false,
     ): GroupMembership {
         val me = ownMember(groupId)
-            ?: error("Mitgliedschaft konnte nicht gelesen werden")
+            ?: error(S.errMembershipRead)
         return GroupMembership(
             groupId = groupId,
             memberId = me.id,
@@ -559,6 +562,18 @@ class MatchdayBackend {
                 eq("calendar_id", calendarId)
                 eq("match_uid", matchUid)
             }
+        }
+    }
+
+    /**
+     * Hinterlegt die Geraetesprache beim eigenen Mitglied, damit der Server
+     * Push-Meldungen in der richtigen Sprache schreibt.
+     */
+    suspend fun updateLocale(membership: GroupMembership, locale: String) {
+        client.from("members").update(
+            { set("locale", locale) }
+        ) {
+            filter { eq("id", membership.memberId) }
         }
     }
 

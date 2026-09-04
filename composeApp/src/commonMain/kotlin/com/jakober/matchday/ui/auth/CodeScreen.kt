@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.auth
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,8 +50,8 @@ fun CodeScreen(
     onConfirm: (code: String) -> Unit,
     onResend: () -> Unit,
     onCancel: () -> Unit,
-    title: String = "Adresse bestätigen",
-    cancelLabel: String = "Andere Adresse verwenden",
+    title: String = S.codeTitle,
+    cancelLabel: String = S.codeCancel,
 ) {
     var code by remember { mutableStateOf("") }
     val canConfirm = !busy && code.length == 6
@@ -76,7 +77,7 @@ fun CodeScreen(
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    text = "Wir haben einen Code an $email geschickt. Schau auch im Spam-Ordner nach.",
+                    text = S.codeIntro(email),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -85,7 +86,7 @@ fun CodeScreen(
                 OutlinedTextField(
                     value = code,
                     onValueChange = { code = it.filter { c -> c.isDigit() }.take(6) },
-                    label = { Text("Code aus der Mail") },
+                    label = { Text(S.codeLabel) },
                     singleLine = true,
                     shape = RoundedCornerShape(CardCorner),
                     textStyle = TextStyle(
@@ -111,7 +112,7 @@ fun CodeScreen(
                 }
 
                 TextButton(onClick = onResend, enabled = !busy) {
-                    Text("Code erneut schicken")
+                    Text(S.codeResend)
                 }
                 TextButton(onClick = onCancel, enabled = !busy) {
                     Text(cancelLabel)
@@ -130,7 +131,7 @@ fun CodeScreen(
                     .height(56.dp),
             ) {
                 if (busy) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                else Text("Bestätigen", style = MaterialTheme.typography.titleMedium)
+                else Text(S.confirm, style = MaterialTheme.typography.titleMedium)
             }
 
             Spacer(Modifier.height(24.dp))

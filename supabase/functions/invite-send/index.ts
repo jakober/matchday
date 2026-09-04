@@ -29,7 +29,8 @@ Deno.serve(async (request) => {
     const authorization = request.headers.get("Authorization");
     if (!authorization) return new Response("nicht angemeldet", { status: 401 });
 
-    const { group_id, scope, email } = await request.json();
+    const { group_id, scope, email, locale } = await request.json();
+    const en = locale === "en";
     if (!group_id || !scope) return reply({ error: "Angaben unvollständig" });
     if (typeof email !== "string" || !looksLikeEmail(email)) {
       return reply({ error: "Das ist keine gültige E-Mail-Adresse" });
@@ -75,27 +76,28 @@ Deno.serve(async (request) => {
 
     const to = email.trim();
     const groupName = String(group.name);
+    // Sprache des Einladenden - die des Empfaengers kennt niemand.
     const scopeText = scope === "important"
-      ? "Du siehst die hervorgehobenen Spiele."
-      : "Du siehst alle Spiele.";
-    const text = [
-      `Du bist eingeladen, bei „${groupName}“ in Matchday mitzumachen.`,
-      "",
-      `Dein Einladungscode: ${code}`,
-      "",
-      "So geht es: Matchday öffnen, unter Gruppe „Beitreten“ wählen und den Code eingeben.",
-      scopeText,
-      "",
-      "Der Code gilt einmal.",
-    ].join("\n");
+      ? (en ? "You'll see the highlighted matches." : "Du siehst die hervorgehobenen Spiele.")
+      : (en ? "You'll see all matches." : "Du siehst alle Spiele.");
+    const intro = en
+      ? `You're invited to join “${groupName}” on Matchday.`
+      : `Du bist eingeladen, bei „${groupName}“ in Matchday mitzumachen.`;
+    const codeLine = en ? `Your invitation code: ${code}` : `Dein Einladungscode: ${code}`;
+    const howTo = en
+      ? "How it works: open Matchday, choose “Join” under Group and enter the code."
+      : "So geht es: Matchday öffnen, unter Gruppe „Beitreten“ wählen und den Code eingeben.";
+    const once = en ? "The code works once." : "Der Code gilt einmal.";
+    const text = [intro, "", codeLine, "", howTo, scopeText, "", once].join("\n");
     const html = `
-      <p>Du bist eingeladen, bei <strong>${escapeHtml(groupName)}</strong> in Matchday mitzumachen.</p>
+      <p>${escapeHtml(intro)}</p>
       <p style="font-size:28px;letter-spacing:6px;font-weight:bold">${escapeHtml(code)}</p>
-      <p>So geht es: Matchday öffnen, unter <em>Gruppe</em> „Beitreten“ wählen und den Code eingeben.<br>${scopeText}</p>
-      <p style="color:#666">Der Code gilt einmal.</p>`;
+      <p>${escapeHtml(howTo)}<br>${escapeHtml(scopeText)}</p>
+      <p style="color:#666">${escapeHtml(once)}</p>`;
+    const subject = en ? `Invitation to “${groupName}”` : `Einladung zu „${groupName}“`;
 
     try {
-      await sendMail(to, `Einladung zu „${groupName}“`, text, html);
+      await sendMail(to, subject, text, html);
     } catch (error) {
       // Die Einladung bleibt gueltig - der Code wird in der App angezeigt und
       // laesst sich anders weitergeben.

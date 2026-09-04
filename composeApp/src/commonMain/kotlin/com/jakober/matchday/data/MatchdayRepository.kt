@@ -1,5 +1,6 @@
 package com.jakober.matchday.data
 
+import com.jakober.matchday.i18n.S
 import com.jakober.matchday.data.ics.IcsParser
 import com.jakober.matchday.domain.Subscription
 import io.ktor.client.HttpClient
@@ -74,7 +75,7 @@ class MatchdayRepository(
         } catch (e: Exception) {
             // Ein kaputter Feed darf die anderen nicht mitreissen, deshalb
             // liefern wir den Fehler zurueck statt ihn zu werfen.
-            SyncResult.Failure(e.message ?: "Abruf fehlgeschlagen")
+            SyncResult.Failure(e.message ?: S.errFetch)
         }
     }
 
@@ -101,29 +102,26 @@ class MatchdayRepository(
         val response = try {
             http.get(normalizeUrl(url))
         } catch (e: HttpRequestTimeoutException) {
-            error("Der Server antwortet nicht. Bitte später erneut versuchen.")
+            error(S.errServerNoAnswer)
         } catch (e: ConnectTimeoutException) {
-            error("Der Server antwortet nicht. Bitte später erneut versuchen.")
+            error(S.errServerNoAnswer)
         } catch (e: SocketTimeoutException) {
-            error("Der Server antwortet nicht. Bitte später erneut versuchen.")
+            error(S.errServerNoAnswer)
         } catch (e: IllegalArgumentException) {
             // Ktor lehnt Adressen mit Leerzeichen oder falschem Aufbau so ab.
-            error("Das ist keine gültige Adresse. Bitte auf Tippfehler prüfen.")
+            error(S.errInvalidAddress)
         }
 
         when (response.status.value) {
-            404 -> error("Die Adresse gibt es nicht. Bitte auf Tippfehler prüfen.")
-            401, 403 -> error("Der Kalender ist nicht öffentlich - diese Adresse verlangt eine Anmeldung.")
+            404 -> error(S.errNotFound)
+            401, 403 -> error(S.errNotPublic)
         }
         if (!response.status.isSuccess()) {
-            error("Der Server antwortete mit Fehler ${response.status.value}.")
+            error(S.errServerStatus(response.status.value))
         }
         val body = response.bodyAsText()
         if (!body.contains("BEGIN:VCALENDAR", ignoreCase = true)) {
-            error(
-                "Unter dieser Adresse liegt kein Kalender. Wahrscheinlich ist es die Adresse der " +
-                    "Webseite statt die des Kalenders - suche dort nach „Kalender abonnieren“."
-            )
+            error(S.errNoCalendar)
         }
         return body
     }

@@ -1,5 +1,6 @@
 package com.jakober.matchday
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
@@ -112,7 +113,7 @@ private fun AuthFlow() {
         error = null
         notice = null
         scope.launch {
-            block().onSuccess { onOk() }.onFailure { error = it.message ?: "Fehlgeschlagen" }
+            block().onSuccess { onOk() }.onFailure { error = it.message ?: S.failed }
             busy = false
         }
     }
@@ -139,7 +140,7 @@ private fun RecoveryCodeFlow(email: String) {
         busy = true
         error = null
         scope.launch {
-            block().onSuccess { onOk() }.onFailure { error = it.message ?: "Fehlgeschlagen" }
+            block().onSuccess { onOk() }.onFailure { error = it.message ?: S.failed }
             busy = false
         }
     }
@@ -149,12 +150,12 @@ private fun RecoveryCodeFlow(email: String) {
         busy = busy,
         error = error,
         notice = notice,
-        title = "Passwort zurücksetzen",
-        cancelLabel = "Zurück zur Anmeldung",
+        title = S.resetTitle,
+        cancelLabel = S.backToSignIn,
         onConfirm = { code -> run({ Container.confirmRecovery(email, code) }) },
         onResend = {
             notice = null
-            run({ Container.requestPasswordReset(email) }) { notice = "Ein neuer Code ist unterwegs." }
+            run({ Container.requestPasswordReset(email) }) { notice = S.newCodeSent }
         },
         onCancel = { Container.cancelSignUp() },
     )
@@ -174,7 +175,7 @@ private fun NewPasswordFlow() {
             error = null
             scope.launch {
                 Container.setNewPassword(password)
-                    .onFailure { error = it.message ?: "Speichern fehlgeschlagen" }
+                    .onFailure { error = it.message ?: S.saveFailed }
                 busy = false
             }
         },
@@ -200,7 +201,7 @@ private fun CodeFlow(email: String) {
             scope.launch {
                 Container.confirmEmail(email, code)
                     .onSuccess { Container.requestNotificationPermission() }
-                    .onFailure { error = it.message ?: "Bestätigung fehlgeschlagen" }
+                    .onFailure { error = it.message ?: S.confirmFailed }
                 busy = false
             }
         },
@@ -210,8 +211,8 @@ private fun CodeFlow(email: String) {
             notice = null
             scope.launch {
                 Container.resendCode(email)
-                    .onSuccess { notice = "Ein neuer Code ist unterwegs." }
-                    .onFailure { error = it.message ?: "Senden fehlgeschlagen" }
+                    .onSuccess { notice = S.newCodeSent }
+                    .onFailure { error = it.message ?: S.sendFailed }
                 busy = false
             }
         },
@@ -234,7 +235,7 @@ private fun GroupGate(profile: Profile) {
         members = emptyList(),
         busy = busy,
         error = error ?: if (membershipLost) {
-            "Du bist nicht mehr Mitglied deiner bisherigen Gruppe. Lege eine neue an oder lass dich neu einladen."
+            S.membershipLostGate
         } else {
             null
         },
@@ -437,7 +438,7 @@ private fun Root() {
                 scope.launch {
                     Container.previewCalendar(url)
                         .onSuccess { importPreview = it }
-                        .onFailure { importError = it.message ?: "Prüfen fehlgeschlagen" }
+                        .onFailure { importError = it.message ?: S.checkFailed }
                     importBusy = false
                 }
             },
@@ -450,7 +451,7 @@ private fun Root() {
                             importPreview = null
                             screen = Screen.TEAMS
                         }
-                        .onFailure { importError = it.message ?: "Hinzufügen fehlgeschlagen" }
+                        .onFailure { importError = it.message ?: S.addFailedShort }
                     importBusy = false
                 }
             },
@@ -482,7 +483,7 @@ private fun Root() {
             onChangePassword = { password ->
                 scope.launch {
                     Container.changePassword(password)
-                        .onSuccess { accountNotice = "Passwort geändert." }
+                        .onSuccess { accountNotice = S.passwordChanged }
                         .onFailure { accountNotice = it.message }
                 }
             },
@@ -495,8 +496,7 @@ private fun Root() {
             members = groupSnapshot.members,
             busy = groupBusy || inviteBusy,
             error = groupError ?: if (membershipLost) {
-                "Deine bisherige Gruppe gehört zu einer früheren Installation der App " +
-                    "und ist nicht mehr erreichbar. Lege eine neue an oder lass dich neu einladen."
+                S.membershipLostSettings
             } else {
                 null
             },
@@ -527,7 +527,7 @@ private fun Root() {
                         }
                             .onSuccess { invite = it }
                             .onFailure {
-                                groupError = it.message ?: "Einladung fehlgeschlagen"
+                                groupError = it.message ?: S.errInviteFailed
                             }
                         inviteBusy = false
                     }

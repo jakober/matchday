@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.auth
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -57,13 +58,13 @@ fun PasswordScreen(
             ) {
                 Spacer(Modifier.height(48.dp))
                 Text(
-                    text = "Neues Passwort",
+                    text = S.newPasswordTitle,
                     style = MaterialTheme.typography.headlineMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    text = "Wähle ein neues Passwort mit mindestens 8 Zeichen.",
+                    text = S.newPasswordIntro,
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -71,7 +72,7 @@ fun PasswordScreen(
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Neues Passwort") },
+                    label = { Text(S.newPasswordLabel) },
                     singleLine = true,
                     shape = RoundedCornerShape(CardCorner),
                     visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
@@ -79,7 +80,7 @@ fun PasswordScreen(
                         IconButton(onClick = { show = !show }) {
                             Icon(
                                 if (show) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                                contentDescription = if (show) "Passwort verbergen" else "Passwort anzeigen",
+                                contentDescription = if (show) S.hidePassword else S.showPassword,
                             )
                         }
                     },
@@ -103,7 +104,7 @@ fun PasswordScreen(
                 modifier = Modifier.padding(horizontal = 24.dp).fillMaxWidth().height(56.dp),
             ) {
                 if (busy) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                else Text("Speichern", style = MaterialTheme.typography.titleMedium)
+                else Text(S.save, style = MaterialTheme.typography.titleMedium)
             }
             Spacer(Modifier.height(24.dp))
         }

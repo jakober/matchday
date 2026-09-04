@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.group
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -88,17 +89,17 @@ fun GroupScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text(if (onSignOut != null) "Deine Gruppe" else "Gruppe") },
+                title = { Text(if (onSignOut != null) S.yourGroup else S.groupTitle) },
                 navigationIcon = {
                     if (onSignOut == null) {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = S.back)
                         }
                     }
                 },
                 actions = {
                     if (onSignOut != null) {
-                        TextButton(onClick = onSignOut) { Text("Abmelden") }
+                        TextButton(onClick = onSignOut) { Text(S.signOut) }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -146,19 +147,18 @@ private fun NoGroup(
 
     Spacer(Modifier.height(8.dp))
     Text(
-        text = "Matchday lebt von der Gruppe: Ihr teilt die Kalender und seht, wer zu einem Spiel mitkommt. " +
-            "Lege eine Gruppe an oder tritt mit einem Einladungscode bei.",
+        text = S.groupIntro,
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
 
     Spacer(Modifier.height(28.dp))
-    Label("NEUE GRUPPE")
+    Label(S.newGroup)
     OutlinedTextField(
         value = groupName,
         onValueChange = { groupName = it },
-        label = { Text("Name der Gruppe") },
-        placeholder = { Text("z.B. Stammtisch") },
+        label = { Text(S.groupNameLabel) },
+        placeholder = { Text(S.groupNamePlaceholder) },
         singleLine = true,
         shape = RoundedCornerShape(ChipCorner),
         keyboardOptions = KeyboardOptions(
@@ -169,7 +169,7 @@ private fun NoGroup(
     )
     Spacer(Modifier.height(6.dp))
     Text(
-        text = "Wer die Gruppe anlegt, verwaltet sie: einladen und Spiele hervorheben.",
+        text = S.adminHint,
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -181,18 +181,18 @@ private fun NoGroup(
         modifier = Modifier.fillMaxWidth().height(50.dp),
     ) {
         if (busy) CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-        else Text("Gruppe erstellen")
+        else Text(S.createGroup)
     }
 
     Spacer(Modifier.height(32.dp))
-    Label("ODER BEITRETEN")
+    Label(S.orJoin)
     OutlinedTextField(
         value = code,
         // Der Code besteht aus Grossbuchstaben und Ziffern; die Umwandlung
         // erspart Tippfehler durch Autokorrektur.
         onValueChange = { code = it.uppercase().filter { c -> c.isLetterOrDigit() }.take(6) },
-        label = { Text("Einladungscode") },
-        placeholder = { Text("6 Zeichen") },
+        label = { Text(S.inviteCode) },
+        placeholder = { Text(S.sixChars) },
         singleLine = true,
         shape = RoundedCornerShape(ChipCorner),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -205,7 +205,7 @@ private fun NoGroup(
         shape = RoundedCornerShape(ChipCorner),
         modifier = Modifier.fillMaxWidth().height(50.dp),
     ) {
-        Text("Beitreten")
+        Text(S.join)
     }
 
     ErrorLine(error)
@@ -236,7 +236,7 @@ private fun InGroup(
         )
         if (membership.isAdmin) {
             Text(
-                text = "ADMIN",
+                text = S.admin,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -260,7 +260,7 @@ private fun InGroup(
             )
             Spacer(Modifier.size(10.dp))
             Text(
-                text = "Du siehst nur die hervorgehobenen Spiele.",
+                text = S.onlyImportantHint,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -269,10 +269,9 @@ private fun InGroup(
 
     if (membership.isAdmin) {
         Spacer(Modifier.height(28.dp))
-        Label("EINLADEN")
+        Label(S.invite)
         Text(
-            text = "Jede Einladung gilt einmal. Du legst dabei fest, was der Eingeladene zu sehen bekommt. " +
-                "Mit Adresse geht der Code direkt per E-Mail raus, ohne siehst du ihn hier zum Weitergeben.",
+            text = S.inviteIntro,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -280,7 +279,7 @@ private fun InGroup(
         OutlinedTextField(
             value = inviteEmail,
             onValueChange = { inviteEmail = it },
-            label = { Text("E-Mail-Adresse (optional)") },
+            label = { Text(S.emailOptional) },
             singleLine = true,
             shape = RoundedCornerShape(ChipCorner),
             keyboardOptions = KeyboardOptions(
@@ -299,7 +298,7 @@ private fun InGroup(
                 shape = RoundedCornerShape(ChipCorner),
                 modifier = Modifier.weight(1f).height(50.dp),
             ) {
-                Text("Alle Spiele")
+                Text(S.allMatches)
             }
             OutlinedButton(
                 onClick = { onCreateInvite(SCOPE_IMPORTANT, email) },
@@ -307,7 +306,7 @@ private fun InGroup(
                 shape = RoundedCornerShape(ChipCorner),
                 modifier = Modifier.weight(1f).height(50.dp),
             ) {
-                Text("Nur wichtige")
+                Text(S.onlyImportant)
             }
         }
 
@@ -320,7 +319,7 @@ private fun InGroup(
     ErrorLine(error)
 
     Spacer(Modifier.height(28.dp))
-    Label(if (members.size == 1) "1 MITGLIED" else "${members.size} MITGLIEDER")
+    Label(S.membersHeader(members.size))
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         for (member in members) {
@@ -338,17 +337,16 @@ private fun InGroup(
 
     Spacer(Modifier.height(28.dp))
     TextButton(onClick = onLeave, modifier = Modifier.fillMaxWidth()) {
-        Text("Gruppe verlassen", color = MaterialTheme.colorScheme.error)
+        Text(S.leaveGroup, color = MaterialTheme.colorScheme.error)
     }
 
     zuEntfernen?.let { member ->
         AlertDialog(
             onDismissRequest = { zuEntfernen = null },
-            title = { Text("${member.displayName} entfernen?") },
+            title = { Text(S.removeMemberQ(member.displayName)) },
             text = {
                 Text(
-                    "Alle Zu- und Absagen dieser Person verschwinden aus der Gruppe. " +
-                        "Für eine Rückkehr braucht sie eine neue Einladung."
+                    S.removeMemberText
                 )
             },
             confirmButton = {
@@ -356,11 +354,11 @@ private fun InGroup(
                     onRemoveMember(member)
                     zuEntfernen = null
                 }) {
-                    Text("Entfernen", color = MaterialTheme.colorScheme.error)
+                    Text(S.remove, color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { zuEntfernen = null }) { Text("Abbrechen") }
+                TextButton(onClick = { zuEntfernen = null }) { Text(S.cancel) }
             },
         )
     }
@@ -394,14 +392,14 @@ private fun InviteCode(code: String, scope: String, sentTo: String?, warning: St
         )
         Spacer(Modifier.height(4.dp))
         Text(
-            text = if (scope == SCOPE_IMPORTANT) "sieht nur wichtige Spiele" else "sieht alle Spiele",
+            text = if (scope == SCOPE_IMPORTANT) S.seesOnlyImportant else S.seesAll,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
         sentTo?.let {
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "Per E-Mail an $it geschickt",
+                text = S.sentTo(it),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onPrimaryContainer,
                 textAlign = TextAlign.Center,
@@ -411,7 +409,7 @@ private fun InviteCode(code: String, scope: String, sentTo: String?, warning: St
         warning?.let {
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "$it - gib den Code stattdessen so weiter.",
+                text = S.sendWarning(it),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
                 textAlign = TextAlign.Center,
@@ -419,7 +417,7 @@ private fun InviteCode(code: String, scope: String, sentTo: String?, warning: St
             )
         }
         TextButton(onClick = { clipboard.setText(AnnotatedString(code)) }) {
-            Text("Kopieren")
+            Text(S.copy)
         }
     }
 }
@@ -464,7 +462,7 @@ private fun MemberRow(
             )
             if (showScope && member.scope == SCOPE_IMPORTANT) {
                 Text(
-                    text = "nur wichtige Spiele",
+                    text = S.onlyImportantSmall,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -472,7 +470,7 @@ private fun MemberRow(
         }
         if (isMe) {
             Text(
-                text = "Du",
+                text = S.you,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -481,7 +479,7 @@ private fun MemberRow(
             IconButton(onClick = onRemove) {
                 Icon(
                     Icons.Filled.PersonRemove,
-                    contentDescription = "${member.displayName} entfernen",
+                    contentDescription = S.removeMemberDesc(member.displayName),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

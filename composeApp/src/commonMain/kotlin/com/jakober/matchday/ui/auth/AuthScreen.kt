@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.auth
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -84,16 +85,16 @@ fun AuthScreen(
             ) {
                 Spacer(Modifier.height(48.dp))
                 Text(
-                    text = "Matchday",
+                    text = S.appName,
                     style = MaterialTheme.typography.displaySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
                     text = if (register) {
-                        "Leg dein Konto an. Die Adresse bestätigst du gleich mit einem Code aus der Mail."
+                        S.authIntroRegister
                     } else {
-                        "Melde dich mit deinem Konto an."
+                        S.authIntroSignIn
                     },
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -105,7 +106,7 @@ fun AuthScreen(
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Wie heißt du?") },
+                        label = { Text(S.nameQuestion) },
                         singleLine = true,
                         shape = RoundedCornerShape(CardCorner),
                         keyboardOptions = KeyboardOptions(
@@ -120,7 +121,7 @@ fun AuthScreen(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text("E-Mail-Adresse") },
+                    label = { Text(S.emailLabel) },
                     singleLine = true,
                     shape = RoundedCornerShape(CardCorner),
                     keyboardOptions = KeyboardOptions(
@@ -134,7 +135,7 @@ fun AuthScreen(
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text(if (register) "Passwort (mindestens 8 Zeichen)" else "Passwort") },
+                    label = { Text(if (register) S.passwordLabelNew else S.passwordLabel) },
                     singleLine = true,
                     shape = RoundedCornerShape(CardCorner),
                     visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
@@ -142,7 +143,7 @@ fun AuthScreen(
                         IconButton(onClick = { showPassword = !showPassword }) {
                             Icon(
                                 if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                                contentDescription = if (showPassword) "Passwort verbergen" else "Passwort anzeigen",
+                                contentDescription = if (showPassword) S.hidePassword else S.showPassword,
                             )
                         }
                     },
@@ -175,7 +176,7 @@ fun AuthScreen(
                         onClick = { onForgotPassword(email.trim()) },
                         enabled = !busy && emailOk,
                     ) {
-                        Text("Passwort vergessen?")
+                        Text(S.forgotPassword)
                     }
                 }
 
@@ -198,7 +199,7 @@ fun AuthScreen(
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                 } else {
                     Text(
-                        text = if (register) "Konto anlegen" else "Anmelden",
+                        text = if (register) S.createAccount else S.signIn,
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }
@@ -210,7 +211,7 @@ fun AuthScreen(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
             ) {
                 Text(
-                    text = if (register) "Ich habe schon ein Konto" else "Noch kein Konto? Registrieren",
+                    text = if (register) S.haveAccount else S.noAccount,
                     textAlign = TextAlign.Center,
                 )
             }

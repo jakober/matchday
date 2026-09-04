@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.home
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -119,12 +120,12 @@ fun MonthView(
             IconButton(onClick = {
                 scope.launch { pagerState.animateScrollToPage(pagerState.currentPage - 1) }
             }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Voriger Monat")
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = S.prevMonth)
             }
             IconButton(onClick = {
                 scope.launch { pagerState.animateScrollToPage(pagerState.currentPage + 1) }
             }) {
-                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Nächster Monat")
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = S.nextMonth)
             }
         }
 
@@ -176,7 +177,7 @@ fun MonthView(
         Spacer(Modifier.height(12.dp))
 
         Text(
-            text = "Wische für den nächsten Monat. Tippe einen Spieltag an.",
+            text = S.monthHint,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 16.dp),
@@ -312,7 +313,7 @@ private fun DaySheet(
 
             if (matches.isEmpty()) {
                 Text(
-                    text = "Kein Spiel an diesem Tag.",
+                    text = S.noMatchThatDay,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = 12.dp),
@@ -356,7 +357,7 @@ private fun MatchMark(
         if (isImportant) {
             Icon(
                 imageVector = Icons.Filled.Star,
-                contentDescription = "Wichtiges Spiel",
+                contentDescription = S.importantMatch,
                 tint = StatusOpen,
                 modifier = Modifier.size(15.dp),
             )

@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.onboarding
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -83,13 +84,13 @@ fun OnboardingScreen(onDone: (Profile) -> Unit) {
             Spacer(Modifier.height(48.dp))
 
             Text(
-                text = "Matchday",
+                text = S.appName,
                 style = MaterialTheme.typography.displaySmall,
                 color = MaterialTheme.colorScheme.primary,
             )
             Spacer(Modifier.height(10.dp))
             Text(
-                text = "Alle Spiele an einem Ort - und deine Truppe weiß, wer dabei ist.",
+                text = S.onboardingIntro,
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -104,7 +105,7 @@ fun OnboardingScreen(onDone: (Profile) -> Unit) {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Wie heißt du?") },
+                label = { Text(S.nameQuestion) },
                 singleLine = true,
                 shape = RoundedCornerShape(CardCorner),
                 keyboardOptions = KeyboardOptions(
@@ -117,7 +118,7 @@ fun OnboardingScreen(onDone: (Profile) -> Unit) {
             Spacer(Modifier.height(28.dp))
 
             Text(
-                text = "FARBE",
+                text = S.color,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth(),
@@ -145,7 +146,7 @@ fun OnboardingScreen(onDone: (Profile) -> Unit) {
                     .fillMaxWidth()
                     .height(56.dp),
             ) {
-                Text("Los geht's", style = MaterialTheme.typography.titleMedium)
+                Text(S.letsGo, style = MaterialTheme.typography.titleMedium)
             }
 
             Spacer(Modifier.height(24.dp))

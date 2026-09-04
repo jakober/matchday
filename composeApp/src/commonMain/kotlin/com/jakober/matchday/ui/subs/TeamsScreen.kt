@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.subs
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -66,10 +67,10 @@ fun TeamsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Kalender") },
+                title = { Text(S.calendars) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = S.back)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -89,9 +90,9 @@ fun TeamsScreen(
             if (subscriptions.isEmpty()) {
                 Text(
                     text = if (isAdmin) {
-                        "Eure Gruppe hat noch keinen Kalender. Füge einen hinzu - zum Beispiel den Spielplan der Bundesliga."
+                        S.noCalendarAdmin
                     } else {
-                        "Eure Gruppe hat noch keinen Kalender. Der Admin kann einen hinzufügen."
+                        S.noCalendarMember
                     },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -104,7 +105,7 @@ fun TeamsScreen(
                     subscription = subscription,
                     matchCount = matchCountOf(subscription.id),
                     lastSynced = subscription.lastSyncedAt?.let {
-                        "${DateText.fullDate(it.local().date)}, ${DateText.time(it.local())} Uhr"
+                        S.dateTime(it.local(), DateText.fullDate(it.local().date), DateText.time(it.local()))
                     },
                     canRemove = isAdmin,
                     onToggle = { onToggle(subscription.id, it) },
@@ -119,7 +120,7 @@ fun TeamsScreen(
                     shape = RoundedCornerShape(ChipCorner),
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                 ) {
-                    Text("Kalender hinzufügen")
+                    Text(S.addCalendar)
                 }
             }
 
@@ -134,9 +135,9 @@ fun TeamsScreen(
             Spacer(Modifier.height(8.dp))
             Text(
                 text = if (isAdmin) {
-                    "Die Spielpläne werden automatisch im Hintergrund aktualisiert - auch verlegte Anstoßzeiten."
+                    S.autoUpdateHint
                 } else {
-                    "Welche Kalender es gibt, legt der Admin fest. Der Schalter blendet einen Kalender nur auf diesem Gerät aus."
+                    S.adminDecidesHint
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -148,21 +149,20 @@ fun TeamsScreen(
     pendingRemoval?.let { subscription ->
         AlertDialog(
             onDismissRequest = { pendingRemoval = null },
-            title = { Text("Kalender entfernen?") },
+            title = { Text(S.removeCalendarQ) },
             text = {
                 Text(
-                    "„${subscription.name}“ verschwindet für alle in der Gruppe - " +
-                        "samt aller Zusagen zu diesen Spielen."
+                    S.removeCalendarText(subscription.name)
                 )
             },
             confirmButton = {
                 TextButton(onClick = {
                     onRemove(subscription)
                     pendingRemoval = null
-                }) { Text("Entfernen") }
+                }) { Text(S.remove) }
             },
             dismissButton = {
-                TextButton(onClick = { pendingRemoval = null }) { Text("Abbrechen") }
+                TextButton(onClick = { pendingRemoval = null }) { Text(S.cancel) }
             },
         )
     }
@@ -196,10 +196,10 @@ private fun SubscriptionRow(
             )
             Text(
                 text = when {
-                    !subscription.enabled -> "Ausgeblendet"
-                    matchCount == 0 -> "Noch keine Spiele geladen"
-                    lastSynced == null -> "$matchCount Spiele"
-                    else -> "$matchCount Spiele · Stand $lastSynced"
+                    !subscription.enabled -> S.hidden
+                    matchCount == 0 -> S.noMatchesYet
+                    lastSynced == null -> S.matchesN(matchCount)
+                    else -> S.matchesNStand(matchCount, lastSynced)
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -211,7 +211,7 @@ private fun SubscriptionRow(
             IconButton(onClick = onRemove) {
                 Icon(
                     Icons.Filled.Delete,
-                    contentDescription = "Kalender entfernen",
+                    contentDescription = S.removeCalendar,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

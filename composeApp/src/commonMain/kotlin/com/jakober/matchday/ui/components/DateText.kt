@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.components
 
+import com.jakober.matchday.i18n.S
 import kotlinx.datetime.Clock
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.Instant
@@ -27,14 +28,9 @@ fun Instant.local(): LocalDateTime = toLocalDateTime(TimeZone.currentSystemDefau
 
 object DateText {
 
-    private val WEEKDAYS_SHORT = listOf("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
-    private val WEEKDAYS_LONG = listOf(
-        "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag",
-    )
-    private val MONTHS = listOf(
-        "Januar", "Februar", "März", "April", "Mai", "Juni",
-        "Juli", "August", "September", "Oktober", "November", "Dezember",
-    )
+    private val WEEKDAYS_SHORT: List<String> get() = S.weekdaysShort
+    private val WEEKDAYS_LONG: List<String> get() = S.weekdaysLong
+    private val MONTHS: List<String> get() = S.months
 
     val weekdayHeaders: List<String> get() = WEEKDAYS_SHORT
 
@@ -67,11 +63,11 @@ object DateText {
     fun relativeDay(date: LocalDate, today: LocalDate = todayDate()): String {
         val days = today.daysUntil(date)
         return when {
-            days == 0 -> "Heute"
-            days == 1 -> "Morgen"
-            days == 2 -> "Übermorgen"
-            days in 3..6 -> "In $days Tagen"
-            days < 0 -> "Vorbei"
+            days == 0 -> S.today
+            days == 1 -> S.tomorrow
+            days == 2 -> S.dayAfterTomorrow
+            days in 3..6 -> S.inDays(days)
+            days < 0 -> S.past
             else -> "${weekdayShort(date)}, ${date.dayOfMonth}. ${MONTHS[date.monthNumber - 1]}"
         }
     }

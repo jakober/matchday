@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.settings
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -89,10 +90,10 @@ fun SettingsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Einstellungen") },
+                title = { Text(S.settings) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Zurück")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = S.back)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -110,7 +111,7 @@ fun SettingsScreen(
                 .padding(horizontal = 16.dp),
         ) {
             // -- Profil ------------------------------------------------------
-            SectionLabel("PROFIL")
+            SectionLabel(S.profile)
 
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Avatar(
@@ -129,7 +130,7 @@ fun SettingsScreen(
                             onProfileChange(profile.copy(name = it.trim()))
                         }
                     },
-                    label = { Text("Name") },
+                    label = { Text(S.name) },
                     singleLine = true,
                     shape = RoundedCornerShape(ChipCorner),
                     modifier = Modifier.weight(1f),
@@ -143,7 +144,7 @@ fun SettingsScreen(
             )
 
             // -- Konto -------------------------------------------------------
-            SectionLabel("KONTO")
+            SectionLabel(S.account)
             AccountSection(
                 email = email,
                 notice = accountNotice,
@@ -152,23 +153,23 @@ fun SettingsScreen(
             )
 
             // -- Gruppe ------------------------------------------------------
-            SectionLabel("GRUPPE")
+            SectionLabel(S.group)
 
             LinkRow(
-                title = groupName ?: "Keine Gruppe",
+                title = groupName ?: S.noGroup,
                 subtitle = when {
-                    groupName == null -> "Zusagen bleiben auf diesem Gerät"
-                    memberCount <= 1 -> "Lade jemanden mit dem Einladungscode ein"
-                    else -> "$memberCount Mitglieder"
+                    groupName == null -> S.groupSubtitleNone
+                    memberCount <= 1 -> S.groupSubtitleInvite
+                    else -> S.membersN(memberCount)
                 },
                 onClick = onOpenGroup,
             )
 
             // -- Erinnerungen ------------------------------------------------
-            SectionLabel("ERINNERUNG VOR ANPFIFF")
+            SectionLabel(S.reminderSection)
 
             SwitchRow(
-                label = "Vor dem Spiel erinnern",
+                label = S.remindBefore,
                 checked = reminders.kickoffReminderEnabled,
                 onChange = { onRemindersChange(reminders.copy(kickoffReminderEnabled = it)) },
             )
@@ -187,7 +188,7 @@ fun SettingsScreen(
                 }
             }
 
-            SectionLabel("ZUSTELLUNG")
+            SectionLabel(S.delivery)
 
             NotificationStatus(
                 diagnostics = diagnostics,
@@ -196,20 +197,20 @@ fun SettingsScreen(
                 onOpenExactAlarmSettings = onOpenExactAlarmSettings,
             )
 
-            SectionLabel("OFFENE ZUSAGEN")
+            SectionLabel(S.openRsvps)
 
             SwitchRow(
-                label = "Eine Woche vorher nachfragen",
-                description = "Erinnert dich, wenn ein Spiel in sieben Tagen ansteht und du noch nicht geantwortet hast.",
+                label = S.askWeekBefore,
+                description = S.askWeekBeforeDesc,
                 checked = reminders.undecidedReminderEnabled,
                 onChange = { onRemindersChange(reminders.copy(undecidedReminderEnabled = it)) },
             )
 
             // -- Kalender ----------------------------------------------------
-            SectionLabel("KALENDER")
+            SectionLabel(S.calendarSection)
 
             LinkRow(
-                title = if (subscriptionCount == 1) "1 Kalender" else "$subscriptionCount Kalender",
+                title = S.calendarsN(subscriptionCount),
                 subtitle = null,
                 onClick = onOpenSubscriptions,
             )
@@ -220,7 +221,7 @@ fun SettingsScreen(
             // Datenbank nachsehen.
             Spacer(Modifier.height(28.dp))
             Text(
-                text = "Gerätekennung: ${deviceId?.take(8) ?: "nicht angemeldet"}",
+                text = S.deviceId(deviceId?.take(8)),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -254,7 +255,7 @@ private fun NotificationStatus(
     ) {
         if (diagnostics == null) {
             Text(
-                text = "Wird geprüft ...",
+                text = S.checking,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -263,20 +264,20 @@ private fun NotificationStatus(
 
         StatusLine(
             ok = diagnostics.permissionGranted,
-            okText = "Benachrichtigungen erlaubt",
-            failText = "Benachrichtigungen nicht erlaubt - in den Systemeinstellungen freigeben",
+            okText = S.notifAllowed,
+            failText = S.notifDenied,
         )
 
         if (diagnostics.exactAlarmsRelevant) {
             Spacer(Modifier.height(8.dp))
             StatusLine(
                 ok = diagnostics.exactAlarmsAllowed,
-                okText = "Erinnerungen kommen auf die Minute genau",
-                failText = "Ohne exakte Alarme kann eine Erinnerung einige Minuten später kommen",
+                okText = S.exactOk,
+                failText = S.exactFail,
             )
             if (!diagnostics.exactAlarmsAllowed) {
                 TextButton(onClick = onOpenExactAlarmSettings) {
-                    Text("Exakte Alarme erlauben")
+                    Text(S.allowExact)
                 }
             }
         }
@@ -284,9 +285,9 @@ private fun NotificationStatus(
         Spacer(Modifier.height(8.dp))
         Text(
             text = when (diagnostics.pendingCount) {
-                0 -> "Zurzeit keine Erinnerung vorgemerkt"
-                1 -> "1 Erinnerung vorgemerkt"
-                else -> "${diagnostics.pendingCount} Erinnerungen vorgemerkt"
+                0 -> S.pendingNone
+                1 -> S.pendingOne
+                else -> S.pendingN(diagnostics.pendingCount)
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -299,18 +300,18 @@ private fun NotificationStatus(
         when (pushState) {
             PushState.REGISTERED -> StatusLine(
                 ok = true,
-                okText = "Für Meldungen der Gruppe erreichbar",
+                okText = S.pushOk,
                 failText = "",
             )
             PushState.NO_GROUP -> Text(
-                text = "Ohne Gruppe gibt es keine Meldungen der anderen.",
+                text = S.pushNoGroup,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             PushState.NO_TOKEN, PushState.UPLOAD_FAILED -> StatusLine(
                 ok = false,
                 okText = "",
-                failText = "Nicht für Meldungen der Gruppe erreichbar",
+                failText = S.pushFail,
             )
             PushState.UNKNOWN -> Unit
         }
@@ -324,12 +325,12 @@ private fun NotificationStatus(
             shape = RoundedCornerShape(ChipCorner),
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Testbenachrichtigung senden")
+            Text(S.sendTest)
         }
         if (testSent) {
             Spacer(Modifier.height(6.dp))
             Text(
-                text = "Kommt in etwa 10 Sekunden. Schließe die App kurz, dann siehst du sie wie im Alltag.",
+                text = S.testHint,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -377,12 +378,12 @@ private fun AccountSection(
     if (passwordDialog) {
         AlertDialog(
             onDismissRequest = { passwordDialog = false },
-            title = { Text("Passwort ändern") },
+            title = { Text(S.changePassword) },
             text = {
                 OutlinedTextField(
                     value = newPassword,
                     onValueChange = { newPassword = it },
-                    label = { Text("Neues Passwort (mindestens 8 Zeichen)") },
+                    label = { Text(S.newPasswordMin) },
                     singleLine = true,
                     visualTransformation = PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -398,10 +399,10 @@ private fun AccountSection(
                         passwordDialog = false
                     },
                     enabled = newPassword.length >= 8,
-                ) { Text("Speichern") }
+                ) { Text(S.save) }
             },
             dismissButton = {
-                TextButton(onClick = { passwordDialog = false; newPassword = "" }) { Text("Abbrechen") }
+                TextButton(onClick = { passwordDialog = false; newPassword = "" }) { Text(S.cancel) }
             },
         )
     }
@@ -415,7 +416,7 @@ private fun AccountSection(
             .padding(16.dp),
     ) {
         Text(
-            text = email ?: "Nicht angemeldet",
+            text = email ?: S.notSignedIn,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -430,11 +431,11 @@ private fun AccountSection(
         Spacer(Modifier.height(6.dp))
         Row {
             TextButton(onClick = { passwordDialog = true }, enabled = email != null) {
-                Text("Passwort ändern")
+                Text(S.changePassword)
             }
             Spacer(Modifier.weight(1f))
             TextButton(onClick = { confirmSignOut = true }) {
-                Text("Abmelden", color = MaterialTheme.colorScheme.error)
+                Text(S.signOut, color = MaterialTheme.colorScheme.error)
             }
         }
     }
@@ -442,11 +443,10 @@ private fun AccountSection(
     if (confirmSignOut) {
         AlertDialog(
             onDismissRequest = { confirmSignOut = false },
-            title = { Text("Abmelden?") },
+            title = { Text(S.signOutQuestion) },
             text = {
                 Text(
-                    "Deine Gruppe und deine Zusagen bleiben in deinem Konto erhalten. " +
-                        "Auf diesem Gerät wird alles entfernt, bis du dich wieder anmeldest."
+                    S.signOutText
                 )
             },
             confirmButton = {
@@ -454,11 +454,11 @@ private fun AccountSection(
                     confirmSignOut = false
                     onSignOut()
                 }) {
-                    Text("Abmelden", color = MaterialTheme.colorScheme.error)
+                    Text(S.signOut, color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { confirmSignOut = false }) { Text("Abbrechen") }
+                TextButton(onClick = { confirmSignOut = false }) { Text(S.cancel) }
             },
         )
     }
@@ -548,9 +548,9 @@ private fun MinuteChip(
     modifier: Modifier = Modifier,
 ) {
     val label = when {
-        minutes % (24 * 60) == 0 -> "${minutes / (24 * 60)} Tag"
-        minutes % 60 == 0 -> "${minutes / 60} Std"
-        else -> "$minutes Min"
+        minutes % (24 * 60) == 0 -> S.daysShort(minutes / (24 * 60))
+        minutes % 60 == 0 -> S.hoursShort(minutes / 60)
+        else -> S.minutesShort(minutes)
     }
     Box(
         modifier = modifier

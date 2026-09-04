@@ -283,29 +283,39 @@ Deno.serve(async (request) => {
     // In der App waere sie umgehbar.
     const { data: alle } = await supabase
       .from("members")
-      .select("id, scope")
+      .select("id, scope, locale")
       .eq("group_id", member.group_id);
 
-    const scopeById = new Map((alle ?? []).map((m: { id: string; scope: string }) => [m.id, m.scope]));
+    const memberById = new Map(
+      (alle ?? []).map((m: { id: string; scope: string; locale: string }) => [m.id, m]),
+    );
     const empfaenger = tokens.filter((entry: { member_id: string }) =>
-      important !== null || scopeById.get(entry.member_id) !== "important"
+      important !== null || memberById.get(entry.member_id)?.scope !== "important"
     );
 
     if (empfaenger.length === 0) {
       return new Response("keine passenden Empfaenger", { status: 200 });
     }
 
-    const name = member.display_name ?? "Jemand";
-    const title = rsvp.status === "IN" ? `${name} ist dabei` : `${name} kann nicht`;
-    const match = rsvp.match_title ?? "Ein Spiel";
-    const body = rsvp.comment ? `${match} · ${rsvp.comment}` : match;
+    // Text in der Sprache des Empfaengers - jedes Mitglied hat seine eigene.
+    const name = member.display_name ?? (rsvp.status === "IN" ? "Jemand" : "Jemand");
+    const textFor = (locale: string) => {
+      const en = locale === "en";
+      const title = rsvp.status === "IN"
+        ? (en ? `${name} is in` : `${name} ist dabei`)
+        : (en ? `${name} can't make it` : `${name} kann nicht`);
+      const match = rsvp.match_title ?? (en ? "A match" : "Ein Spiel");
+      const body = rsvp.comment ? `${match} · ${rsvp.comment}` : match;
+      return { title, body };
+    };
 
     const results = await Promise.all(
-      empfaenger.map((entry: { platform: string; token: string }) =>
-        entry.platform === "ios"
+      empfaenger.map((entry: { platform: string; token: string; member_id: string }) => {
+        const { title, body } = textFor(memberById.get(entry.member_id)?.locale ?? "de");
+        return entry.platform === "ios"
           ? sendApns(entry.token, title, body)
-          : sendFcm(entry.token, title, body)
-      ),
+          : sendFcm(entry.token, title, body);
+      }),
     );
 
     const sent = results.filter(Boolean).length;

@@ -1,5 +1,6 @@
 package com.jakober.matchday.notify
 
+import com.jakober.matchday.i18n.S
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.ReminderSettings
 import com.jakober.matchday.domain.Rsvp
@@ -114,7 +115,7 @@ object ReminderPlanner {
                         out += ScheduledReminder(
                             id = "undecided:${match.id}:$daysBefore",
                             at = at,
-                            title = "Bist du dabei?",
+                            title = S.askAreYouIn,
                             body = undecidedBody(daysBefore, match.displayTitle),
                         )
                     }
@@ -127,24 +128,24 @@ object ReminderPlanner {
 
     private fun undecidedBody(daysBefore: Int, title: String): String {
         val whenText = when (daysBefore) {
-            1 -> "ist morgen"
-            7 -> "ist in einer Woche"
-            else -> "ist in $daysBefore Tagen"
+            1 -> S.isTomorrow
+            7 -> S.isInAWeek
+            else -> S.isInDays(daysBefore)
         }
-        return "$title $whenText - du hast noch nicht geantwortet."
+        return S.notAnswered(title, whenText)
     }
 
     private fun kickoffBody(minutesBefore: Int, location: String?): String {
         val whenText = when {
             minutesBefore % (24 * 60) == 0 -> {
                 val days = minutesBefore / (24 * 60)
-                if (days == 1) "Morgen um diese Zeit ist Anpfiff" else "In $days Tagen ist Anpfiff"
+                if (days == 1) S.kickoffTomorrow else S.kickoffInDays(days)
             }
             minutesBefore % 60 == 0 -> {
                 val hours = minutesBefore / 60
-                if (hours == 1) "Anpfiff in einer Stunde" else "Anpfiff in $hours Stunden"
+                if (hours == 1) S.kickoffInHour else S.kickoffInHours(hours)
             }
-            else -> "Anpfiff in $minutesBefore Minuten"
+            else -> S.kickoffInMinutes(minutesBefore)
         }
         return if (location.isNullOrBlank()) whenText else "$whenText - $location"
     }

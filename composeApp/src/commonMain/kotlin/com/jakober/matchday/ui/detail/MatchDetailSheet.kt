@@ -1,5 +1,6 @@
 package com.jakober.matchday.ui.detail
 
+import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -138,7 +139,7 @@ fun MatchDetailSheet(
                     Spacer(Modifier.size(8.dp))
                     Icon(
                         imageVector = Icons.Filled.Star,
-                        contentDescription = "Wichtiges Spiel",
+                        contentDescription = S.importantMatch,
                         tint = StatusOpen,
                         modifier = Modifier.size(26.dp),
                     )
@@ -170,7 +171,7 @@ fun MatchDetailSheet(
                     )
                     Spacer(Modifier.size(8.dp))
                     Text(
-                        text = if (isImportant) "Hervorhebung aufheben" else "Als wichtig hervorheben",
+                        text = if (isImportant) S.unmarkImportant else S.markImportant,
                         style = MaterialTheme.typography.labelLarge,
                         color = if (isImportant) StatusOpen else MaterialTheme.colorScheme.onSurface,
                     )
@@ -197,7 +198,7 @@ fun MatchDetailSheet(
                     if (!match.isAllDay) {
                         append(" · ")
                         append(DateText.time(dateTime))
-                        append(" Uhr")
+                        append(S.clockSuffix)
                     }
                 },
             )
@@ -210,7 +211,7 @@ fun MatchDetailSheet(
             Spacer(Modifier.height(24.dp))
 
             Text(
-                text = "WER KOMMT MIT",
+                text = S.whoComes,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -220,7 +221,7 @@ fun MatchDetailSheet(
             Spacer(Modifier.height(24.dp))
 
             Text(
-                text = "BIST DU DABEI?",
+                text = S.areYouIn,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -228,7 +229,7 @@ fun MatchDetailSheet(
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 ChoiceButton(
-                    label = "Dabei",
+                    label = S.statusIn,
                     icon = Icons.Filled.Check,
                     color = StatusIn,
                     selected = status == RsvpStatus.IN,
@@ -239,7 +240,7 @@ fun MatchDetailSheet(
                     modifier = Modifier.weight(1f),
                 )
                 ChoiceButton(
-                    label = "Nicht dabei",
+                    label = S.statusOut,
                     icon = Icons.Filled.Close,
                     color = StatusOut,
                     selected = status == RsvpStatus.OUT,
@@ -258,8 +259,8 @@ fun MatchDetailSheet(
                 OutlinedTextField(
                     value = draft,
                     onValueChange = { if (it.length <= MAX_COMMENT) draft = it },
-                    label = { Text("Warum nicht? (optional)") },
-                    placeholder = { Text("z.B. bin im Urlaub") },
+                    label = { Text(S.whyNotLabel) },
+                    placeholder = { Text(S.whyNotPlaceholder) },
                     supportingText = { Text("${draft.length}/$MAX_COMMENT") },
                     shape = RoundedCornerShape(ChipCorner),
                     maxLines = 3,
@@ -278,7 +279,7 @@ fun MatchDetailSheet(
                     shape = RoundedCornerShape(ChipCorner),
                     modifier = Modifier.fillMaxWidth().height(48.dp),
                 ) {
-                    Text(if (draft.isBlank()) "Ohne Grund absagen" else "Speichern")
+                    Text(if (draft.isBlank()) S.declineWithoutReason else S.save)
                 }
             }
 
@@ -294,7 +295,7 @@ fun MatchDetailSheet(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        text = "Antwort zurücknehmen",
+                        text = S.withdraw,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -316,7 +317,7 @@ private fun PersonList(participants: List<Participant>) {
 
     if (attending.isEmpty() && declined.isEmpty()) {
         Text(
-            text = "Noch hat niemand geantwortet.",
+            text = S.nobodyAnswered,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -325,7 +326,7 @@ private fun PersonList(participants: List<Participant>) {
 
     if (attending.isEmpty()) {
         Text(
-            text = "Noch keine Zusage.",
+            text = S.noAcceptYetDot,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -340,7 +341,7 @@ private fun PersonList(participants: List<Participant>) {
     if (declined.isNotEmpty()) {
         Spacer(Modifier.height(20.dp))
         Text(
-            text = if (declined.size == 1) "1 ABSAGE" else "${declined.size} ABSAGEN",
+            text = S.declinesHeader(declined.size),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -367,7 +368,7 @@ private fun PersonRow(person: Participant, accent: Color, icon: ImageVector) {
         Spacer(Modifier.size(12.dp))
         Column(Modifier.weight(1f)) {
             Text(
-                text = if (person.isMe) "${person.name} (du)" else person.name,
+                text = if (person.isMe) person.name + S.youSuffix else person.name,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
