@@ -177,9 +177,25 @@ class MatchdayBackend {
         authCall { client.auth.resendEmail(OtpType.Email.SIGNUP, email) }
     }
 
-    /** Schickt die Mail zum Zuruecksetzen des Passworts. */
+    /** Schickt die Mail mit dem Code zum Zuruecksetzen des Passworts. */
     suspend fun sendPasswordReset(email: String) {
         authCall { client.auth.resetPasswordForEmail(email) }
+    }
+
+    /** Loest den Code aus der Zuruecksetz-Mail ein; danach besteht eine Sitzung. */
+    suspend fun verifyRecovery(email: String, code: String) {
+        authCall {
+            client.auth.verifyEmailOtp(
+                type = OtpType.Email.RECOVERY,
+                email = email,
+                token = code.trim(),
+            )
+        }
+    }
+
+    /** Setzt ein neues Passwort fuer die bestehende Sitzung. */
+    suspend fun updatePassword(password: String) {
+        authCall { client.auth.updateUser { this.password = password } }
     }
 
     suspend fun signOut() {

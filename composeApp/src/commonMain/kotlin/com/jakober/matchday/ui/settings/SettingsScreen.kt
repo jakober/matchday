@@ -42,6 +42,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import com.jakober.matchday.PushState
 import com.jakober.matchday.domain.Profile
@@ -75,7 +78,8 @@ fun SettingsScreen(
     /** Adresse des Kontos; null, solange die Sitzung nicht geladen ist. */
     email: String?,
     accountNotice: String?,
-    onChangePassword: () -> Unit,
+    /** Neues Passwort; die Sitzung besteht, also braucht es das alte nicht. */
+    onChangePassword: (String) -> Unit,
     onSignOut: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -356,18 +360,51 @@ private fun StatusLine(ok: Boolean, okText: String, failText: String) {
 }
 
 /**
- * Konto: Adresse, Passwort aendern, Abmelden. Das Passwort wird per Mail
- * geaendert - ein Formular hier muesste das alte Passwort pruefen, und das
- * kann nur der Server; die Mail ist derselbe Weg wie "Passwort vergessen".
+ * Konto: Adresse, Passwort aendern, Abmelden. Das Passwort laesst sich mit
+ * bestehender Sitzung direkt setzen; das alte ist dafuer nicht noetig.
  */
 @Composable
 private fun AccountSection(
     email: String?,
     notice: String?,
-    onChangePassword: () -> Unit,
+    onChangePassword: (String) -> Unit,
     onSignOut: () -> Unit,
 ) {
     var confirmSignOut by remember { mutableStateOf(false) }
+    var passwordDialog by remember { mutableStateOf(false) }
+    var newPassword by remember { mutableStateOf("") }
+
+    if (passwordDialog) {
+        AlertDialog(
+            onDismissRequest = { passwordDialog = false },
+            title = { Text("Passwort ändern") },
+            text = {
+                OutlinedTextField(
+                    value = newPassword,
+                    onValueChange = { newPassword = it },
+                    label = { Text("Neues Passwort (mindestens 8 Zeichen)") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    shape = RoundedCornerShape(ChipCorner),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onChangePassword(newPassword)
+                        newPassword = ""
+                        passwordDialog = false
+                    },
+                    enabled = newPassword.length >= 8,
+                ) { Text("Speichern") }
+            },
+            dismissButton = {
+                TextButton(onClick = { passwordDialog = false; newPassword = "" }) { Text("Abbrechen") }
+            },
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -392,7 +429,7 @@ private fun AccountSection(
         }
         Spacer(Modifier.height(6.dp))
         Row {
-            TextButton(onClick = onChangePassword, enabled = email != null) {
+            TextButton(onClick = { passwordDialog = true }, enabled = email != null) {
                 Text("Passwort ändern")
             }
             Spacer(Modifier.weight(1f))

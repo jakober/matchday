@@ -47,6 +47,10 @@ sealed interface AuthState {
     data object SignedOut : AuthState
     /** Konto angelegt, Adresse noch nicht bestaetigt. */
     data class AwaitingCode(val email: String) : AuthState
+    /** Passwort vergessen: Code aus der Mail wird erwartet. */
+    data class AwaitingRecoveryCode(val email: String) : AuthState
+    /** Code eingeloest, jetzt ein neues Passwort waehlen. */
+    data object NewPassword : AuthState
     data object SignedIn : AuthState
 }
 
@@ -153,9 +157,29 @@ object Container {
 
     suspend fun resendCode(email: String): Result<Unit> = runCatching { backend.resendCode(email) }
 
-    suspend fun sendPasswordReset(email: String): Result<Unit> = runCatching { backend.sendPasswordReset(email) }
+    /**
+     * Passwort vergessen: Code per Mail, dann neues Passwort - alles in der
+     * App. Der uebliche Weg ueber einen Link braeuchte eine Webseite, die es
+     * fuer Matchday nicht gibt.
+     */
+    suspend fun requestPasswordReset(email: String): Result<Unit> =
+        runCatching { backend.sendPasswordReset(email) }
+            .onSuccess { _auth.value = AuthState.AwaitingRecoveryCode(email) }
 
-    /** Zurueck zur Anmeldung, ohne Konto - etwa wenn man sich in der Adresse vertippt hat. */
+    suspend fun confirmRecovery(email: String, code: String): Result<Unit> =
+        runCatching { backend.verifyRecovery(email, code) }
+            .onSuccess { _auth.value = AuthState.NewPassword }
+
+    /** Nach dem Zuruecksetzen: neues Passwort setzen und drin sein. */
+    suspend fun setNewPassword(password: String): Result<Unit> =
+        runCatching { backend.updatePassword(password) }
+            .onSuccess { _auth.value = AuthState.SignedIn }
+
+    /** Aus den Einstellungen heraus, mit bestehender Sitzung. */
+    suspend fun changePassword(password: String): Result<Unit> =
+        runCatching { backend.updatePassword(password) }
+
+    /** Zurueck zur Anmeldung - etwa wenn man sich in der Adresse vertippt hat. */
     fun cancelSignUp() {
         pendingName = null
         _auth.value = AuthState.SignedOut

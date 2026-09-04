@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import com.jakober.matchday.domain.Profile
 import com.jakober.matchday.ui.auth.AuthScreen
 import com.jakober.matchday.ui.auth.CodeScreen
+import com.jakober.matchday.ui.auth.PasswordScreen
 import com.jakober.matchday.ui.components.SystemBackHandler
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -73,6 +74,8 @@ fun App() {
             AuthState.Loading -> LoadingScreen()
             AuthState.SignedOut -> AuthFlow()
             is AuthState.AwaitingCode -> CodeFlow(state.email)
+            is AuthState.AwaitingRecoveryCode -> RecoveryCodeFlow(state.email)
+            AuthState.NewPassword -> NewPasswordFlow()
             AuthState.SignedIn -> when {
                 profile == null -> OnboardingScreen(
                     onDone = { newProfile ->
@@ -120,9 +123,59 @@ private fun AuthFlow() {
         notice = notice,
         onSignIn = { email, password -> run({ Container.signIn(email, password) }) },
         onSignUp = { name, email, password -> run({ Container.signUp(name, email, password) }) },
-        onForgotPassword = { email ->
-            run({ Container.sendPasswordReset(email) }) {
-                notice = "Eine Mail zum Zurücksetzen ist unterwegs an $email."
+        onForgotPassword = { email -> run({ Container.requestPasswordReset(email) }) },
+    )
+}
+
+/** Code aus der Zuruecksetz-Mail. */
+@Composable
+private fun RecoveryCodeFlow(email: String) {
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+    var notice by remember { mutableStateOf<String?>(null) }
+
+    fun run(block: suspend () -> Result<Unit>, onOk: () -> Unit = {}) {
+        busy = true
+        error = null
+        scope.launch {
+            block().onSuccess { onOk() }.onFailure { error = it.message ?: "Fehlgeschlagen" }
+            busy = false
+        }
+    }
+
+    CodeScreen(
+        email = email,
+        busy = busy,
+        error = error,
+        notice = notice,
+        title = "Passwort zurücksetzen",
+        cancelLabel = "Zurück zur Anmeldung",
+        onConfirm = { code -> run({ Container.confirmRecovery(email, code) }) },
+        onResend = {
+            notice = null
+            run({ Container.requestPasswordReset(email) }) { notice = "Ein neuer Code ist unterwegs." }
+        },
+        onCancel = { Container.cancelSignUp() },
+    )
+}
+
+@Composable
+private fun NewPasswordFlow() {
+    val scope = rememberCoroutineScope()
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    PasswordScreen(
+        busy = busy,
+        error = error,
+        onSubmit = { password ->
+            busy = true
+            error = null
+            scope.launch {
+                Container.setNewPassword(password)
+                    .onFailure { error = it.message ?: "Speichern fehlgeschlagen" }
+                busy = false
             }
         },
     )
@@ -426,14 +479,11 @@ private fun Root() {
             onOpenGroup = { screen = Screen.GROUP },
             email = Container.backend.currentEmail(),
             accountNotice = accountNotice,
-            onChangePassword = {
-                val email = Container.backend.currentEmail()
-                if (email != null) {
-                    scope.launch {
-                        Container.sendPasswordReset(email)
-                            .onSuccess { accountNotice = "Eine Mail zum Ändern des Passworts ist unterwegs an $email." }
-                            .onFailure { accountNotice = it.message }
-                    }
+            onChangePassword = { password ->
+                scope.launch {
+                    Container.changePassword(password)
+                        .onSuccess { accountNotice = "Passwort geändert." }
+                        .onFailure { accountNotice = it.message }
                 }
             },
             onSignOut = { Container.signOut() },
