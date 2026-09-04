@@ -141,8 +141,12 @@ object IcsParser {
         // Ohne diese Trennung hiesse die Gastmannschaft "Hamburger SV |
         // Bundesliga | 3. Spieltag" - kein Wappen, unsinniges Kuerzel.
         val segments = summary.split(" | ").map { it.trim() }.filter { it.isNotEmpty() }
-        val title = segments.firstOrNull() ?: summary
-        val suffix = segments.drop(1).joinToString(" · ").ifEmpty { null }
+        // fixtur.es haengt Ergebnis und Wettbewerbskuerzel an: "Arsenal -
+        // Chelsea [CL] (2-1)". Beides gehoert nicht zum Mannschaftsnamen.
+        val cleaned = stripScoreAndTag(segments.firstOrNull() ?: summary)
+        val title = cleaned.first
+        val suffix = (segments.drop(1) + listOfNotNull(cleaned.second))
+            .joinToString(" · ").ifEmpty { null }
 
         val teams = splitTeams(title)
 
@@ -242,6 +246,21 @@ object IcsParser {
             }
         }
         return sb.toString()
+    }
+
+    private val SCORE = Regex("""\s*\(\d+\s*[-:]\s*\d+(?:\s*[a-zA-Z.]+)?\)\s*$""")
+    private val TAG = Regex("""\s*\[([A-Za-z0-9 .-]{1,12})\]""")
+    private val SPACES = Regex("""\s{2,}""")
+
+    /** Entfernt "(2-1)" am Ende und "[CL]" mittendrin; das Kuerzel kommt als Wettbewerb zurueck. */
+    private fun stripScoreAndTag(title: String): Pair<String, String?> {
+        var tag: String? = null
+        val withoutTag = TAG.replace(title) { m ->
+            tag = m.groupValues[1]
+            ""
+        }
+        val withoutScore = SCORE.replace(withoutTag, "")
+        return withoutScore.replace(SPACES, " ").trim() to tag
     }
 
     /**

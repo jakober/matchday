@@ -236,4 +236,15 @@ class IcsParserTest {
         assertEquals("FC Bayern München - Hamburger SV", match.title)
         assertEquals("Bundesliga · 3. Spieltag", match.competition)
     }
+
+    @Test
+    fun `entfernt Ergebnis und Wettbewerbskuerzel aus dem Titel`() {
+        val m1 = IcsParser.parse(icsWith("Arsenal - West Ham United (0-2)"), "s", berlin).single()
+        assertEquals("Arsenal", m1.homeTeam)
+        assertEquals("West Ham United", m1.awayTeam)
+        val m2 = IcsParser.parse(icsWith("PSV - Shakhtar Donetsk [CL] (1-1)"), "s", berlin).single()
+        assertEquals("PSV", m2.homeTeam)
+        assertEquals("Shakhtar Donetsk", m2.awayTeam)
+        assertEquals("CL", m2.competition)
+    }
 }

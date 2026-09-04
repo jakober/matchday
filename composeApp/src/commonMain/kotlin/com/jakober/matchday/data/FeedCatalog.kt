@@ -5,8 +5,10 @@ package com.jakober.matchday.data
  *
  * Reine Vorschlaege: Die Identitaet eines Abos kommt weiterhin vom Server
  * (calendars.id), hier stehen nur Name und Adresse zum Vorbelegen. Alle
- * Adressen stammen von calovo und wurden beim Erstellen einzeln abgerufen;
- * der Zahlenblock am Ende ist ein Platzhalter, den der Dienst nicht prueft.
+ * Adressen wurden beim Erstellen einzeln abgerufen und aktualisieren sich
+ * beim Anbieter von selbst: Bundesliga, 2. Bundesliga und DFB von calovo,
+ * Premier League, Champions League und NFL von fixtur.es. Der Zahlenblock
+ * am Ende der calovo-Adressen ist ein Platzhalter, den der Dienst nicht prueft.
  *
  * Stand: September 2026. Auf- und Absteiger muessen hier nachgezogen werden.
  */
@@ -54,7 +56,65 @@ object FeedCatalog {
         CatalogFeed("FC St. Pauli", "2. Bundesliga", "https://i.cal.to/ical/2730/bundesliga/fc-st-pauli/12345.12345-54321.ics"),
         CatalogFeed("VfL Wolfsburg", "2. Bundesliga", "https://i.cal.to/ical/2716/bundesliga/vfl-wolfsburg/12345.12345-54321.ics"),
         CatalogFeed("Deutsche Nationalmannschaft", "DFB", "https://i.cal.to/ical/23/dfb/nationalmannschaft/12345.12345-54321.ics"),
+        CatalogFeed("Premier League - alle Spiele", "Premier League", "https://ics.fixtur.es/v2/league/premier-league.ics"),
+        CatalogFeed("AFC Bournemouth", "Premier League", "https://ics.fixtur.es/v2/afc-bournemouth.ics"),
+        CatalogFeed("Arsenal", "Premier League", "https://ics.fixtur.es/v2/arsenal.ics"),
+        CatalogFeed("Aston Villa", "Premier League", "https://ics.fixtur.es/v2/aston-villa.ics"),
+        CatalogFeed("Brentford", "Premier League", "https://ics.fixtur.es/v2/brentford-fc.ics"),
+        CatalogFeed("Brighton & Hove Albion", "Premier League", "https://ics.fixtur.es/v2/brighton-hove-albion-fc.ics"),
+        CatalogFeed("Chelsea", "Premier League", "https://ics.fixtur.es/v2/chelsea.ics"),
+        CatalogFeed("Coventry City", "Premier League", "https://ics.fixtur.es/v2/coventry-city.ics"),
+        CatalogFeed("Crystal Palace", "Premier League", "https://ics.fixtur.es/v2/crystal-palace.ics"),
+        CatalogFeed("Everton", "Premier League", "https://ics.fixtur.es/v2/everton.ics"),
+        CatalogFeed("Fulham", "Premier League", "https://ics.fixtur.es/v2/fulham.ics"),
+        CatalogFeed("Hull City", "Premier League", "https://ics.fixtur.es/v2/hull-city.ics"),
+        CatalogFeed("Ipswich Town", "Premier League", "https://ics.fixtur.es/v2/ipswich-town.ics"),
+        CatalogFeed("Leeds United", "Premier League", "https://ics.fixtur.es/v2/leeds-united.ics"),
+        CatalogFeed("Liverpool", "Premier League", "https://ics.fixtur.es/v2/liverpool.ics"),
+        CatalogFeed("Manchester City", "Premier League", "https://ics.fixtur.es/v2/manchester-city.ics"),
+        CatalogFeed("Manchester United", "Premier League", "https://ics.fixtur.es/v2/manchester-united.ics"),
+        CatalogFeed("Newcastle United", "Premier League", "https://ics.fixtur.es/v2/newcastle-united.ics"),
+        CatalogFeed("Nottingham Forest", "Premier League", "https://ics.fixtur.es/v2/nottingham-forest.ics"),
+        CatalogFeed("Sunderland", "Premier League", "https://ics.fixtur.es/v2/sunderland.ics"),
+        CatalogFeed("Tottenham Hotspur", "Premier League", "https://ics.fixtur.es/v2/tottenham-hotspur.ics"),
+        CatalogFeed("Champions League - alle Spiele", "Champions League", "https://ics.fixtur.es/v2/league/champions-league.ics"),
+        CatalogFeed("NFL - alle Spiele", "NFL", "https://ics.fixtur.es/v2/league/nfl.ics"),
+        CatalogFeed("Arizona Cardinals", "NFL", "https://ics.fixtur.es/v2/nfl-arizona-cardinals.ics"),
+        CatalogFeed("Atlanta Falcons", "NFL", "https://ics.fixtur.es/v2/nfl-atlanta-falcons.ics"),
+        CatalogFeed("Baltimore Ravens", "NFL", "https://ics.fixtur.es/v2/nfl-baltimore-ravens.ics"),
+        CatalogFeed("Buffalo Bills", "NFL", "https://ics.fixtur.es/v2/nfl-buffalo-bills.ics"),
+        CatalogFeed("Carolina Panthers", "NFL", "https://ics.fixtur.es/v2/nfl-carolina-panthers.ics"),
+        CatalogFeed("Chicago Bears", "NFL", "https://ics.fixtur.es/v2/nfl-chicago-bears.ics"),
+        CatalogFeed("Cincinnati Bengals", "NFL", "https://ics.fixtur.es/v2/nfl-cincinnati-bengals.ics"),
+        CatalogFeed("Cleveland Browns", "NFL", "https://ics.fixtur.es/v2/nfl-cleveland-browns.ics"),
+        CatalogFeed("Dallas Cowboys", "NFL", "https://ics.fixtur.es/v2/nfl-dallas-cowboys.ics"),
+        CatalogFeed("Denver Broncos", "NFL", "https://ics.fixtur.es/v2/nfl-denver-broncos.ics"),
+        CatalogFeed("Detroit Lions", "NFL", "https://ics.fixtur.es/v2/nfl-detroit-lions.ics"),
+        CatalogFeed("Green Bay Packers", "NFL", "https://ics.fixtur.es/v2/nfl-green-bay-packers.ics"),
+        CatalogFeed("Houston Texans", "NFL", "https://ics.fixtur.es/v2/nfl-houston-texans.ics"),
+        CatalogFeed("Indianapolis Colts", "NFL", "https://ics.fixtur.es/v2/nfl-indianapolis-colts.ics"),
+        CatalogFeed("Jacksonville Jaguars", "NFL", "https://ics.fixtur.es/v2/nfl-jacksonville-jaguars.ics"),
+        CatalogFeed("Kansas City Chiefs", "NFL", "https://ics.fixtur.es/v2/nfl-kansas-city-chiefs.ics"),
+        CatalogFeed("Las Vegas Raiders", "NFL", "https://ics.fixtur.es/v2/nfl-las-vegas-raiders.ics"),
+        CatalogFeed("Los Angeles Chargers", "NFL", "https://ics.fixtur.es/v2/nfl-los-angeles-chargers.ics"),
+        CatalogFeed("Los Angeles Rams", "NFL", "https://ics.fixtur.es/v2/nfl-los-angeles-rams.ics"),
+        CatalogFeed("Miami Dolphins", "NFL", "https://ics.fixtur.es/v2/nfl-miami-dolphins.ics"),
+        CatalogFeed("Minnesota Vikings", "NFL", "https://ics.fixtur.es/v2/nfl-minnesota-vikings.ics"),
+        CatalogFeed("New England Patriots", "NFL", "https://ics.fixtur.es/v2/nfl-new-england-patriots.ics"),
+        CatalogFeed("New Orleans Saints", "NFL", "https://ics.fixtur.es/v2/nfl-new-orleans-saints.ics"),
+        CatalogFeed("New York Giants", "NFL", "https://ics.fixtur.es/v2/nfl-new-york-giants.ics"),
+        CatalogFeed("New York Jets", "NFL", "https://ics.fixtur.es/v2/nfl-new-york-jets.ics"),
+        CatalogFeed("Philadelphia Eagles", "NFL", "https://ics.fixtur.es/v2/nfl-philadelphia-eagles.ics"),
+        CatalogFeed("Pittsburgh Steelers", "NFL", "https://ics.fixtur.es/v2/nfl-pittsburgh-steelers.ics"),
+        CatalogFeed("San Francisco 49ers", "NFL", "https://ics.fixtur.es/v2/nfl-san-francisco-49ers.ics"),
+        CatalogFeed("Seattle Seahawks", "NFL", "https://ics.fixtur.es/v2/nfl-seattle-seahawks.ics"),
+        CatalogFeed("Tampa Bay Buccaneers", "NFL", "https://ics.fixtur.es/v2/nfl-tampa-bay-buccaneers.ics"),
+        CatalogFeed("Tennessee Titans", "NFL", "https://ics.fixtur.es/v2/nfl-tennessee-titans.ics"),
+        CatalogFeed("Washington Commanders", "NFL", "https://ics.fixtur.es/v2/nfl-washington-commanders.ics"),
     )
+
+    /** Die Gesamtplaene und die Nationalmannschaft - was ohne Suche sichtbar ist. */
+    val featured: List<CatalogFeed> get() = ALL.filter { it.name.endsWith("alle Spiele") || it.league == "DFB" }
 
     /**
      * Sucht in Name und Liga, unempfindlich gegen Gross-/Kleinschreibung und

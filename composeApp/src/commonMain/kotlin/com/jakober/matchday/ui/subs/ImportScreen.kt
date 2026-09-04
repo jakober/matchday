@@ -89,7 +89,7 @@ fun ImportScreen(
     }
 
     val suggestions = remember(query) {
-        if (query.isBlank()) FeedCatalog.ALL.filter { it.name.contains("alle Spiele") || it.league == "DFB" }
+        if (query.isBlank()) FeedCatalog.featured
         else FeedCatalog.search(query).take(10)
     }
 
