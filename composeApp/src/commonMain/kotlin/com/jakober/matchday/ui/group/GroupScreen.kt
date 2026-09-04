@@ -74,8 +74,10 @@ fun GroupScreen(
     invite: InviteResult?,
     onCreate: (String) -> Unit,
     onJoin: (String) -> Unit,
-    /** Sichtbarkeit und - optional - die Adresse, an die der Code gehen soll. */
-    onCreateInvite: (scope: String, email: String?) -> Unit,
+    /** Sichtbarkeit und - optional - Adresse und Name der eingeladenen Person. */
+    onCreateInvite: (scope: String, email: String?, name: String?) -> Unit,
+    /** Code aus einem geoeffneten Einladungslink, zum Vorbelegen. */
+    initialCode: String? = null,
     onRemoveMember: (MemberDto) -> Unit,
     onLeave: () -> Unit,
     onBack: () -> Unit,
@@ -117,7 +119,7 @@ fun GroupScreen(
                 .padding(horizontal = 16.dp),
         ) {
             if (membership == null) {
-                NoGroup(busy = busy, error = error, onCreate = onCreate, onJoin = onJoin)
+                NoGroup(busy = busy, error = error, initialCode = initialCode, onCreate = onCreate, onJoin = onJoin)
             } else {
                 InGroup(
                     membership = membership,
@@ -139,11 +141,12 @@ fun GroupScreen(
 private fun NoGroup(
     busy: Boolean,
     error: String?,
+    initialCode: String?,
     onCreate: (String) -> Unit,
     onJoin: (String) -> Unit,
 ) {
     var groupName by remember { mutableStateOf("") }
-    var code by remember { mutableStateOf("") }
+    var code by remember(initialCode) { mutableStateOf(initialCode ?: "") }
 
     Spacer(Modifier.height(8.dp))
     Text(
@@ -218,13 +221,14 @@ private fun InGroup(
     busy: Boolean,
     error: String?,
     invite: InviteResult?,
-    onCreateInvite: (scope: String, email: String?) -> Unit,
+    onCreateInvite: (scope: String, email: String?, name: String?) -> Unit,
     onRemoveMember: (MemberDto) -> Unit,
     onLeave: () -> Unit,
 ) {
     // Vor dem Entfernen nachfragen: Die Zusagen des Mitglieds verschwinden mit.
     var zuEntfernen by remember { mutableStateOf<MemberDto?>(null) }
     var inviteEmail by remember { mutableStateOf("") }
+    var inviteName by remember { mutableStateOf("") }
 
     Spacer(Modifier.height(8.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -277,6 +281,19 @@ private fun InGroup(
         )
         Spacer(Modifier.height(12.dp))
         OutlinedTextField(
+            value = inviteName,
+            onValueChange = { inviteName = it },
+            label = { Text(S.inviteeName) },
+            singleLine = true,
+            shape = RoundedCornerShape(ChipCorner),
+            keyboardOptions = KeyboardOptions(
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Next,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
             value = inviteEmail,
             onValueChange = { inviteEmail = it },
             label = { Text(S.emailOptional) },
@@ -289,20 +306,30 @@ private fun InGroup(
             ),
             modifier = Modifier.fillMaxWidth(),
         )
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = S.inviteNameHint,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Spacer(Modifier.height(10.dp))
         val email = inviteEmail.trim().ifEmpty { null }
+        val name = inviteName.trim().ifEmpty { null }
+        // Mit Adresse braucht es auch den Namen - sonst kann der Server das
+        // Konto beim Annehmen nicht anlegen.
+        val canInvite = !busy && (email == null || (name?.length ?: 0) >= 2)
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedButton(
-                onClick = { onCreateInvite(SCOPE_ALL, email) },
-                enabled = !busy,
+                onClick = { onCreateInvite(SCOPE_ALL, email, name) },
+                enabled = canInvite,
                 shape = RoundedCornerShape(ChipCorner),
                 modifier = Modifier.weight(1f).height(50.dp),
             ) {
                 Text(S.allMatches)
             }
             OutlinedButton(
-                onClick = { onCreateInvite(SCOPE_IMPORTANT, email) },
-                enabled = !busy,
+                onClick = { onCreateInvite(SCOPE_IMPORTANT, email, name) },
+                enabled = canInvite,
                 shape = RoundedCornerShape(ChipCorner),
                 modifier = Modifier.weight(1f).height(50.dp),
             ) {

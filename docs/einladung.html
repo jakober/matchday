@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Einladung zu Matchday</title>
+<style>
+  body { margin: 0; font-family: -apple-system, system-ui, Segoe UI, Roboto, sans-serif; background: #0f1115; color: #e8eaf0; }
+  main { max-width: 420px; margin: 0 auto; padding: 48px 24px; text-align: center; }
+  h1 { font-size: 28px; margin: 0 0 8px; color: #37e27a; }
+  p { color: #a7adba; line-height: 1.5; }
+  .code { font-size: 40px; font-weight: 700; letter-spacing: 8px; margin: 28px 0; color: #fff; }
+  a.btn { display: block; padding: 16px; border-radius: 16px; background: #37e27a; color: #0f1115; font-weight: 600; text-decoration: none; font-size: 17px; margin: 12px 0; }
+  .small { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Matchday</h1>
+  <p>Du bist eingeladen. Dein Einladungscode:</p>
+  <div class="code" id="code">······</div>
+  <a class="btn" id="open" href="#">In Matchday öffnen</a>
+  <p class="small">Die App öffnet sich mit dem Code und fragt nur noch nach einem Passwort.</p>
+  <p class="small">Keine App installiert? Frag die Person, die dich eingeladen hat, nach dem Installationslink. Der Code oben gilt einmal; du kannst ihn auch abtippen.</p>
+</main>
+<script>
+  // Der Code steht in der Adresse; die Seite ist nur die Bruecke von der Mail
+  // in die App, weil Mail-Programme App-Links selbst oft nicht anklickbar machen.
+  var code = (new URLSearchParams(location.search).get("code") || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6);
+  if (code.length === 6) {
+    document.getElementById("code").textContent = code;
+    document.getElementById("open").href = "matchday://invite?code=" + code;
+  } else {
+    document.getElementById("code").textContent = "?";
+    document.getElementById("open").style.display = "none";
+  }
+</script>
+</body>
+</html>

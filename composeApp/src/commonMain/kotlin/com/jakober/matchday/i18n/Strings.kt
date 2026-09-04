@@ -42,6 +42,12 @@ interface Strings {
     val signIn: String
     val haveAccount: String
     val noAccount: String
+    val haveInvite: String
+    val acceptInviteIntro: String
+    val acceptInvite: String
+    val inviteCodeLabel: String
+    val inviteeName: String
+    val inviteNameHint: String
     val codeTitle: String
     val codeCancel: String
     fun codeIntro(email: String): String
@@ -303,6 +309,12 @@ object De : Strings {
     override val signIn = "Anmelden"
     override val haveAccount = "Ich habe schon ein Konto"
     override val noAccount = "Noch kein Konto? Registrieren"
+    override val haveInvite = "Ich habe eine Einladung"
+    override val acceptInviteIntro = "Gib den Code aus der Einladungsmail ein und wähle ein Passwort - mehr braucht es nicht."
+    override val acceptInvite = "Einladung annehmen"
+    override val inviteCodeLabel = "Einladungscode"
+    override val inviteeName = "Name der Person"
+    override val inviteNameHint = "Mit Name und Adresse muss sich die Person nicht registrieren - sie wählt nur ein Passwort."
     override val codeTitle = "Adresse bestätigen"
     override val codeCancel = "Andere Adresse verwenden"
     override fun codeIntro(email: String) = "Wir haben einen Code an $email geschickt. Schau auch im Spam-Ordner nach."
@@ -555,6 +567,12 @@ object En : Strings {
     override val signIn = "Sign in"
     override val haveAccount = "I already have an account"
     override val noAccount = "No account yet? Register"
+    override val haveInvite = "I have an invitation"
+    override val acceptInviteIntro = "Enter the code from the invitation email and choose a password - that's all it takes."
+    override val acceptInvite = "Accept invitation"
+    override val inviteCodeLabel = "Invitation code"
+    override val inviteeName = "Person's name"
+    override val inviteNameHint = "With name and address the person doesn't need to register - they just pick a password."
     override val codeTitle = "Confirm address"
     override val codeCancel = "Use a different address"
     override fun codeIntro(email: String) = "We sent a code to $email. Check your spam folder too."

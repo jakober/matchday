@@ -112,6 +112,7 @@ private fun LoadingScreen() {
 @Composable
 private fun AuthFlow() {
     val scope = rememberCoroutineScope()
+    val pendingInvite by Container.pendingInvite.collectAsState()
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var notice by remember { mutableStateOf<String?>(null) }
@@ -130,9 +131,17 @@ private fun AuthFlow() {
         busy = busy,
         error = error,
         notice = notice,
+        inviteCode = pendingInvite,
         onSignIn = { email, password -> run({ Container.signIn(email, password) }) },
         onSignUp = { name, email, password -> run({ Container.signUp(name, email, password) }) },
         onForgotPassword = { email -> run({ Container.requestPasswordReset(email) }) },
+        onAcceptInvite = { code, password ->
+            // Der Code bleibt vorgemerkt: Weist der Server ab, weil ein Konto
+            // besteht oder eine Registrierung noetig ist, fuehrt der Weg ueber
+            // Anmeldung bzw. Registrierung - und danach ist der Code noch da.
+            Container.handleUrl("code=$code")
+            run({ Container.acceptInvite(code, password) })
+        },
     )
 }
 
@@ -236,6 +245,7 @@ private fun CodeFlow(email: String) {
 private fun GroupGate(profile: Profile) {
     val busy by Container.groupBusy.collectAsState()
     val membershipLost by Container.membershipLost.collectAsState()
+    val pendingInvite by Container.pendingInvite.collectAsState()
     var error by remember { mutableStateOf<String?>(null) }
 
     GroupScreen(
@@ -256,11 +266,12 @@ private fun GroupGate(profile: Profile) {
             error = null
             Container.joinGroup(code, profile) { error = it }
         },
-        onCreateInvite = { _, _ -> },
+        onCreateInvite = { _, _, _ -> },
         onRemoveMember = {},
         onLeave = {},
         onBack = {},
         onSignOut = { Container.signOut() },
+        initialCode = pendingInvite,
     )
 }
 
@@ -559,7 +570,7 @@ private fun Root() {
             },
             // Der Parameter heisst bewusst nicht "scope" - das waere der
             // CoroutineScope von oben und wuerde verdeckt.
-            onCreateInvite = { visibility, email ->
+            onCreateInvite = { visibility, email, name ->
                 val groupId = membership?.groupId
                 if (groupId != null) {
                     inviteBusy = true
@@ -570,7 +581,7 @@ private fun Root() {
                             if (email == null) {
                                 InviteResult(Container.backend.createInvite(groupId, visibility), visibility)
                             } else {
-                                val sent = Container.backend.sendInvite(groupId, visibility, email)
+                                val sent = Container.backend.sendInvite(groupId, visibility, email, name.orEmpty())
                                 InviteResult(sent.code, visibility, sent.sentTo, sent.warning)
                             }
                         }

@@ -22,6 +22,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -29,6 +30,19 @@ import kotlin.time.Duration.Companion.seconds
 
 /** Fehler der Anmeldung, mit einer Meldung fuer den Bildschirm. */
 class AuthException(message: String) : Exception(message)
+
+/** Ergebnis einer angenommenen Einladung. */
+data class AcceptedInvite(val email: String, val name: String)
+
+/**
+ * Abgelehnte Einladung. Die beiden Kennzeichen sagen der App, wohin sie den
+ * Nutzer stattdessen schickt: zur Anmeldung oder zur Registrierung.
+ */
+class AcceptInviteException(
+    message: String,
+    val accountExists: Boolean,
+    val needsSignup: Boolean,
+) : Exception(message)
 
 /**
  * Anbindung an Supabase.
@@ -335,7 +349,7 @@ class MatchdayBackend {
      * Erwartbare Fehler kommen als Meldung im JSON, nicht als HTTP-Fehler;
      * sie sind fuer den Bildschirm geschrieben.
      */
-    suspend fun sendInvite(groupId: String, scope: String, email: String): SentInvite {
+    suspend fun sendInvite(groupId: String, scope: String, email: String, name: String): SentInvite {
         val response = client.functions.invoke(
             function = "invite-send",
             body = JsonObject(
@@ -343,6 +357,7 @@ class MatchdayBackend {
                     "group_id" to JsonPrimitive(groupId),
                     "scope" to JsonPrimitive(scope),
                     "email" to JsonPrimitive(email),
+                    "name" to JsonPrimitive(name),
                     "locale" to JsonPrimitive(currentLocale),
                 )
             ),
@@ -352,6 +367,59 @@ class MatchdayBackend {
         val error = json["error"]?.jsonPrimitive?.contentOrNull
         if (code == null) error(error ?: S.errInviteFailed)
         return SentInvite(code = code, sentTo = json["sent_to"]?.jsonPrimitive?.contentOrNull, warning = error)
+    }
+
+    /**
+     * Nimmt eine Einladung mit hinterlegtem Namen an: Der Server legt das
+     * Konto an und traegt die Person in die Gruppe ein. Liefert die Adresse,
+     * mit der sich die App anschliessend anmeldet.
+     */
+    suspend fun acceptInvite(code: String, password: String): AcceptedInvite {
+        val response = client.functions.invoke(
+            function = "accept-invite",
+            body = JsonObject(
+                mapOf(
+                    "code" to JsonPrimitive(code),
+                    "password" to JsonPrimitive(password),
+                    "locale" to JsonPrimitive(currentLocale),
+                )
+            ),
+        )
+        val json = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+        val ok = json["ok"]?.jsonPrimitive?.booleanOrNull == true
+        if (!ok) {
+            throw AcceptInviteException(
+                message = json["error"]?.jsonPrimitive?.contentOrNull ?: S.failed,
+                accountExists = json["exists"]?.jsonPrimitive?.booleanOrNull == true,
+                needsSignup = json["needs_signup"]?.jsonPrimitive?.booleanOrNull == true,
+            )
+        }
+        return AcceptedInvite(
+            email = json["email"]?.jsonPrimitive?.content ?: error(S.failed),
+            name = json["name"]?.jsonPrimitive?.contentOrNull ?: "",
+        )
+    }
+
+    /**
+     * Findet die Gruppe des angemeldeten Kontos - nach einer Neuinstallation
+     * oder auf einem zweiten Geraet. Die Zugehoerigkeit haengt am Konto, das
+     * Geraet muss sie nur wiederfinden.
+     */
+    suspend fun membershipOfCurrentUser(): GroupMembership? {
+        val userId = currentUserId() ?: return null
+        val me = client.from("members").select {
+            filter { eq("user_id", userId) }
+        }.decodeList<MemberDto>().firstOrNull() ?: return null
+        val groupId = me.groupId ?: return null
+        val group = client.from("groups").select {
+            filter { eq("id", groupId) }
+        }.decodeList<GroupDto>().firstOrNull() ?: return null
+        return finishSetup(
+            groupId = groupId,
+            inviteCode = group.inviteCode,
+            groupName = group.name,
+            adminMemberId = group.adminMemberId,
+        )
     }
 
     /**

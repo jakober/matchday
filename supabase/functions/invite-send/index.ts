@@ -29,7 +29,8 @@ Deno.serve(async (request) => {
     const authorization = request.headers.get("Authorization");
     if (!authorization) return new Response("nicht angemeldet", { status: 401 });
 
-    const { group_id, scope, email, locale } = await request.json();
+    const { group_id, scope, email, locale, name } = await request.json();
+    const inviteeName = typeof name === "string" ? name.trim() : "";
     const en = locale === "en";
     if (!group_id || !scope) return reply({ error: "Angaben unvollständig" });
     if (typeof email !== "string" || !looksLikeEmail(email)) {
@@ -80,17 +81,27 @@ Deno.serve(async (request) => {
     const scopeText = scope === "important"
       ? (en ? "You'll see the highlighted matches." : "Du siehst die hervorgehobenen Spiele.")
       : (en ? "You'll see all matches." : "Du siehst alle Spiele.");
+    const greeting = inviteeName ? (en ? `Hi ${inviteeName},` : `Hallo ${inviteeName},`) : (en ? "Hi," : "Hallo,");
     const intro = en
-      ? `You're invited to join “${groupName}” on Matchday.`
-      : `Du bist eingeladen, bei „${groupName}“ in Matchday mitzumachen.`;
+      ? `${greeting} you're invited to join “${groupName}” on Matchday.`
+      : `${greeting} du bist eingeladen, bei „${groupName}“ in Matchday mitzumachen.`;
+    // Der Link fuehrt auf eine kleine Seite, die den Code zeigt und die App
+    // oeffnet - Mail-Programme machen App-Links selbst oft nicht anklickbar.
+    const link = `https://jakober.github.io/matchday/einladung.html?code=${encodeURIComponent(code)}`;
     const codeLine = en ? `Your invitation code: ${code}` : `Dein Einladungscode: ${code}`;
-    const howTo = en
-      ? "How it works: open Matchday, choose “Join” under Group and enter the code."
-      : "So geht es: Matchday öffnen, unter Gruppe „Beitreten“ wählen und den Code eingeben.";
+    const howTo = inviteeName
+      ? (en
+        ? "Tap the link, choose a password, done - no registration needed."
+        : "Tippe auf den Link, wähle ein Passwort, fertig - keine Registrierung nötig.")
+      : (en
+        ? "How it works: open Matchday, choose “Join” under Group and enter the code."
+        : "So geht es: Matchday öffnen, unter Gruppe „Beitreten“ wählen und den Code eingeben.");
     const once = en ? "The code works once." : "Der Code gilt einmal.";
-    const text = [intro, "", codeLine, "", howTo, scopeText, "", once].join("\n");
+    const text = [intro, "", link, "", codeLine, "", howTo, scopeText, "", once].join("\n");
     const html = `
       <p>${escapeHtml(intro)}</p>
+      <p><a href="${link}" style="display:inline-block;padding:14px 22px;background:#37e27a;color:#0f1115;border-radius:12px;text-decoration:none;font-weight:bold">${en ? "Open invitation" : "Einladung öffnen"}</a></p>
+      <p>${en ? "Your code:" : "Dein Code:"}</p>
       <p style="font-size:28px;letter-spacing:6px;font-weight:bold">${escapeHtml(code)}</p>
       <p>${escapeHtml(howTo)}<br>${escapeHtml(scopeText)}</p>
       <p style="color:#666">${escapeHtml(once)}</p>`;
@@ -107,7 +118,11 @@ Deno.serve(async (request) => {
 
     await admin
       .from("invites")
-      .update({ sent_to: to, sent_at: new Date().toISOString() })
+      .update({
+        sent_to: to,
+        sent_at: new Date().toISOString(),
+        invitee_name: inviteeName || null,
+      })
       .eq("code", code);
 
     return reply({ code, sent_to: to });

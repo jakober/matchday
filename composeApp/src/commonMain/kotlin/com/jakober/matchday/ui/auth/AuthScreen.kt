@@ -2,6 +2,7 @@ package com.jakober.matchday.ui.auth
 
 import com.jakober.matchday.i18n.S
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -57,18 +58,28 @@ fun AuthScreen(
     error: String?,
     /** Bestaetigung, dass eine Mail zum Zuruecksetzen unterwegs ist. */
     notice: String?,
+    /** Code aus einem geoeffneten Einladungslink; schaltet auf "Einladung annehmen". */
+    inviteCode: String? = null,
     onSignIn: (email: String, password: String) -> Unit,
     onSignUp: (name: String, email: String, password: String) -> Unit,
     onForgotPassword: (email: String) -> Unit,
+    onAcceptInvite: (code: String, password: String) -> Unit,
 ) {
-    var register by remember { mutableStateOf(false) }
+    var mode by remember(inviteCode) { mutableStateOf(if (inviteCode != null) Mode.INVITE else Mode.SIGN_IN) }
+    val register = mode == Mode.REGISTER
+    val inviting = mode == Mode.INVITE
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var code by remember(inviteCode) { mutableStateOf(inviteCode ?: "") }
     var showPassword by remember { mutableStateOf(false) }
 
     val emailOk = email.trim().let { "@" in it && "." in it.substringAfter("@") }
-    val canSubmit = !busy && emailOk && password.length >= 8 && (!register || name.trim().length >= 2)
+    val canSubmit = !busy && password.length >= 8 && when (mode) {
+        Mode.SIGN_IN -> emailOk
+        Mode.REGISTER -> emailOk && name.trim().length >= 2
+        Mode.INVITE -> code.length == 6
+    }
 
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -91,16 +102,31 @@ fun AuthScreen(
                 )
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    text = if (register) {
-                        S.authIntroRegister
-                    } else {
-                        S.authIntroSignIn
+                    text = when (mode) {
+                        Mode.REGISTER -> S.authIntroRegister
+                        Mode.INVITE -> S.acceptInviteIntro
+                        Mode.SIGN_IN -> S.authIntroSignIn
                     },
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
 
                 Spacer(Modifier.height(32.dp))
+
+                if (inviting) {
+                    OutlinedTextField(
+                        value = code,
+                        // Der Code besteht aus Grossbuchstaben und Ziffern; die
+                        // Umwandlung erspart Tippfehler durch Autokorrektur.
+                        onValueChange = { code = it.uppercase().filter { c -> c.isLetterOrDigit() }.take(6) },
+                        label = { Text(S.inviteCodeLabel) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(CardCorner),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
 
                 if (register) {
                     OutlinedTextField(
@@ -118,24 +144,26 @@ fun AuthScreen(
                     Spacer(Modifier.height(12.dp))
                 }
 
-                OutlinedTextField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = { Text(S.emailLabel) },
-                    singleLine = true,
-                    shape = RoundedCornerShape(CardCorner),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Email,
-                        autoCorrectEnabled = false,
-                        imeAction = ImeAction.Next,
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(Modifier.height(12.dp))
+                if (!inviting) {
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text(S.emailLabel) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(CardCorner),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
+                            autoCorrectEnabled = false,
+                            imeAction = ImeAction.Next,
+                        ),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text(if (register) S.passwordLabelNew else S.passwordLabel) },
+                    label = { Text(if (mode == Mode.SIGN_IN) S.passwordLabel else S.passwordLabelNew) },
                     singleLine = true,
                     shape = RoundedCornerShape(CardCorner),
                     visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
@@ -171,7 +199,7 @@ fun AuthScreen(
                     )
                 }
 
-                if (!register) {
+                if (mode == Mode.SIGN_IN) {
                     TextButton(
                         onClick = { onForgotPassword(email.trim()) },
                         enabled = !busy && emailOk,
@@ -185,8 +213,11 @@ fun AuthScreen(
 
             Button(
                 onClick = {
-                    if (register) onSignUp(name.trim(), email.trim(), password)
-                    else onSignIn(email.trim(), password)
+                    when (mode) {
+                        Mode.REGISTER -> onSignUp(name.trim(), email.trim(), password)
+                        Mode.INVITE -> onAcceptInvite(code, password)
+                        Mode.SIGN_IN -> onSignIn(email.trim(), password)
+                    }
                 },
                 enabled = canSubmit,
                 shape = RoundedCornerShape(CardCorner),
@@ -199,24 +230,44 @@ fun AuthScreen(
                     CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
                 } else {
                     Text(
-                        text = if (register) S.createAccount else S.signIn,
+                        text = when (mode) {
+                            Mode.REGISTER -> S.createAccount
+                            Mode.INVITE -> S.acceptInvite
+                            Mode.SIGN_IN -> S.signIn
+                        },
                         style = MaterialTheme.typography.titleMedium,
                     )
                 }
             }
 
-            TextButton(
-                onClick = { register = !register },
-                enabled = !busy,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-            ) {
-                Text(
-                    text = if (register) S.haveAccount else S.noAccount,
-                    textAlign = TextAlign.Center,
-                )
+            // Die zwei anderen Wege, je nachdem wo man steht. Wer eine
+            // Einladung hat, soll sie mit einem Tipp erreichen - und von dort
+            // genauso leicht zur Anmeldung, falls das Konto schon besteht.
+            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
+                TextButton(
+                    onClick = { mode = if (mode == Mode.SIGN_IN) Mode.REGISTER else Mode.SIGN_IN },
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = if (mode == Mode.SIGN_IN) S.noAccount else S.haveAccount,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+                if (mode != Mode.INVITE) {
+                    TextButton(
+                        onClick = { mode = Mode.INVITE },
+                        enabled = !busy,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(S.haveInvite, textAlign = TextAlign.Center)
+                    }
+                }
             }
 
             Spacer(Modifier.height(16.dp))
         }
     }
 }
+
+private enum class Mode { SIGN_IN, REGISTER, INVITE }

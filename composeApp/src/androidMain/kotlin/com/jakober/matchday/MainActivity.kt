@@ -1,6 +1,7 @@
 package com.jakober.matchday
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -23,7 +24,18 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         askForNotificationPermission()
+        handleLink(intent)
         setContent { App() }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        // singleTask: Ein Link, waehrend die App laeuft, landet hier.
+        handleLink(intent)
+    }
+
+    private fun handleLink(intent: Intent?) {
+        intent?.dataString?.let { Container.handleUrl(it) }
     }
 
     override fun onResume() {

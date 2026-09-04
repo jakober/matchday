@@ -28,6 +28,11 @@ targets:
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen: {}
+        # Einladungslink aus der Mail: matchday://invite?code=ABC123
+        CFBundleURLTypes:
+          - CFBundleURLName: com.jakober.matchday
+            CFBundleURLSchemes:
+              - matchday
         # Ohne diesen Eintrag bricht Compose Multiplatform beim Start ab -
         # geprueft wird das nur im Release-Build. iOS zeichnet sonst auf
         # ProMotion-Geraeten nur mit 60 statt 120 Hz.
@@ -56,7 +61,7 @@ targets:
         # Massgebliche Versionsnummer. Der TestFlight-Ablauf liest sie hier,
         # wenn beim Auslösen keine angegeben wird - also bei jedem Lauf nach
         # Zeitplan. Bei neuen Funktionen hier hochzaehlen.
-        MARKETING_VERSION: "0.31"
+        MARKETING_VERSION: "0.32"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
         # Setzt zugleich CFBundleIconName im Paket - ohne den Eintrag lehnt

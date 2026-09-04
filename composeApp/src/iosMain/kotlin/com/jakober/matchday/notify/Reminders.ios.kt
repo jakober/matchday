@@ -154,3 +154,8 @@ fun refreshGroupOnResume() {
 fun pauseUsage() {
     Container.onPause()
 }
+
+/** Von der Swift-Seite mit einem geoeffneten Link aufgerufen. */
+fun handleUrl(url: String) {
+    Container.handleUrl(url)
+}

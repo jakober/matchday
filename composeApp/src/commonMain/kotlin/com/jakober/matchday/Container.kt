@@ -118,9 +118,70 @@ object Container {
     /** Beim Start: gespeicherte Sitzung wiederherstellen oder zur Anmeldung. */
     fun startSession() {
         scope.launch {
-            _auth.value = if (backend.restoreSession()) AuthState.SignedIn else AuthState.SignedOut
+            if (backend.restoreSession()) {
+                restoreMembership()
+                _auth.value = AuthState.SignedIn
+            } else {
+                _auth.value = AuthState.SignedOut
+            }
         }
     }
+
+    /**
+     * Gruppe und Profil vom Konto holen, wenn das Geraet sie nicht kennt -
+     * nach Neuinstallation, Handywechsel oder zweitem Geraet. Damit ueberlebt
+     * die Zugehoerigkeit alles, was frueher zum Verlust fuehrte.
+     */
+    suspend fun restoreMembership() {
+        if (store.membership.value != null) return
+        val membership = runCatching { backend.membershipOfCurrentUser() }.getOrNull() ?: return
+        store.saveMembership(membership)
+        if (store.profile.value == null) {
+            val me = runCatching { backend.members(membership.groupId) }.getOrNull()
+                ?.firstOrNull { it.id == membership.memberId }
+            if (me != null) {
+                store.saveProfile(Profile(id = com.jakober.matchday.domain.newId(), name = me.displayName, colorArgb = me.color))
+            }
+        }
+        refreshGroup()
+        refreshCalendars()
+        syncAll()
+        uploadPushToken()
+    }
+
+    // -- Einladung ueber Link -------------------------------------------------
+
+    private val _pendingInvite = MutableStateFlow<String?>(null)
+
+    /** Einladungscode aus einem geoeffneten Link, bis er eingeloest oder verworfen ist. */
+    val pendingInvite: StateFlow<String?> = _pendingInvite.asStateFlow()
+
+    /** Nimmt einen geoeffneten Link entgegen: matchday://invite?code=ABC123 */
+    fun handleUrl(url: String) {
+        val code = url.substringAfter("code=", "").substringBefore('&').trim().uppercase()
+            .filter { it.isLetterOrDigit() }.take(6)
+        if (code.length == 6) _pendingInvite.value = code
+    }
+
+    fun clearPendingInvite() {
+        _pendingInvite.value = null
+    }
+
+    /**
+     * Einladung mit hinterlegtem Namen annehmen: Konto entsteht auf dem
+     * Server, danach Anmeldung und Gruppe wie bei jedem anderen Konto.
+     */
+    suspend fun acceptInvite(code: String, password: String): Result<Unit> =
+        runCatching {
+            val accepted = backend.acceptInvite(code, password)
+            backend.signIn(accepted.email, password)
+            if (store.profile.value == null && accepted.name.isNotBlank()) {
+                store.saveProfile(Profile(id = com.jakober.matchday.domain.newId(), name = accepted.name, colorArgb = AvatarColors.first()))
+            }
+            _pendingInvite.value = null
+            restoreMembership()
+            _auth.value = AuthState.SignedIn
+        }
 
     /**
      * Registriert und wechselt zur Code-Eingabe. Name und Farbe werden
@@ -135,7 +196,10 @@ object Container {
             }
 
     suspend fun signIn(email: String, password: String): Result<Unit> =
-        runCatching { backend.signIn(email, password) }
+        runCatching {
+            backend.signIn(email, password)
+            restoreMembership()
+        }
             .onSuccess { _auth.value = AuthState.SignedIn }
             .onFailure {
                 // Konto vorhanden, Adresse nie bestaetigt: statt einer
@@ -226,6 +290,7 @@ object Container {
         scope.launch {
             runCatching { action() }
                 .onSuccess { membership ->
+                    _pendingInvite.value = null
                     store.saveMembership(membership)
                     // Was vor dem Beitritt lokal beantwortet wurde, soll die
                     // Gruppe auch sehen.

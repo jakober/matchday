@@ -15,6 +15,8 @@ struct ContentView: View {
         ComposeView()
             .ignoresSafeArea(.all)
             .preferredColorScheme(.dark)
+            // Einladungslink: die App merkt sich den Code und zeigt die Annahme.
+            .onOpenURL { url in Reminders_iosKt.handleUrl(url: url.absoluteString) }
     }
 }
 

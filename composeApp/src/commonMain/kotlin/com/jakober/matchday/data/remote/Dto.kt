@@ -12,6 +12,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class MemberDto(
     val id: String,
+    /** Nur beim Wiederfinden der eigenen Gruppe gelesen; sonst steht sie fest. */
+    @SerialName("group_id") val groupId: String? = null,
     @SerialName("display_name") val displayName: String,
     val color: Long,
     @SerialName("avatar_url") val avatarUrl: String? = null,
