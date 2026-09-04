@@ -238,15 +238,24 @@ object IcsParser {
     /**
      * Trennt "Bayern - Dortmund" in Heim und Gast. Die Trennerliste deckt die
      * gaengigen Schreibweisen ab; passt keine, bleibt der Titel ungeteilt.
+     *
+     * An der Zerlegung haengen die Wappen - sie ist keine Kosmetik mehr.
+     * Deshalb fehlen " : " und " v " bewusst: Das eine trifft "Achtung :
+     * Spiel verlegt", das andere jedes Wort mit einem v am Rand.
+     *
+     * Bei " at " und " @ " (US-Schreibweise, "Packers at Bears") steht die
+     * Heimmannschaft hinten.
      */
     private fun splitTeams(summary: String): Pair<String?, String?> {
-        val separators = listOf(" - ", " – ", " — ", " vs. ", " vs ", " v ", " gegen ", " : ")
-        for (sep in separators) {
+        val separators = listOf(" - ", " – ", " — ", " vs. ", " vs ", " v. ", " gegen ")
+        val swapped = listOf(" at ", " @ ")
+        for (sep in separators + swapped) {
             val index = summary.indexOf(sep, ignoreCase = true)
             if (index > 0) {
-                val home = summary.substring(0, index).trim()
-                val away = summary.substring(index + sep.length).trim()
-                if (home.isNotEmpty() && away.isNotEmpty()) return home to away
+                val before = summary.substring(0, index).trim()
+                val after = summary.substring(index + sep.length).trim()
+                if (before.isEmpty() || after.isEmpty()) continue
+                return if (sep in swapped) after to before else before to after
             }
         }
         return null to null

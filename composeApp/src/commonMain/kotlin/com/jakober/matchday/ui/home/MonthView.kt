@@ -89,6 +89,7 @@ fun MonthView(
     importantIds: Set<String>,
     accentOf: (Match) -> Color,
     subscriptionOf: (String) -> Subscription?,
+    logoOf: (String?) -> String?,
     onSelect: (Match) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -158,6 +159,7 @@ fun MonthView(
                 byDay = byDay,
                 accentOf = accentOf,
                 subscriptionOf = subscriptionOf,
+                logoOf = logoOf,
                 participantsOf = participantsOf,
                 importantIds = importantIds,
                 onDayClick = { date ->
@@ -190,6 +192,7 @@ fun MonthView(
             participantsOf = participantsOf,
             importantIds = importantIds,
             subscriptionOf = subscriptionOf,
+            logoOf = logoOf,
             onSelect = { match ->
                 // Erst schliessen, dann die Detailansicht oeffnen - zwei
                 // uebereinanderliegende Sheets vertragen sich nicht.
@@ -235,6 +238,7 @@ private fun MonthGrid(
     byDay: Map<LocalDate, List<Match>>,
     accentOf: (Match) -> Color,
     subscriptionOf: (String) -> Subscription?,
+    logoOf: (String?) -> String?,
     participantsOf: ParticipantsSource,
     importantIds: Set<String>,
     onDayClick: (LocalDate) -> Unit,
@@ -256,6 +260,7 @@ private fun MonthGrid(
                         matchCount = dayMatches.size,
                         ballColor = dayMatches.firstOrNull()?.let(accentOf),
                         ballSubscription = dayMatches.firstOrNull()?.let { subscriptionOf(it.subscriptionId) },
+                        ballLogo = dayMatches.firstOrNull()?.let { logoOf(it.homeTeam) },
                         mood = dayMood(dayMatches, participantsOf),
                         isImportant = dayMatches.any { it.id in importantIds },
                         onClick = { onDayClick(date) },
@@ -276,6 +281,7 @@ private fun DaySheet(
     participantsOf: ParticipantsSource,
     importantIds: Set<String>,
     subscriptionOf: (String) -> Subscription?,
+    logoOf: (String?) -> String?,
     onSelect: (Match) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -317,6 +323,8 @@ private fun DaySheet(
                 MatchRow(
                     match = match,
                     subscription = subscriptionOf(match.subscriptionId),
+                    homeLogo = logoOf(match.homeTeam),
+                    awayLogo = logoOf(match.awayTeam),
                     status = rsvps[match.id]?.status ?: RsvpStatus.UNDECIDED,
                     participants = participantsOf(match.id),
                     isImportant = match.id in importantIds,
@@ -328,17 +336,16 @@ private fun DaySheet(
 }
 
 /**
- * Zeichen fuer einen Spieltag: das Wappen der Mannschaft, bei Laenderspielen
- * die Flagge. Ein hervorgehobenes Spiel bekommt zusaetzlich den Stern - beides
+ * Zeichen fuer einen Spieltag: das Wappen der Heimmannschaft, sonst das
+ * Abzeichen des Kalenders. Fuer zwei Wappen sind sechzehn Punkte zu wenig.
+ * Ein hervorgehobenes Spiel bekommt zusaetzlich den Stern - beides
  * nebeneinander, damit auch dort erkennbar bleibt, um wen es geht.
- *
- * Beides stammt aus derselben Darstellung wie in der Liste; ein eigenes
- * Symbol nur fuer den Kalender waere unnoetige Doppelung.
  */
 @Composable
 private fun MatchMark(
     isImportant: Boolean,
     subscription: Subscription?,
+    logoUrl: String?,
     dimmed: Boolean,
 ) {
     Row(
@@ -354,7 +361,12 @@ private fun MatchMark(
                 modifier = Modifier.size(15.dp),
             )
         }
-        TeamBadge(subscription = subscription, size = 16.dp)
+        TeamBadge(
+            logoUrl = logoUrl ?: subscription?.logoUrl,
+            fallbackLabel = subscription?.badgeLabel ?: "",
+            fallbackColor = subscription?.colorArgb ?: 0xFF888888,
+            size = 16.dp,
+        )
     }
 }
 
@@ -367,6 +379,7 @@ private fun DayCell(
     matchCount: Int,
     ballColor: Color?,
     ballSubscription: Subscription?,
+    ballLogo: String?,
     mood: MatchMood,
     isImportant: Boolean,
     onClick: () -> Unit,
@@ -438,6 +451,7 @@ private fun DayCell(
                 MatchMark(
                     isImportant = isImportant,
                     subscription = ballSubscription,
+                    logoUrl = ballLogo,
                     dimmed = dimmed,
                 )
                 if (matchCount > 1) {

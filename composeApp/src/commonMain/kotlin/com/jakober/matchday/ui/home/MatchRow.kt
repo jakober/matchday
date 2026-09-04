@@ -36,6 +36,7 @@ import com.jakober.matchday.domain.MatchMood
 import com.jakober.matchday.domain.Participant
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.domain.Subscription
+import com.jakober.matchday.domain.badgeLabelOf
 import com.jakober.matchday.domain.moodOf
 import com.jakober.matchday.theme.CardCorner
 import com.jakober.matchday.theme.StatusIn
@@ -66,8 +67,11 @@ fun statusLabel(status: RsvpStatus): String = when (status) {
 @Composable
 fun MatchRow(
     match: Match,
-    /** Der Kalender, aus dem das Spiel stammt - fuer das Abzeichen. */
+    /** Der Kalender, aus dem das Spiel stammt - Farbe und Ersatzabzeichen. */
     subscription: Subscription?,
+    /** Wappen der beiden Mannschaften, sofern schon nachgeschlagen. */
+    homeLogo: String? = null,
+    awayLogo: String? = null,
     status: RsvpStatus,
     participants: List<Participant>,
     isImportant: Boolean = false,
@@ -102,9 +106,9 @@ fun MatchRow(
             .padding(top = 14.dp, bottom = 14.dp, end = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Wappen statt Farbbalken - auf einen Blick erkennbar, um wessen
-        // Spiel es geht. Bei hervorgehobenen Spielen steht der Stern darueber
-        // und schiebt das Wappen nach unten; die Begegnung bleibt davon
+        // Wappen statt Farbbalken - auf einen Blick erkennbar, wer gegen wen
+        // spielt. Bei hervorgehobenen Spielen steht der Stern darueber und
+        // schiebt die Wappen nach unten; die Begegnung bleibt davon
         // unberuehrt, weil beides in derselben Spalte liegt.
         Column(
             modifier = Modifier.padding(start = 14.dp),
@@ -119,7 +123,12 @@ fun MatchRow(
                 )
                 Spacer(Modifier.height(4.dp))
             }
-            TeamBadge(subscription = subscription, size = 38.dp)
+            MatchBadges(
+                match = match,
+                subscription = subscription,
+                homeLogo = homeLogo,
+                awayLogo = awayLogo,
+            )
         }
 
         Column(
@@ -163,6 +172,48 @@ fun MatchRow(
         Spacer(Modifier.width(8.dp))
 
         StatusDot(status)
+    }
+}
+
+/**
+ * Die Wappen einer Begegnung, leicht ueberlappend, Heim vorn. Ein Ligakalender
+ * enthaelt alle Vereine - ein einzelnes Wappen sagte dort nicht mehr, worum es
+ * geht. Ohne erkannte Mannschaften bleibt es beim Abzeichen des Kalenders.
+ */
+@Composable
+private fun MatchBadges(
+    match: Match,
+    subscription: Subscription?,
+    homeLogo: String?,
+    awayLogo: String?,
+) {
+    val home = match.homeTeam
+    val away = match.awayTeam
+    if (home == null || away == null) {
+        TeamBadge(subscription = subscription, size = 38.dp)
+        return
+    }
+
+    val color = subscription?.colorArgb ?: 0xFF888888
+    Box(modifier = Modifier.width(54.dp).height(38.dp)) {
+        TeamBadge(
+            logoUrl = awayLogo,
+            fallbackLabel = badgeLabelOf(away),
+            fallbackColor = color,
+            size = 32.dp,
+            modifier = Modifier.align(Alignment.CenterEnd),
+        )
+        // Ein schmaler Rand in der Kartenfarbe trennt das vordere Wappen vom
+        // hinteren - sonst verschmelzen zwei Ersatzabzeichen derselben Farbe.
+        TeamBadge(
+            logoUrl = homeLogo,
+            fallbackLabel = badgeLabelOf(home),
+            fallbackColor = color,
+            size = 36.dp,
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .border(2.dp, MaterialTheme.colorScheme.surface, CircleShape),
+        )
     }
 }
 

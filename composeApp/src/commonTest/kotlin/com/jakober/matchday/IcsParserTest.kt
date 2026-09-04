@@ -196,4 +196,35 @@ class IcsParserTest {
         body.trimIndent().lines().forEach { appendLine(it) }
         appendLine("END:VCALENDAR")
     }
+
+    private fun icsWith(summary: String) = """
+        BEGIN:VCALENDAR
+        BEGIN:VEVENT
+        UID:x1
+        DTSTART:20261003T133000Z
+        SUMMARY:$summary
+        END:VEVENT
+        END:VCALENDAR
+    """.trimIndent()
+
+    @Test
+    fun `US-Schreibweise stellt die Heimmannschaft nach hinten`() {
+        val match = IcsParser.parse(icsWith("Green Bay Packers at Chicago Bears"), "s", berlin).single()
+        assertEquals("Chicago Bears", match.homeTeam)
+        assertEquals("Green Bay Packers", match.awayTeam)
+    }
+
+    @Test
+    fun `Doppelpunkt und einzelnes v trennen nicht mehr`() {
+        // Beides traf harmlose Titel und machte daraus Begegnungen.
+        assertNull(IcsParser.parse(icsWith("Achtung : Spiel verlegt"), "s", berlin).single().homeTeam)
+        assertNull(IcsParser.parse(icsWith("Abfahrt v Bus"), "s", berlin).single().homeTeam)
+    }
+
+    @Test
+    fun `v mit Punkt trennt weiterhin`() {
+        val match = IcsParser.parse(icsWith("Arsenal v. Chelsea"), "s", berlin).single()
+        assertEquals("Arsenal", match.homeTeam)
+        assertEquals("Chelsea", match.awayTeam)
+    }
 }

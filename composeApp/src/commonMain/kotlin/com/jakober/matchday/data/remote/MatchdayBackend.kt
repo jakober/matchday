@@ -12,9 +12,15 @@ import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
+import io.ktor.client.statement.bodyAsText
 import kotlinx.datetime.Clock
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.time.Duration.Companion.seconds
 
 /**
@@ -401,6 +407,22 @@ class MatchdayBackend {
                 )
             ),
         )
+    }
+
+    /**
+     * Loest Mannschaftsnamen in Wappen auf. Der Server haelt den
+     * Zwischenspeicher und fragt den Wappendienst - nicht die App, damit
+     * jeder Name genau einmal nachgeschlagen wird statt einmal je Geraet.
+     * Ein Name ohne Treffer kommt als null zurueck.
+     */
+    suspend fun resolveLogos(names: List<String>): Map<String, String?> {
+        val response = client.functions.invoke(
+            function = "team-logo",
+            body = JsonObject(mapOf("names" to JsonArray(names.map { JsonPrimitive(it) }))),
+        )
+        val logos = Json.parseToJsonElement(response.bodyAsText())
+            .jsonObject["logos"]?.jsonObject ?: return emptyMap()
+        return logos.mapValues { (_, value) -> value.jsonPrimitive.contentOrNull }
     }
 
     /** Nimmt die eigene Antwort zurueck. */

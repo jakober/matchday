@@ -2,6 +2,7 @@ package com.jakober.matchday.data
 
 import com.jakober.matchday.data.remote.GroupMembership
 import com.jakober.matchday.data.remote.GroupSnapshot
+import com.jakober.matchday.domain.LogoEntry
 import com.jakober.matchday.domain.Match
 import com.jakober.matchday.domain.Profile
 import com.jakober.matchday.domain.ReminderSettings
@@ -179,6 +180,18 @@ class MatchdayStore(private val settings: Settings) {
         settings.putString(KEY_RSVPS, json.encodeToString(map))
     }
 
+    // -- Wappen -------------------------------------------------------------
+
+    /** Nachgeschlagene Wappen je Mannschaftsname, wie er im Kalender steht. */
+    fun loadLogos(): Map<String, LogoEntry> {
+        val raw = settings.getStringOrNull(KEY_LOGOS) ?: return emptyMap()
+        return runCatching { json.decodeFromString<Map<String, LogoEntry>>(raw) }.getOrDefault(emptyMap())
+    }
+
+    fun saveLogos(map: Map<String, LogoEntry>) {
+        settings.putString(KEY_LOGOS, json.encodeToString(map))
+    }
+
     // -- Erinnerungen -------------------------------------------------------
 
     fun saveReminders(value: ReminderSettings) {
@@ -226,6 +239,7 @@ class MatchdayStore(private val settings: Settings) {
         const val KEY_REMINDERS = "reminders"
         const val KEY_MEMBERSHIP = "membership"
         const val KEY_SNAPSHOT = "group_snapshot"
+        const val KEY_LOGOS = "team_logos"
     }
 }
 

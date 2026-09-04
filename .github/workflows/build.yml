@@ -44,6 +44,10 @@ jobs:
           if-no-files-found: error
 
   ios:
+    # Nur auf Handstart: Ein Mac-Runner kostet das Zehnfache, und den
+    # iOS-Build prueft ohnehin jeder TestFlight-Lauf. Android laeuft weiter
+    # bei jedem Push - auf Linux, zum einfachen Preis.
+    if: github.event_name == 'workflow_dispatch'
     name: iOS (Simulator)
     # Laeuft wieder bei jedem Push: Oeffentliche Repositories haben
     # unbegrenzte Actions-Minuten, auch auf macOS.

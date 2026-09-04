@@ -80,6 +80,7 @@ private fun Root() {
     val groupSnapshot by Container.group.collectAsState()
     val membershipLost by Container.membershipLost.collectAsState()
     val pushState by Container.pushState.collectAsState()
+    val logos by Container.logos.collectAsState()
 
     val activeProfile = profile ?: return
     val scope = rememberCoroutineScope()
@@ -128,6 +129,9 @@ private fun Root() {
         Container.refreshGroup()
         Container.uploadPushToken()
         syncing = false
+        // Wappen nach dem Sichtbarwerden - sie sind Kosmetik und duerfen
+        // die Anzeige nicht aufhalten.
+        Container.resolveLogos()
     }
 
     // Vergangene Spiele blenden wir aus - der Tag selbst bleibt sichtbar,
@@ -150,6 +154,7 @@ private fun Root() {
         subscriptionById[it.subscriptionId]?.let { sub -> Color(sub.colorArgb) } ?: Pitch
     }
     val subscriptionOf: (String) -> Subscription? = { subscriptionById[it] }
+    val logoOf: (String?) -> String? = { name -> name?.let { logos[it.trim()]?.url } }
 
     val participantsOf = remember(rsvps, membership, groupSnapshot, activeProfile) {
         ParticipantsSource { matchId ->
@@ -191,6 +196,7 @@ private fun Root() {
             importantIds = groupSnapshot.importantMatchIds,
             accentOf = accentOf,
             subscriptionOf = subscriptionOf,
+            logoOf = logoOf,
             onViewChange = { view = it },
             onSelect = {
                 importantError = null

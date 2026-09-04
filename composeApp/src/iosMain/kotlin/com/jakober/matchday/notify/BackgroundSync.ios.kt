@@ -48,6 +48,7 @@ fun registerBackgroundRefresh() {
         Container.scope.launch {
             val errors = Container.repository.syncAll()
             Container.rescheduleReminders()
+            Container.resolveLogos()
             refreshTask.setTaskCompletedWithSuccess(errors.isEmpty())
         }
     }

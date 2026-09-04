@@ -25,18 +25,31 @@ data class Subscription(
     val lastSyncedAt: Instant? = null,
     val enabled: Boolean = true,
 ) {
-    /** Bis zu drei Buchstaben fuer das Ersatzabzeichen: "FC Bayern" -> "FB", "Bundesliga" -> "BUN". */
-    val badgeLabel: String
-        get() {
-            val words = name.trim().split(" ").filter { it.isNotEmpty() }
-            val label = if (words.size >= 2) {
-                words.take(3).joinToString("") { it.first().toString() }
-            } else {
-                name.trim().take(3)
-            }
-            return label.uppercase().ifEmpty { "?" }
-        }
+    /** Kuerzel fuer das Ersatzabzeichen. */
+    val badgeLabel: String get() = badgeLabelOf(name)
 }
+
+/** Bis zu drei Buchstaben fuer ein Ersatzabzeichen: "FC Bayern" -> "FB", "Bundesliga" -> "BUN". */
+fun badgeLabelOf(name: String): String {
+    val words = name.trim().split(" ").filter { it.isNotEmpty() }
+    val label = if (words.size >= 2) {
+        words.take(3).joinToString("") { it.first().toString() }
+    } else {
+        name.trim().take(3)
+    }
+    return label.uppercase().ifEmpty { "?" }
+}
+
+/**
+ * Ein nachgeschlagenes Wappen. url null heisst: gesucht, nichts gefunden -
+ * auch das wird gemerkt, damit nicht jeder Start dieselbe Frage stellt.
+ */
+@Serializable
+data class LogoEntry(
+    val url: String?,
+    /** Zeitpunkt der Abfrage, damit Fehlschlaege irgendwann erneut versucht werden. */
+    val checkedAt: Instant,
+)
 
 /** Ein Spiel, wie es aus einem ICS-Kalender gelesen wurde. */
 @Serializable

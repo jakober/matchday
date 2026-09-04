@@ -55,6 +55,7 @@ class SyncWorker(
         return try {
             Container.repository.syncAll()
             Container.rescheduleReminders()
+            Container.resolveLogos()
             Result.success()
         } catch (_: Exception) {
             // Beim naechsten Durchlauf erneut versuchen; ein fehlgeschlagener

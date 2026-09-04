@@ -7,6 +7,7 @@ import com.jakober.matchday.data.createSettings
 import com.jakober.matchday.data.remote.GroupSnapshot
 import com.jakober.matchday.data.remote.MatchdayBackend
 import com.jakober.matchday.data.remote.splitMatchId
+import com.jakober.matchday.domain.LogoEntry
 import com.jakober.matchday.domain.Profile
 import com.jakober.matchday.domain.RsvpStatus
 import com.jakober.matchday.notify.BackgroundSync
@@ -26,6 +27,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlin.time.Duration.Companion.days
+
+/** Nach dieser Frist wird ein Name ohne Wappen erneut nachgeschlagen. */
+private val LOGO_RETRY = 30.days
 
 /**
  * Zusammenbau der App. Bewusst schlicht statt mit einem
@@ -64,6 +69,11 @@ object Container {
 
     /** Mitglieder und deren Antworten, Stand des letzten Abgleichs. */
     val group: StateFlow<GroupSnapshot> = _group.asStateFlow()
+
+    private val _logos = MutableStateFlow(store.loadLogos())
+
+    /** Wappen je Mannschaftsname, wie er im Kalender steht. */
+    val logos: StateFlow<Map<String, LogoEntry>> = _logos.asStateFlow()
 
     private val _pushState = MutableStateFlow(PushState.UNKNOWN)
 
@@ -174,6 +184,38 @@ object Container {
         )
     }
 
+    /**
+     * Schlaegt die Wappen aller Mannschaften nach, die noch keins haben.
+     *
+     * Haengt am Abgleich, nicht am Zeichnen: Ein Ligakalender hat achtzehn
+     * Vereine, und die stehen in jeder Listenzeile - dort nachzufragen waere
+     * dreistellig pro Bildschirm. So ist es eine Anfrage nach dem Import und
+     * danach fast nie wieder.
+     */
+    suspend fun resolveLogos() {
+        val names = store.matches.value
+            .flatMap { listOfNotNull(it.homeTeam, it.awayTeam) }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .toSet()
+
+        // Fehlschlaege nach einer Weile erneut versuchen - der Dienst waechst.
+        val retryBefore = Clock.System.now() - LOGO_RETRY
+        val known = _logos.value
+        val missing = names.filter { name ->
+            val entry = known[name]
+            entry == null || (entry.url == null && entry.checkedAt < retryBefore)
+        }
+        if (missing.isEmpty()) return
+        if (!backend.ensureFreshSession()) return
+
+        val found = runCatching { backend.resolveLogos(missing.take(50)) }.getOrNull() ?: return
+        val now = Clock.System.now()
+        val merged = known + found.mapValues { (_, url) -> LogoEntry(url, now) }
+        _logos.value = merged
+        store.saveLogos(merged)
+    }
+
     /** Laedt einen Kalender probeweise, ohne etwas zu speichern. */
     suspend fun previewCalendar(url: String): Result<FeedPreview> = repository.preview(url)
 
@@ -195,6 +237,7 @@ object Container {
             refreshCalendars()
             store.subscriptions.value.firstOrNull { it.id == created.id }?.let { repository.sync(it) }
             rescheduleReminders()
+            resolveLogos()
         }.recoverCatching { e ->
             val message = e.message.orEmpty()
             throw IllegalStateException(
@@ -425,6 +468,7 @@ object Container {
             refreshCalendars()
             val errors = repository.syncAll()
             rescheduleReminders()
+            resolveLogos()
             refreshGroup()
             onDone(errors)
         }

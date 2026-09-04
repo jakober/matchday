@@ -63,6 +63,8 @@ fun HomeScreen(
     importantIds: Set<String>,
     accentOf: (Match) -> Color,
     subscriptionOf: (String) -> Subscription?,
+    /** Wappen zu einem Mannschaftsnamen, sofern schon nachgeschlagen. */
+    logoOf: (String?) -> String?,
     onViewChange: (HomeView) -> Unit,
     onSelect: (Match) -> Unit,
     onOpenSubscriptions: () -> Unit,
@@ -141,6 +143,7 @@ fun HomeScreen(
                             participantsOf = participantsOf,
                             importantIds = importantIds,
                             subscriptionOf = subscriptionOf,
+                            logoOf = logoOf,
                             onSelect = onSelect,
                         )
 
@@ -151,6 +154,7 @@ fun HomeScreen(
                             importantIds = importantIds,
                             accentOf = accentOf,
                             subscriptionOf = subscriptionOf,
+                            logoOf = logoOf,
                             onSelect = onSelect,
                         )
                     }

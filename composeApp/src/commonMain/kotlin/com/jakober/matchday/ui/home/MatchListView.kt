@@ -34,6 +34,7 @@ fun MatchListView(
     participantsOf: ParticipantsSource,
     importantIds: Set<String>,
     subscriptionOf: (String) -> Subscription?,
+    logoOf: (String?) -> String?,
     onSelect: (Match) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -58,6 +59,8 @@ fun MatchListView(
                 MatchRow(
                     match = match,
                     subscription = subscriptionOf(match.subscriptionId),
+                    homeLogo = logoOf(match.homeTeam),
+                    awayLogo = logoOf(match.awayTeam),
                     status = rsvps[match.id]?.status ?: RsvpStatus.UNDECIDED,
                     participants = participantsOf(match.id),
                     isImportant = match.id in importantIds,
