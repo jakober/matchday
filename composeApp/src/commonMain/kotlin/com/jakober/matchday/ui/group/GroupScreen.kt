@@ -46,6 +46,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -68,11 +69,12 @@ fun GroupScreen(
     members: List<MemberDto>,
     busy: Boolean,
     error: String?,
-    /** Zuletzt erzeugte Einladung, samt gewaehlter Sichtbarkeit. */
-    invite: Pair<String, String>?,
+    /** Zuletzt erzeugte Einladung. */
+    invite: InviteResult?,
     onCreate: (String) -> Unit,
     onJoin: (String) -> Unit,
-    onCreateInvite: (String) -> Unit,
+    /** Sichtbarkeit und - optional - die Adresse, an die der Code gehen soll. */
+    onCreateInvite: (scope: String, email: String?) -> Unit,
     onRemoveMember: (MemberDto) -> Unit,
     onLeave: () -> Unit,
     onBack: () -> Unit,
@@ -202,13 +204,14 @@ private fun InGroup(
     members: List<MemberDto>,
     busy: Boolean,
     error: String?,
-    invite: Pair<String, String>?,
-    onCreateInvite: (String) -> Unit,
+    invite: InviteResult?,
+    onCreateInvite: (scope: String, email: String?) -> Unit,
     onRemoveMember: (MemberDto) -> Unit,
     onLeave: () -> Unit,
 ) {
     // Vor dem Entfernen nachfragen: Die Zusagen des Mitglieds verschwinden mit.
     var zuEntfernen by remember { mutableStateOf<MemberDto?>(null) }
+    var inviteEmail by remember { mutableStateOf("") }
 
     Spacer(Modifier.height(8.dp))
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -255,14 +258,30 @@ private fun InGroup(
         Spacer(Modifier.height(28.dp))
         Label("EINLADEN")
         Text(
-            text = "Jede Einladung gilt einmal. Du legst dabei fest, was der Eingeladene zu sehen bekommt.",
+            text = "Jede Einladung gilt einmal. Du legst dabei fest, was der Eingeladene zu sehen bekommt. " +
+                "Mit Adresse geht der Code direkt per E-Mail raus, ohne siehst du ihn hier zum Weitergeben.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(12.dp))
+        OutlinedTextField(
+            value = inviteEmail,
+            onValueChange = { inviteEmail = it },
+            label = { Text("E-Mail-Adresse (optional)") },
+            singleLine = true,
+            shape = RoundedCornerShape(ChipCorner),
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Email,
+                autoCorrectEnabled = false,
+                imeAction = ImeAction.Done,
+            ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(10.dp))
+        val email = inviteEmail.trim().ifEmpty { null }
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             OutlinedButton(
-                onClick = { onCreateInvite(SCOPE_ALL) },
+                onClick = { onCreateInvite(SCOPE_ALL, email) },
                 enabled = !busy,
                 shape = RoundedCornerShape(ChipCorner),
                 modifier = Modifier.weight(1f).height(50.dp),
@@ -270,7 +289,7 @@ private fun InGroup(
                 Text("Alle Spiele")
             }
             OutlinedButton(
-                onClick = { onCreateInvite(SCOPE_IMPORTANT) },
+                onClick = { onCreateInvite(SCOPE_IMPORTANT, email) },
                 enabled = !busy,
                 shape = RoundedCornerShape(ChipCorner),
                 modifier = Modifier.weight(1f).height(50.dp),
@@ -279,9 +298,9 @@ private fun InGroup(
             }
         }
 
-        invite?.let { (code, scope) ->
+        invite?.let {
             Spacer(Modifier.height(16.dp))
-            InviteCode(code = code, scope = scope)
+            InviteCode(code = it.code, scope = it.scope, sentTo = it.sentTo, warning = it.warning)
         }
     }
 
@@ -334,8 +353,13 @@ private fun InGroup(
     }
 }
 
+/**
+ * Der Code bleibt sichtbar, auch wenn er per Mail ging: Die Mail ist die
+ * Bequemlichkeit, der angezeigte Code die Rueckfallebene. Sonst verschwaende
+ * eine Einladung an eine vertippte Adresse spurlos.
+ */
 @Composable
-private fun InviteCode(code: String, scope: String) {
+private fun InviteCode(code: String, scope: String, sentTo: String?, warning: String?) {
     val clipboard = LocalClipboardManager.current
 
     Column(
@@ -361,11 +385,39 @@ private fun InviteCode(code: String, scope: String) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onPrimaryContainer,
         )
+        sentTo?.let {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "Per E-Mail an $it geschickt",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
+        warning?.let {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = "$it - gib den Code stattdessen so weiter.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 16.dp),
+            )
+        }
         TextButton(onClick = { clipboard.setText(AnnotatedString(code)) }) {
             Text("Kopieren")
         }
     }
 }
+
+/** Zuletzt erzeugte Einladung, wie die Oberflaeche sie zeigt. */
+data class InviteResult(
+    val code: String,
+    val scope: String,
+    val sentTo: String? = null,
+    val warning: String? = null,
+)
 
 @Composable
 private fun MemberRow(

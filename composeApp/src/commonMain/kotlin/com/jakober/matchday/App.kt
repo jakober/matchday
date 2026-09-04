@@ -24,6 +24,7 @@ import com.jakober.matchday.theme.MatchdayTheme
 import com.jakober.matchday.theme.Pitch
 import com.jakober.matchday.ui.detail.MatchDetailSheet
 import com.jakober.matchday.ui.group.GroupScreen
+import com.jakober.matchday.ui.group.InviteResult
 import com.jakober.matchday.ui.home.HomeScreen
 import com.jakober.matchday.ui.home.HomeView
 import com.jakober.matchday.ui.onboarding.OnboardingScreen
@@ -91,7 +92,7 @@ private fun Root() {
     var syncing by remember { mutableStateOf(false) }
     var groupBusy by remember { mutableStateOf(false) }
     var groupError by remember { mutableStateOf<String?>(null) }
-    var invite by remember { mutableStateOf<Pair<String, String>?>(null) }
+    var invite by remember { mutableStateOf<InviteResult?>(null) }
     var importantError by remember { mutableStateOf<String?>(null) }
     var calendarError by remember { mutableStateOf<String?>(null) }
     var importBusy by remember { mutableStateOf(false) }
@@ -356,15 +357,22 @@ private fun Root() {
             },
             // Der Parameter heisst bewusst nicht "scope" - das waere der
             // CoroutineScope von oben und wuerde verdeckt.
-            onCreateInvite = { visibility ->
+            onCreateInvite = { visibility, email ->
                 val groupId = membership?.groupId
                 if (groupId != null) {
                     groupBusy = true
                     groupError = null
                     invite = null
                     scope.launch {
-                        runCatching { Container.backend.createInvite(groupId, visibility) }
-                            .onSuccess { code -> invite = code to visibility }
+                        runCatching {
+                            if (email == null) {
+                                InviteResult(Container.backend.createInvite(groupId, visibility), visibility)
+                            } else {
+                                val sent = Container.backend.sendInvite(groupId, visibility, email)
+                                InviteResult(sent.code, visibility, sent.sentTo, sent.warning)
+                            }
+                        }
+                            .onSuccess { invite = it }
                             .onFailure {
                                 groupError = it.message ?: "Einladung fehlgeschlagen"
                             }

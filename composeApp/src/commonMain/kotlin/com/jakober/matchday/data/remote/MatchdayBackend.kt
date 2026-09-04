@@ -226,6 +226,32 @@ class MatchdayBackend {
         ).decodeAs()
 
     /**
+     * Erzeugt eine Einladung und laesst den Server den Code per Mail
+     * verschicken. Liefert den Code - er wird auch angezeigt, damit eine
+     * vertippte Adresse die Einladung nicht verschluckt.
+     *
+     * Erwartbare Fehler kommen als Meldung im JSON, nicht als HTTP-Fehler;
+     * sie sind fuer den Bildschirm geschrieben.
+     */
+    suspend fun sendInvite(groupId: String, scope: String, email: String): SentInvite {
+        val response = client.functions.invoke(
+            function = "invite-send",
+            body = JsonObject(
+                mapOf(
+                    "group_id" to JsonPrimitive(groupId),
+                    "scope" to JsonPrimitive(scope),
+                    "email" to JsonPrimitive(email),
+                )
+            ),
+        )
+        val json = Json.parseToJsonElement(response.bodyAsText()).jsonObject
+        val code = json["code"]?.jsonPrimitive?.contentOrNull
+        val error = json["error"]?.jsonPrimitive?.contentOrNull
+        if (code == null) error(error ?: "Einladung fehlgeschlagen")
+        return SentInvite(code = code, sentTo = json["sent_to"]?.jsonPrimitive?.contentOrNull, warning = error)
+    }
+
+    /**
      * Entfernt ein Mitglied aus der Gruppe. Die Datenbank prueft, dass nur der
      * Admin das darf - und dass er sich nicht selbst entfernt.
      */

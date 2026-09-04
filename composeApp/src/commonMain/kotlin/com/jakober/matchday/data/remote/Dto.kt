@@ -91,6 +91,17 @@ data class CreatedGroupDto(
     @SerialName("invite_code") val inviteCode: String,
 )
 
+/**
+ * Ergebnis einer Einladung per Mail. Der Code ist immer da; sentTo fehlt,
+ * wenn der Versand scheiterte - dann steht der Grund in warning und der Code
+ * laesst sich anders weitergeben.
+ */
+data class SentInvite(
+    val code: String,
+    val sentTo: String?,
+    val warning: String? = null,
+)
+
 /** Was die App lokal ueber ihre Gruppe wissen muss. */
 @Serializable
 data class GroupMembership(
