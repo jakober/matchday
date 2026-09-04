@@ -190,7 +190,7 @@ fun SettingsScreen(
             SectionLabel("KALENDER")
 
             LinkRow(
-                title = if (subscriptionCount == 1) "1 Mannschaft" else "$subscriptionCount Mannschaften",
+                title = if (subscriptionCount == 1) "1 Kalender" else "$subscriptionCount Kalender",
                 subtitle = null,
                 onClick = onOpenSubscriptions,
             )

@@ -3,11 +3,18 @@ package com.jakober.matchday.data
 import com.jakober.matchday.data.ics.IcsParser
 import com.jakober.matchday.domain.Subscription
 import io.ktor.client.HttpClient
+import io.ktor.client.network.sockets.ConnectTimeoutException
+import io.ktor.client.network.sockets.SocketTimeoutException
+import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.request.get
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
+import kotlin.time.Duration.Companion.days
+
+/** Wie weit zurueck Spiele behalten werden. */
+private val HISTORY = 60.days
 
 /** Ergebnis eines Abgleichs mit einem Kalenderfeed. */
 sealed interface SyncResult {
@@ -47,11 +54,16 @@ class MatchdayRepository(
     suspend fun sync(subscription: Subscription): SyncResult {
         return try {
             val ics = fetch(subscription.url)
-            val matches = IcsParser.parse(
+            val parsed = IcsParser.parse(
                 ics = ics,
                 subscriptionId = subscription.id,
                 fallbackZone = TimeZone.currentSystemDefault(),
             )
+            // Laengst Vergangenes verwerfen. Ein Ligakalender hat ueber 300
+            // Termine, und die Ablage schreibt bei jeder Aenderung die ganze
+            // Liste neu - was niemand mehr ansieht, muss da nicht mitlaufen.
+            val cutoff = Clock.System.now() - HISTORY
+            val matches = parsed.filter { it.start >= cutoff }
             store.replaceMatchesOf(subscription.id, matches)
             store.updateSubscriptions(
                 store.subscriptions.value.map {
@@ -78,16 +90,40 @@ class MatchdayRepository(
         return errors
     }
 
+    /**
+     * Holt den Kalendertext. Die Fehlermeldungen sind fuer Menschen
+     * geschrieben, nicht fuer Entwickler: Sie landen unveraendert auf dem
+     * Bildschirm dessen, der gerade eine Adresse eingetippt hat.
+     */
     private suspend fun fetch(url: String): String {
-        // Auch hier normalisieren: Die Adresse kommt kuenftig vom Server, so
-        // wie der Admin sie eingegeben hat - womoeglich als webcal://.
-        val response = http.get(normalizeUrl(url))
+        // Auch hier normalisieren: Die Adresse kommt vom Server, so wie der
+        // Admin sie eingegeben hat - womoeglich als webcal://.
+        val response = try {
+            http.get(normalizeUrl(url))
+        } catch (e: HttpRequestTimeoutException) {
+            error("Der Server antwortet nicht. Bitte später erneut versuchen.")
+        } catch (e: ConnectTimeoutException) {
+            error("Der Server antwortet nicht. Bitte später erneut versuchen.")
+        } catch (e: SocketTimeoutException) {
+            error("Der Server antwortet nicht. Bitte später erneut versuchen.")
+        } catch (e: IllegalArgumentException) {
+            // Ktor lehnt Adressen mit Leerzeichen oder falschem Aufbau so ab.
+            error("Das ist keine gültige Adresse. Bitte auf Tippfehler prüfen.")
+        }
+
+        when (response.status.value) {
+            404 -> error("Die Adresse gibt es nicht. Bitte auf Tippfehler prüfen.")
+            401, 403 -> error("Der Kalender ist nicht öffentlich - diese Adresse verlangt eine Anmeldung.")
+        }
         if (!response.status.isSuccess()) {
-            error("Server antwortete mit ${response.status.value}")
+            error("Der Server antwortete mit Fehler ${response.status.value}.")
         }
         val body = response.bodyAsText()
         if (!body.contains("BEGIN:VCALENDAR", ignoreCase = true)) {
-            error("Die Adresse liefert keinen Kalender")
+            error(
+                "Unter dieser Adresse liegt kein Kalender. Wahrscheinlich ist es die Adresse der " +
+                    "Webseite statt die des Kalenders - suche dort nach „Kalender abonnieren“."
+            )
         }
         return body
     }

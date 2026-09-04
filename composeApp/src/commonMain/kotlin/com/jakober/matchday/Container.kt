@@ -1,5 +1,6 @@
 package com.jakober.matchday
 
+import com.jakober.matchday.data.FeedPreview
 import com.jakober.matchday.data.MatchdayRepository
 import com.jakober.matchday.data.MatchdayStore
 import com.jakober.matchday.data.createSettings
@@ -171,6 +172,56 @@ object Container {
                 )
             }
         )
+    }
+
+    /** Laedt einen Kalender probeweise, ohne etwas zu speichern. */
+    suspend fun previewCalendar(url: String): Result<FeedPreview> = repository.preview(url)
+
+    /**
+     * Legt einen Kalender in der Gruppe an und laedt ihn sofort, damit die
+     * Spiele nicht erst beim naechsten Abgleich auftauchen.
+     *
+     * Die Datenbank prueft, dass nur der Admin das darf und dass dieselbe
+     * Adresse nicht zweimal in der Gruppe landet.
+     */
+    suspend fun importCalendar(name: String, url: String, colorArgb: Long): Result<Unit> {
+        val membership = store.membership.value
+            ?: return Result.failure(IllegalStateException("Dafür brauchst du eine Gruppe"))
+
+        return runCatching {
+            backend.ensureFreshSession()
+            backend.addCalendar(membership, name, url, colorArgb)
+        }.mapCatching { created ->
+            refreshCalendars()
+            store.subscriptions.value.firstOrNull { it.id == created.id }?.let { repository.sync(it) }
+            rescheduleReminders()
+        }.recoverCatching { e ->
+            val message = e.message.orEmpty()
+            throw IllegalStateException(
+                when {
+                    "23505" in message || "duplicate" in message.lowercase() ->
+                        "Diesen Kalender habt ihr schon."
+                    "42501" in message || "row-level security" in message ->
+                        "Nur der Admin kann Kalender hinzufügen."
+                    else -> "Hinzufügen fehlgeschlagen: $message"
+                }
+            )
+        }
+    }
+
+    /** Entfernt einen Kalender aus der Gruppe; die Abo-Liste zieht nach. */
+    fun removeCalendar(calendarId: String, onError: (String) -> Unit = {}) {
+        scope.launch {
+            runCatching {
+                backend.ensureFreshSession()
+                backend.removeCalendar(calendarId)
+            }
+                .onSuccess {
+                    refreshCalendars()
+                    rescheduleReminders()
+                }
+                .onFailure { onError(it.message ?: "Entfernen nicht möglich") }
+        }
     }
 
     fun toggleImportant(matchId: String, onError: (String) -> Unit = {}) {

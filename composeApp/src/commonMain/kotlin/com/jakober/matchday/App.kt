@@ -28,14 +28,16 @@ import com.jakober.matchday.ui.home.HomeScreen
 import com.jakober.matchday.ui.home.HomeView
 import com.jakober.matchday.ui.onboarding.OnboardingScreen
 import com.jakober.matchday.ui.settings.SettingsScreen
+import com.jakober.matchday.ui.subs.ImportScreen
 import com.jakober.matchday.ui.subs.TeamsScreen
+import com.jakober.matchday.data.FeedPreview
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.toLocalDateTime
 
-private enum class Screen { HOME, TEAMS, SETTINGS, GROUP }
+private enum class Screen { HOME, TEAMS, IMPORT, SETTINGS, GROUP }
 
 @Composable
 fun App() {
@@ -90,6 +92,10 @@ private fun Root() {
     var groupError by remember { mutableStateOf<String?>(null) }
     var invite by remember { mutableStateOf<Pair<String, String>?>(null) }
     var importantError by remember { mutableStateOf<String?>(null) }
+    var calendarError by remember { mutableStateOf<String?>(null) }
+    var importBusy by remember { mutableStateOf(false) }
+    var importPreview by remember { mutableStateOf<FeedPreview?>(null) }
+    var importError by remember { mutableStateOf<String?>(null) }
     var deviceId by remember { mutableStateOf<String?>(null) }
     var diagnostics by remember { mutableStateOf<NotificationDiagnostics?>(null) }
 
@@ -167,6 +173,7 @@ private fun Root() {
             // Die Gruppe wird aus den Einstellungen heraus geoeffnet, also
             // fuehrt der Weg zurueck auch dorthin.
             Screen.GROUP -> Screen.SETTINGS
+            Screen.IMPORT -> Screen.TEAMS
             else -> Screen.HOME
         }
     }
@@ -199,7 +206,19 @@ private fun Root() {
 
         Screen.TEAMS -> TeamsScreen(
             subscriptions = subscriptions,
+            isAdmin = membership?.isAdmin == true,
+            error = calendarError,
             matchCountOf = { id -> allMatches.count { it.subscriptionId == id } },
+            onAdd = {
+                importPreview = null
+                importError = null
+                calendarError = null
+                screen = Screen.IMPORT
+            },
+            onRemove = { subscription ->
+                calendarError = null
+                Container.removeCalendar(subscription.id) { calendarError = it }
+            },
             onToggle = { id, enabled ->
                 Container.store.setSubscriptionEnabled(id, enabled)
                 // Eingeschaltet: Spielplan holen. Ausgeschaltet: nur die
@@ -212,6 +231,37 @@ private fun Root() {
                 }
             },
             onBack = { screen = Screen.HOME },
+        )
+
+        Screen.IMPORT -> ImportScreen(
+            busy = importBusy,
+            preview = importPreview,
+            error = importError,
+            onPreview = { url ->
+                importBusy = true
+                importError = null
+                importPreview = null
+                scope.launch {
+                    Container.previewCalendar(url)
+                        .onSuccess { importPreview = it }
+                        .onFailure { importError = it.message ?: "Prüfen fehlgeschlagen" }
+                    importBusy = false
+                }
+            },
+            onAdd = { name, url, colorArgb ->
+                importBusy = true
+                importError = null
+                scope.launch {
+                    Container.importCalendar(name, url, colorArgb)
+                        .onSuccess {
+                            importPreview = null
+                            screen = Screen.TEAMS
+                        }
+                        .onFailure { importError = it.message ?: "Hinzufügen fehlgeschlagen" }
+                    importBusy = false
+                }
+            },
+            onBack = { screen = Screen.TEAMS },
         )
 
         Screen.SETTINGS -> SettingsScreen(
