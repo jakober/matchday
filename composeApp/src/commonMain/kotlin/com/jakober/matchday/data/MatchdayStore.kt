@@ -200,6 +200,14 @@ class MatchdayStore(private val settings: Settings) {
 
     /** Nachgeschlagene Wappen je Mannschaftsname, wie er im Kalender steht. */
     fun loadLogos(): Map<String, LogoEntry> {
+        // Aendert sich die Wappenlogik auf dem Server (etwa Flaggen statt
+        // Verbandswappen), muss der lokale Speicher einmal weg - Treffer
+        // werden sonst nie erneut gefragt.
+        if (settings.getIntOrNull(KEY_LOGOS_VERSION) != LOGOS_VERSION) {
+            settings.remove(KEY_LOGOS)
+            settings.putInt(KEY_LOGOS_VERSION, LOGOS_VERSION)
+            return emptyMap()
+        }
         val raw = settings.getStringOrNull(KEY_LOGOS) ?: return emptyMap()
         return runCatching { json.decodeFromString<Map<String, LogoEntry>>(raw) }.getOrDefault(emptyMap())
     }
@@ -272,6 +280,8 @@ class MatchdayStore(private val settings: Settings) {
         const val KEY_MEMBERSHIP = "membership"
         const val KEY_SNAPSHOT = "group_snapshot"
         const val KEY_LOGOS = "team_logos"
+        const val KEY_LOGOS_VERSION = "team_logos_version"
+        const val LOGOS_VERSION = 2
         const val KEY_USAGE_SECONDS = "usage_seconds"
         const val KEY_EXACT_PROMPT_OFF = "exact_alarm_prompt_off"
     }

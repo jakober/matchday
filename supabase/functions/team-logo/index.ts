@@ -19,6 +19,184 @@ const MAX_NAMES = 50;
 // Nach dieser Frist wird ein Fehlschlag erneut versucht - der Dienst waechst.
 const RETRY_AFTER_DAYS = 90;
 
+// Nationalmannschaften bekommen die Landesflagge statt eines Verbandswappens.
+// Die Wappen der Verbaende sind Markenzeichen und beim Wappendienst
+// unzuverlaessig ("Deutschland" fand einen Regionalligisten); Flaggen sind
+// frei, eindeutig und auf einen Blick lesbar. Schluessel wie normalize()
+// sie liefert, deutsch und englisch; Wert ist der Laendercode von flagcdn.
+const FLAGS: Record<string, string> = {
+  "deutschland": "de",
+  "germany": "de",
+  "dfb": "de",
+  "dfb-team": "de",
+  "dfb team": "de",
+  "niederlande": "nl",
+  "netherlands": "nl",
+  "holland": "nl",
+  "griechenland": "gr",
+  "greece": "gr",
+  "serbien": "rs",
+  "serbia": "rs",
+  "oesterreich": "at",
+  "austria": "at",
+  "schweiz": "ch",
+  "switzerland": "ch",
+  "frankreich": "fr",
+  "france": "fr",
+  "spanien": "es",
+  "spain": "es",
+  "italien": "it",
+  "italy": "it",
+  "belgien": "be",
+  "belgium": "be",
+  "daenemark": "dk",
+  "denmark": "dk",
+  "schweden": "se",
+  "sweden": "se",
+  "norwegen": "no",
+  "norway": "no",
+  "polen": "pl",
+  "poland": "pl",
+  "tuerkei": "tr",
+  "turkey": "tr",
+  "tuerkiye": "tr",
+  "turkiye": "tr",
+  "kroatien": "hr",
+  "croatia": "hr",
+  "tschechien": "cz",
+  "czech republic": "cz",
+  "czechia": "cz",
+  "ungarn": "hu",
+  "hungary": "hu",
+  "irland": "ie",
+  "ireland": "ie",
+  "republic of ireland": "ie",
+  "schottland": "gb-sct",
+  "scotland": "gb-sct",
+  "england": "gb-eng",
+  "wales": "gb-wls",
+  "nordirland": "gb-nir",
+  "northern ireland": "gb-nir",
+  "slowakei": "sk",
+  "slovakia": "sk",
+  "slowenien": "si",
+  "slovenia": "si",
+  "rumaenien": "ro",
+  "romania": "ro",
+  "portugal": "pt",
+  "ukraine": "ua",
+  "bosnien-herzegowina": "ba",
+  "bosnien und herzegowina": "ba",
+  "bosnia and herzegovina": "ba",
+  "bosnia": "ba",
+  "albanien": "al",
+  "albania": "al",
+  "georgien": "ge",
+  "georgia": "ge",
+  "finnland": "fi",
+  "finland": "fi",
+  "island": "is",
+  "iceland": "is",
+  "bulgarien": "bg",
+  "bulgaria": "bg",
+  "nordmazedonien": "mk",
+  "north macedonia": "mk",
+  "montenegro": "me",
+  "kosovo": "xk",
+  "luxemburg": "lu",
+  "luxembourg": "lu",
+  "israel": "il",
+  "zypern": "cy",
+  "cyprus": "cy",
+  "estland": "ee",
+  "estonia": "ee",
+  "lettland": "lv",
+  "latvia": "lv",
+  "litauen": "lt",
+  "lithuania": "lt",
+  "belarus": "by",
+  "weissrussland": "by",
+  "kasachstan": "kz",
+  "kazakhstan": "kz",
+  "armenien": "am",
+  "armenia": "am",
+  "aserbaidschan": "az",
+  "azerbaijan": "az",
+  "moldau": "md",
+  "moldova": "md",
+  "republik moldau": "md",
+  "malta": "mt",
+  "liechtenstein": "li",
+  "faeroeer": "fo",
+  "faroe islands": "fo",
+  "gibraltar": "gi",
+  "andorra": "ad",
+  "san marino": "sm",
+  "russland": "ru",
+  "russia": "ru",
+  "usa": "us",
+  "united states": "us",
+  "vereinigte staaten": "us",
+  "kanada": "ca",
+  "canada": "ca",
+  "mexiko": "mx",
+  "mexico": "mx",
+  "brasilien": "br",
+  "brazil": "br",
+  "argentinien": "ar",
+  "argentina": "ar",
+  "uruguay": "uy",
+  "chile": "cl",
+  "kolumbien": "co",
+  "colombia": "co",
+  "peru": "pe",
+  "ecuador": "ec",
+  "paraguay": "py",
+  "venezuela": "ve",
+  "bolivien": "bo",
+  "bolivia": "bo",
+  "japan": "jp",
+  "suedkorea": "kr",
+  "south korea": "kr",
+  "korea republic": "kr",
+  "australien": "au",
+  "australia": "au",
+  "saudi-arabien": "sa",
+  "saudi arabia": "sa",
+  "iran": "ir",
+  "katar": "qa",
+  "qatar": "qa",
+  "marokko": "ma",
+  "morocco": "ma",
+  "senegal": "sn",
+  "nigeria": "ng",
+  "ghana": "gh",
+  "kamerun": "cm",
+  "cameroon": "cm",
+  "elfenbeinkueste": "ci",
+  "ivory coast": "ci",
+  "cote d ivoire": "ci",
+  "aegypten": "eg",
+  "egypt": "eg",
+  "tunesien": "tn",
+  "tunisia": "tn",
+  "algerien": "dz",
+  "algeria": "dz",
+  "suedafrika": "za",
+  "south africa": "za",
+  "neuseeland": "nz",
+  "new zealand": "nz",
+  "china": "cn",
+  "usbekistan": "uz",
+  "uzbekistan": "uz",
+  "jordanien": "jo",
+  "jordan": "jo",
+};
+
+function flagUrl(code: string): string {
+  return `https://flagcdn.com/w320/${code}.png`;
+}
+
 // Deutsche Laendernamen, wie sie in Spielplaenen stehen, auf die englischen
 // des Dienstes. Vereinsnamen findet die Suche meist ueber Zweitnamen selbst.
 const ALIASES: Record<string, string> = {
@@ -162,7 +340,9 @@ Deno.serve(async (request) => {
     for (const name of names) {
       const key = keyOf.get(name)!;
       const row = byKey.get(key);
-      const fresh = row && (
+      // Ein frueher gespeichertes Verbandswappen weicht der Flagge.
+      const flag = FLAGS[key];
+      const fresh = row && !(flag && row.source === "thesportsdb") && (
         row.source === "manual" ||
         row.badge_url !== null ||
         new Date(row.looked_up_at).getTime() > retryBefore
@@ -176,8 +356,9 @@ Deno.serve(async (request) => {
       // darf nicht die ganze Anfrage kippen. Dann bleibt dieser Name offen
       // und wird beim naechsten Mal erneut versucht; gespeichert wird nichts.
       let badge: string | null;
+      const source = flag ? "flag" : "thesportsdb";
       try {
-        badge = await lookup(name, key);
+        badge = flag ? flagUrl(flag) : await lookup(name, key);
       } catch (error) {
         console.error(`Wappen fuer "${name}": ${error}`);
         logos[name] = null;
@@ -188,12 +369,12 @@ Deno.serve(async (request) => {
         key,
         display_name: name.trim(),
         badge_url: badge,
-        source: "thesportsdb",
+        source,
         looked_up_at: new Date().toISOString(),
       });
       // Zwei Namen mit demselben Schluessel in einer Anfrage: der zweite
       // bekommt das Ergebnis des ersten.
-      byKey.set(key, { key, badge_url: badge, source: "thesportsdb", looked_up_at: new Date().toISOString() });
+      byKey.set(key, { key, badge_url: badge, source, looked_up_at: new Date().toISOString() });
     }
 
     return Response.json({ logos });
