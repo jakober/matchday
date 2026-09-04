@@ -17,7 +17,8 @@ sagt zu oder ab, alle sehen, wer dabei ist. Eine Codebasis für Android und iOS
   antwortet, und die offene Ansicht gleicht sich von selbst ab
 - Admin hebt Spiele hervor; Einladungen legen fest, ob jemand alle oder nur
   die hervorgehobenen Spiele sieht
-- Einladung per E-Mail oder als Code zum Weitergeben
+- Einladung per E-Mail mit Name: Eingeladene wählen nur ein Passwort, der Link
+  in der Mail öffnet die App mit dem Code; sonst Code zum Weitergeben
 - Erinnerung vor Anpfiff (Vorlauf einstellbar) und tägliche Nachfrage ab einer
   Woche vorher, solange die Antwort fehlt
 - Deutsch und Englisch, nach Gerätesprache
@@ -30,7 +31,7 @@ composeApp/src/androidMain  Android: Alarme, Benachrichtigungen, Push (FCM), Act
 composeApp/src/iosMain      iOS: lokale Benachrichtigungen, Push (APNs), Einstiegspunkt
 iosApp/                     Xcode-Projekt (wird per XcodeGen erzeugt)
 supabase/migrations/        das vollständige Datenbankschema, nummeriert
-supabase/functions/         Edge Functions: db-setup, rsvp-notify, invite-send, team-logo
+supabase/functions/         Edge Functions: db-setup, rsvp-notify, invite-send, accept-invite, team-logo
 supabase/templates/         Mailvorlagen mit dem Bestätigungscode
 ```
 
@@ -107,10 +108,11 @@ entstehen.
 ### Anmelde-Einstellungen
 
 `supabase/config.toml` trägt die Auth-Konfiguration; `supabase config push`
-überträgt sie. **Der Befehl schreibt ohne Rückfrage.** Die Mailvorlagen mit
-dem Code (`supabase/templates/`) lassen sich erst setzen, wenn ein eigener
-SMTP-Anbieter eingetragen ist - dann die Vorlagenzeilen in `config.toml`
-einkommentieren und erneut pushen.
+überträgt sie. **Der Befehl schreibt ohne Rückfrage und ersetzt alles mit dem
+Stand der Datei.** SMTP (Brevo) und die Mailvorlagen mit dem Code liegen nur
+im Dashboard - ein Push würde beides überschreiben. Deshalb: nicht mehr
+pushen, solange der SMTP-Block in der Datei auskommentiert ist. Die Vorlagen
+liegen zur Ansicht unter `supabase/templates/`.
 
 ### Secrets der Edge Functions
 
