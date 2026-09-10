@@ -54,6 +54,9 @@ class SyncWorker(
     override suspend fun doWork(): Result {
         return try {
             Container.repository.syncAll()
+            // Auch der Gruppenstand: Neue Markierungen des Admins sollen
+            // ankommen, ohne dass die App geoeffnet wird.
+            Container.refreshGroup()
             Container.rescheduleReminders()
             Container.resolveLogos()
             Result.success()

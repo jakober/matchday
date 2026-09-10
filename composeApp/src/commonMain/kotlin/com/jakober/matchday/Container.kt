@@ -375,14 +375,16 @@ object Container {
             // Frage, die nicht beantwortet wurde. Den alten Stand stehen zu
             // lassen ist in jedem Fall richtiger, als alles zu verwerfen.
             if (fresh.members.isEmpty()) return@onSuccess
+            val importantChanged = fresh.importantMatchIds != _group.value.importantMatchIds
             _group.value = fresh
             store.saveGroupSnapshot(fresh)
             // Die eigenen Antworten kommen mit dem Gruppenstand: Nach einer
             // Neuanmeldung waeren sie sonst weg, obwohl der Server sie hat -
             // und die Liste zeigt die eigene Antwort aus dem lokalen Stand.
-            if (store.replaceRsvps(ownRsvpsOf(fresh, membership.memberId))) {
-                rescheduleReminders()
-            }
+            val rsvpsChanged = store.replaceRsvps(ownRsvpsOf(fresh, membership.memberId))
+            // Fuer eingeschraenkte Mitglieder haengt an den Markierungen, zu
+            // welchen Spielen ueberhaupt erinnert wird.
+            if (rsvpsChanged || importantChanged) rescheduleReminders()
         }
     }
 
@@ -577,6 +579,10 @@ object Container {
                     backend.unmarkImportant(membership, calendarId, parts.second)
                 } else {
                     backend.markImportant(membership, calendarId, parts.second, title)
+                    // Fuer eingeschraenkte Mitglieder ist das ein neues Spiel:
+                    // Meldung an sie, und der Push weckt ihre App. Schlaegt
+                    // das fehl, bleibt die Markierung trotzdem bestehen.
+                    runCatching { backend.notifyImportant(calendarId, parts.second) }
                 }
                 refreshGroup()
                 // Die Erinnerungen haengen an der Sichtbarkeit: Fuer ein
@@ -797,9 +803,11 @@ object Container {
             // Der Admin koennte inzwischen einen Kalender hinzugefuegt haben.
             refreshCalendars()
             val errors = repository.syncAll()
+            // Erst der Gruppenstand, dann die Erinnerungen: Ein frisch
+            // hervorgehobenes Spiel muss in der Planung schon drin sein.
+            refreshGroup()
             rescheduleReminders()
             resolveLogos()
-            refreshGroup()
             onDone(errors)
         }
     }

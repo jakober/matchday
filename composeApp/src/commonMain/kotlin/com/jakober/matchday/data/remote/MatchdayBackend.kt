@@ -636,6 +636,23 @@ class MatchdayBackend {
     }
 
     /**
+     * Meldet ein neu hervorgehobenes Spiel an die Mitglieder, die nur
+     * hervorgehobene Spiele sehen. Wer das ist, entscheidet der Server.
+     */
+    suspend fun notifyImportant(calendarId: String, matchUid: String) {
+        client.functions.invoke(
+            function = "rsvp-notify",
+            body = JsonObject(
+                mapOf(
+                    "calendar_id" to JsonPrimitive(calendarId),
+                    "match_uid" to JsonPrimitive(matchUid),
+                    "kind" to JsonPrimitive("important"),
+                )
+            ),
+        )
+    }
+
+    /**
      * Loest Mannschaftsnamen in Wappen auf. Der Server haelt den
      * Zwischenspeicher und fragt den Wappendienst - nicht die App, damit
      * jeder Name genau einmal nachgeschlagen wird statt einmal je Geraet.

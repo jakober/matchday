@@ -1,4 +1,6 @@
-// Benachrichtigt die uebrigen Gruppenmitglieder, wenn jemand zu- oder absagt.
+// Benachrichtigt die uebrigen Gruppenmitglieder, wenn jemand zu- oder absagt -
+// und mit kind = "important" die eingeschraenkten Mitglieder, wenn der Admin
+// ein Spiel hervorhebt.
 //
 // Wird von der App aufgerufen, direkt nachdem sie die eigene Antwort
 // gespeichert hat. Bewusst nicht ueber einen Datenbank-Trigger: So laesst sich
@@ -205,12 +207,77 @@ async function sendFcm(token: string, title: string, body: string): Promise<bool
 
 // -- Einstiegspunkt ---------------------------------------------------------
 
+/**
+ * Meldet ein neu hervorgehobenes Spiel - nur an die, die ausschliesslich
+ * hervorgehobene Spiele sehen. Fuer sie ist es ein neues Spiel in der Liste;
+ * fuer alle anderen war es schon da, die brauchen keine Meldung. Der Push
+ * weckt ausserdem die App, die holt den Gruppenstand und plant die Nachfrage.
+ */
+async function notifyImportant(
+  // deno-lint-ignore no-explicit-any
+  supabase: any,
+  member: { id: string; group_id: string },
+  calendarId: string,
+  matchUid: string,
+): Promise<Response> {
+  // Nur der Admin darf das ausloesen - dieselbe Regel wie fuer das Markieren.
+  const { data: group } = await supabase
+    .from("groups")
+    .select("admin_member_id")
+    .eq("id", member.group_id)
+    .maybeSingle();
+  if (!group || group.admin_member_id !== member.id) {
+    return new Response("nur der Admin", { status: 403 });
+  }
+
+  // Inhalt aus der Datenbank: Nur was wirklich markiert ist, wird gemeldet.
+  const { data: important } = await supabase
+    .from("important_matches")
+    .select("match_title")
+    .eq("group_id", member.group_id)
+    .eq("calendar_id", calendarId)
+    .eq("match_uid", matchUid)
+    .maybeSingle();
+  if (!important) return new Response("nicht markiert", { status: 200 });
+
+  const { data: restricted } = await supabase
+    .from("members")
+    .select("id, locale")
+    .eq("group_id", member.group_id)
+    .eq("scope", "important")
+    .neq("id", member.id);
+  const localeById = new Map(
+    (restricted ?? []).map((m: { id: string; locale: string }) => [m.id, m.locale]),
+  );
+  if (localeById.size === 0) return new Response("keine Empfaenger", { status: 200 });
+
+  const { data: tokens } = await supabase
+    .from("device_tokens")
+    .select("platform, token, member_id")
+    .eq("group_id", member.group_id)
+    .in("member_id", [...localeById.keys()]);
+  if (!tokens || tokens.length === 0) return new Response("keine Empfaenger", { status: 200 });
+
+  const results = await Promise.all(
+    tokens.map((entry: { platform: string; token: string; member_id: string }) => {
+      const en = localeById.get(entry.member_id) === "en";
+      const title = en ? "New important match" : "Neues wichtiges Spiel";
+      const body = important.match_title ?? (en ? "Open Matchday to answer" : "In Matchday antworten");
+      return entry.platform === "ios"
+        ? sendApns(entry.token, title, body)
+        : sendFcm(entry.token, title, body);
+    }),
+  );
+  const sent = results.filter(Boolean).length;
+  return new Response(`${sent} von ${tokens.length} zugestellt`, { status: 200 });
+}
+
 Deno.serve(async (request) => {
   try {
     const userId = userIdFromToken(request.headers.get("Authorization"));
     if (!userId) return new Response("nicht angemeldet", { status: 401 });
 
-    const { calendar_id, match_uid } = await request.json();
+    const { calendar_id, match_uid, kind } = await request.json();
     if (!calendar_id || !match_uid) {
       return new Response("calendar_id und match_uid fehlen", { status: 400 });
     }
@@ -242,6 +309,10 @@ Deno.serve(async (request) => {
       .maybeSingle();
 
     if (!member) return new Response("keine Mitgliedschaft", { status: 403 });
+
+    if (kind === "important") {
+      return await notifyImportant(supabase, member, calendar_id, match_uid);
+    }
 
     // Inhalt ebenfalls aus der Datenbank, nicht aus dem Aufruf.
     const { data: rsvp } = await supabase
