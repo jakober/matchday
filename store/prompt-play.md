@@ -34,7 +34,7 @@ WICHTIGE SPIELE
 Der Gruppenersteller hebt Spiele hervor - das Derby, das Finale, den Abend, an dem alle kommen sollen. Wer mag, sieht nur diese Spiele und wird nur dazu gefragt.
 
 NIE WIEDER VERPASSEN
-Erinnerung vor Anpfiff, Vorlauf frei wählbar. Und wenn ein Spiel in einer Woche ansteht und du noch nicht geantwortet hast, fragt Matchday täglich nach - bis du dich entschieden hast. Sobald jemand aus der Gruppe zusagt, bekommen die anderen eine Nachricht.
+Erinnerung vor Anpfiff, Vorlauf frei wählbar. Und wenn du noch nicht geantwortet hast, fragt Matchday nach: eine Woche, drei Tage und 24 Stunden vor Anpfiff. Sobald jemand aus der Gruppe zusagt, bekommen die anderen eine Nachricht.
 
 EINLADEN OHNE HÜRDEN
 Name und E-Mail eintragen, fertig. Die eingeladene Person bekommt eine Mail mit Link, tippt darauf, wählt ein Passwort und ist in der Gruppe - keine Registrierung, kein zweiter Code.
@@ -77,7 +77,7 @@ IMPORTANT MATCHES
 The group creator highlights matches - the derby, the final, the night everyone should show up. Anyone who wants to can see only those and be asked only about those.
 
 NEVER MISS A KICK-OFF
-A reminder before kick-off, lead time of your choice. And if a match is a week away and you haven't answered, Matchday asks every day until you decide. When someone in the group says they're in, the others get a notification.
+A reminder before kick-off, lead time of your choice. And if you haven't answered yet, Matchday asks: a week, three days and 24 hours before kick-off. When someone in the group says they're in, the others get a notification.
 
 INVITE WITHOUT FRICTION
 Enter a name and an email address, done. The invitee gets an email with a link, taps it, picks a password and is in the group - no sign-up, no second code.
@@ -148,9 +148,9 @@ Testen → Geschlossener Test → Track anlegen:
 - Länder/Regionen: **Alle Länder und Regionen hinzufügen** (die Tester sind international)
 
 Neuen Release erstellen:
-- App Bundle hochladen: C:\Users\jakober\matchday\store\out\release\matchday-0.38.aab
+- App Bundle hochladen: C:\Users\jakober\matchday\store\out\release\matchday-0.39.aab
 - Falls die Console nach Play App Signing fragt: „Von Google generierten Schlüssel verwenden" bzw. die Standardeinstellung bestätigen
-- Release-Name: 0.38
+- Release-Name: 0.39
 - Versionshinweise de-DE: Erste Testversion.
 - Versionshinweise en-US: First test release.
 - Release prüfen → Einführung starten (Veröffentlichung im geschlossenen Test)

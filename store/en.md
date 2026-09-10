@@ -27,7 +27,7 @@ IMPORTANT MATCHES
 The group creator highlights matches - the derby, the final, the night everyone should show up. Anyone who wants to can see only those and be asked only about those.
 
 NEVER MISS A KICK-OFF
-A reminder before kick-off, lead time of your choice. And if a match is a week away and you haven't answered, Matchday asks every day until you decide. When someone in the group says they're in, the others get a notification.
+A reminder before kick-off, lead time of your choice. And if you haven't answered yet, Matchday asks: a week, three days and 24 hours before kick-off. When someone in the group says they're in, the others get a notification.
 
 INVITE WITHOUT FRICTION
 Enter a name and an email address, done. The invitee gets an email with a link, taps it, picks a password and is in the group - no sign-up, no second code.

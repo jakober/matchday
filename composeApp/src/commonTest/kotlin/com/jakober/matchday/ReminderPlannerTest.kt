@@ -26,7 +26,7 @@ class ReminderPlannerTest {
     )
 
     @Test
-    fun `fragt taeglich nach, solange keine Antwort vorliegt`() {
+    fun `fragt eine Woche, drei Tage und einen Tag vorher nach`() {
         val plan = ReminderPlanner.plan(
             matches = listOf(match("m1", inDays = 30)),
             rsvps = emptyMap(),
@@ -35,10 +35,9 @@ class ReminderPlannerTest {
         )
 
         val nags = plan.filter { it.id.startsWith("undecided:") }
-        // Sieben Tage vorher beginnend, bis zum Vortag.
-        assertEquals(7, nags.size)
+        assertEquals(3, nags.size)
         assertEquals(
-            (1..7).map { now + (30 - it).days }.sorted(),
+            listOf(7, 3, 1).map { now + (30 - it).days }.sorted(),
             nags.map { it.at }.sorted(),
         )
     }
@@ -59,10 +58,9 @@ class ReminderPlannerTest {
 
     @Test
     fun `bereits verstrichene Nachfragen entfallen`() {
-        // Spiel in drei Tagen: Alles ab vier Tagen vorher liegt in der
-        // Vergangenheit. Die Nachfrage fuer genau drei Tage vorher faellt auf
-        // den jetzigen Zeitpunkt und zaehlt damit auch nicht mehr - es bleiben
-        // die von zwei und einem Tag vorher.
+        // Spiel in drei Tagen: Die Wochen-Nachfrage liegt in der Vergangenheit,
+        // die fuer drei Tage vorher faellt auf den jetzigen Zeitpunkt und
+        // zaehlt damit auch nicht mehr - es bleibt die vom Vortag.
         val plan = ReminderPlanner.plan(
             matches = listOf(match("m1", inDays = 3)),
             rsvps = emptyMap(),
@@ -71,7 +69,7 @@ class ReminderPlannerTest {
         )
 
         val nags = plan.filter { it.id.startsWith("undecided:") }
-        assertEquals(2, nags.size)
+        assertEquals(1, nags.size)
         assertTrue(nags.all { it.at > now })
     }
 

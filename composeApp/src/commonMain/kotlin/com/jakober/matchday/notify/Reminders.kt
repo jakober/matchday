@@ -79,8 +79,14 @@ object ReminderPlanner {
 
     const val MAX_PENDING = 60
 
-    /** So viele Tage vor Anpfiff beginnt die Nachfrage. */
-    const val UNDECIDED_LEAD_DAYS = 7
+    /**
+     * Tage vor Anpfiff, an denen bei fehlender Antwort nachgefragt wird.
+     * Drei Zeitpunkte statt taeglich: Eine Woche vorher zum Planen, drei
+     * Tage vorher als Erinnerung, 24 Stunden vorher als letzte Frage. Mehr
+     * nervt - und frisst bei Ligakalendern die 60 Vormerkungen, die das
+     * System zulaesst.
+     */
+    val UNDECIDED_NUDGE_DAYS = listOf(7, 3, 1)
 
     fun plan(
         matches: List<Match>,
@@ -106,10 +112,9 @@ object ReminderPlanner {
             }
 
             if (settings.undecidedReminderEnabled && rsvps[match.id] == null) {
-                // Taeglich nachfragen, bis geantwortet wurde. Sobald eine
-                // Antwort vorliegt, faellt der ganze Block weg und die
-                // Neuplanung zieht die Vormerkungen zurueck.
-                for (daysBefore in UNDECIDED_LEAD_DAYS downTo 1) {
+                // Sobald eine Antwort vorliegt, faellt der ganze Block weg
+                // und die Neuplanung zieht die Vormerkungen zurueck.
+                for (daysBefore in UNDECIDED_NUDGE_DAYS) {
                     val at = match.start - daysBefore.days
                     if (at > now) {
                         out += ScheduledReminder(

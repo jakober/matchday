@@ -27,7 +27,7 @@ WICHTIGE SPIELE
 Der Gruppenersteller hebt Spiele hervor - das Derby, das Finale, den Abend, an dem alle kommen sollen. Wer mag, sieht nur diese Spiele und wird nur dazu gefragt.
 
 NIE WIEDER VERPASSEN
-Erinnerung vor Anpfiff, Vorlauf frei wählbar. Und wenn ein Spiel in einer Woche ansteht und du noch nicht geantwortet hast, fragt Matchday täglich nach - bis du dich entschieden hast. Sobald jemand aus der Gruppe zusagt, bekommen die anderen eine Nachricht.
+Erinnerung vor Anpfiff, Vorlauf frei wählbar. Und wenn du noch nicht geantwortet hast, fragt Matchday nach: eine Woche, drei Tage und 24 Stunden vor Anpfiff. Sobald jemand aus der Gruppe zusagt, bekommen die anderen eine Nachricht.
 
 EINLADEN OHNE HÜRDEN
 Name und E-Mail eintragen, fertig. Die eingeladene Person bekommt eine Mail mit Link, tippt darauf, wählt ein Passwort und ist in der Gruppe - keine Registrierung, kein zweiter Code.
