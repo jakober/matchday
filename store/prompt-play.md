@@ -107,9 +107,10 @@ Matchday is a private project with no affiliation to any league, club or associa
 - Datenschutzerklärung: https://jakober.github.io/matchday/
 - Werbung: Nein, meine App enthält keine Werbung
 - Zugriff auf App: „Alle oder einige Funktionen sind eingeschränkt". Anmeldedaten hinzufügen:
-  - Name der Anleitung: Demo-Konto
-  - Nutzername: [DEMO-E-MAIL – frag mich]
-  - Passwort: [DEMO-PASSWORT – frag mich]
+  - Name der Anleitung: Testkonto
+  - Nutzername: mat.jakober+tester@gmail.com
+  - Passwort: [TESTER-PASSWORT – frag mich]
+  - Wichtig: NICHT das Apple-Demo-Konto. Googles Test-Roboter drückt jeden Knopf, auch „Konto löschen".
   - Weitere Informationen: „Nach der Anmeldung ist das Konto bereits Mitglied einer Gruppe mit Spielplänen und Zusagen. Einladungen und Gruppen anlegen sind ebenfalls ohne weitere Daten möglich."
 - Einstufung von Inhalten (IARC-Fragebogen): E-Mail mat.jakober@gmail.com; Kategorie „Dienstprogramm, Produktivität, Kommunikation oder Sonstiges"; Gewalt, sexuelle Inhalte, Sprache, kontrollierte Substanzen, Glücksspiel: alles Nein; „Ermöglicht die App Nutzern, miteinander zu interagieren oder Informationen auszutauschen": Ja, nur innerhalb geschlossener Gruppen (Namen und kurze Absagegründe); Standortweitergabe: Nein; digitale Käufe: Nein; sonstige Fragen: Nein
 - Zielgruppe und Inhalte: Altersgruppe „18 und älter"; „Könnte die App unbeabsichtigt Kinder ansprechen": Nein

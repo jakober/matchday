@@ -150,7 +150,7 @@ Unter „Build" den TestFlight-Build **0.37** auswählen (höchste Build-Nummer 
 
 ## 7. Informationen zur App-Überprüfung
 
-- Anmeldung erforderlich: Ja
+- Anmeldung erforderlich: Ja. **Das Demo-Konto darf nirgends sonst hinterlegt sein**, insbesondere nicht bei Google unter „Zugriff auf App": Googles Test-Roboter hat das erste Demo-Konto über „Konto löschen" gelöscht. Für Google ein eigenes Konto.
   - Benutzername: [DEMO-E-MAIL – frag mich]
   - Passwort: [DEMO-PASSWORT – frag mich]
 - Kontaktinformationen: Vorname Mathis, Nachname Jakober, Telefon [frag mich], E-Mail mat.jakober@gmail.com

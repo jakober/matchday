@@ -104,3 +104,9 @@ Ein echtes Konto in der App, das beide Prüfteams benutzen:
    „Prüfinformationen → Anmeldung erforderlich" eintragen.
 
 Das Konto darf nie gelöscht werden, solange die App in den Stores ist.
+
+**Zwei getrennte Konten:** Googles Pre-Launch-Roboter meldet sich mit den
+hinterlegten Zugangsdaten an und drückt jeden Knopf, auch „Konto löschen".
+So ist das erste Demo-Konto am 4.9. verschwunden. Deshalb bekommt Google das
+Tester-Konto (`+tester`), Apple ein eigenes Demo-Konto (`+demo`), das sonst
+niemand kennt.
