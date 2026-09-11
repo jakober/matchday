@@ -15,6 +15,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BG = (15, 17, 21)
 GREEN = (55, 226, 122)
 
+# Rohbilder kommen aus dem Android-Emulator (1080 breit): Statusleiste 0-50,
+# Gestenbalken in den letzten ~70 Zeilen.
+CROP_TOP = 56
+CROP_BOTTOM = 72
+
 # Zielgroessen: Apple 6,9" (Pflichtformat), Google beliebig im 9:16-Bereich.
 TARGETS = {"ios": (1320, 2868), "android": (1080, 2340)}
 
@@ -49,6 +54,10 @@ def frame(src, target, caption):
     w, h = target
     canvas = Image.new("RGB", target, BG)
     shot = Image.open(src).convert("RGB")
+    # Android-Statusleiste oben und Gestenbalken unten abschneiden. Apple lehnt
+    # Bilder mit fremder Statusleiste ab (Richtlinie 2.3.10) - und ohne
+    # Leiste sind dieselben Aufnahmen fuer beide Stores brauchbar.
+    shot = shot.crop((0, CROP_TOP, shot.width, shot.height - CROP_BOTTOM))
     # Platz oben fuer die Zeile, unten etwas Luft; der Screenshot behaelt sein
     # Seitenverhaeltnis und bekommt runde Ecken.
     top = int(h * 0.12)
