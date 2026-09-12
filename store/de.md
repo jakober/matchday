@@ -62,6 +62,6 @@ Keine anstößigen Inhalte, keine nutzergenerierten Inhalte außer Gruppennamen 
 
 ## Support-URL / Datenschutz-URL
 
-Support: https://github.com/jakober/matchday
+Support: https://jakober.github.io/matchday/support.html
 Datenschutz (DE): https://jakober.github.io/matchday/
 Datenschutz (EN): https://jakober.github.io/matchday/privacy.html

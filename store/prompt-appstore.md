@@ -82,7 +82,7 @@ Matchday ist ein privates Projekt und steht in keiner Verbindung zu Ligen, Verei
 Schlüsselwörter (100 Zeichen):
 Fußball,Spielplan,Bundesliga,Gruppe,Zusage,Termine,Premier League,NFL,Freunde,Kalender,Spieltag
 
-Support-URL: https://github.com/jakober/matchday
+Support-URL: https://jakober.github.io/matchday/support.html
 Marketing-URL: https://jakober.github.io/matchday/
 
 Neue Funktionen in dieser Version (erste Veröffentlichung):
@@ -132,7 +132,7 @@ Matchday is a private project with no affiliation to any league, club or associa
 Keywords:
 football,soccer,fixtures,Bundesliga,group,RSVP,Premier League,NFL,friends,calendar,match day
 
-Support URL: https://github.com/jakober/matchday
+Support URL: https://jakober.github.io/matchday/support.html
 Marketing URL: https://jakober.github.io/matchday/privacy.html
 
 What's New:

@@ -62,6 +62,6 @@ No objectionable content; user-generated content limited to group names and decl
 
 ## URLs
 
-Support: https://github.com/jakober/matchday
+Support: https://jakober.github.io/matchday/support.html
 Privacy (DE): https://jakober.github.io/matchday/
 Privacy (EN): https://jakober.github.io/matchday/privacy.html
