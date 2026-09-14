@@ -5,13 +5,13 @@ Dateien liegen auf meinem Rechner unter C:\Users\jakober\matchday\store\out\ - l
 ## 1. App-Informationen (Apps → Matchday FCB → App-Informationen)
 
 - Name: Matchday - Wer kommt?
-- Untertitel (deutsch): Spielplan teilen und zusagen
+- Untertitel (deutsch): Zusammen Fußball schauen
 - Primäre Sprache: Deutsch
 - Bundle-ID: com.jakober.matchday (nicht ändern)
 - Kategorie: Sport; Sekundäre Kategorie: Soziale Netze
 - Inhaltsrechte: „Nein, diese App enthält, zeigt oder greift nicht auf Inhalte von Drittanbietern zu"
 - Altersfreigabe: Fragebogen ausfüllen, alle Punkte „Keine" bzw. „Nein" (Gewalt, sexuelle Inhalte, Schimpfwörter, Drogen, Glücksspiel, Horror, medizinische Themen, Wettbewerbe, uneingeschränkter Webzugriff, Lotterie). Falls nach nutzergenerierten Inhalten gefragt wird: Nein - Inhalte sind nur Namen und kurze Absagegründe, sichtbar ausschließlich in geschlossenen Gruppen, in die man persönlich eingeladen wurde. Ergebnis sollte 4+ sein.
-- Lokalisierung Englisch hinzufügen: Name „Matchday - Who's In?", Untertitel „Share fixtures and RSVP"
+- Lokalisierung Englisch hinzufügen: Name „Matchday - Who's In?", Untertitel „Watch football together"
 
 ## 2. Preise und Verfügbarkeit
 
@@ -47,13 +47,13 @@ Wer kommt zum Spiel? Gruppe anlegen, Spielplan teilen, zusagen - Bundesliga, Pre
 
 Beschreibung:
 ---
-Wer kommt zum Spiel? Matchday beantwortet die Frage, die in jeder Fußballrunde vor jedem Spieltag kreist - ohne Gruppenchat-Chaos.
+Wer schaut mit? Matchday ist für Freundesrunden, die Fußball zusammen schauen - im Wohnzimmer, in der Kneipe oder im Stadion. Der Spielplan ist schon drin, ihr sagt nur noch zu oder ab. Kein „Wer kommt Samstag?“ mehr im Gruppenchat.
 
-EINE GRUPPE, EIN SPIELPLAN
+EURE RUNDE, EUER SPIELPLAN
 Lege eine Gruppe an und lade deine Leute per E-Mail ein. Der Ersteller wählt die Kalender: Bundesliga und 2. Bundesliga komplett oder einzelne Vereine, Nationalmannschaft, Premier League, Champions League, NFL - oder jeden anderen Spielplan per Kalenderadresse. Die Spielpläne aktualisieren sich von selbst, auch bei verlegten Anstoßzeiten.
 
-ZUSAGEN AUF EINEN BLICK
-Tippe auf ein Spiel und sag zu oder ab - mit einem Grund, wenn du magst. Alle in der Gruppe sehen sofort, wer dabei ist. Spiele, zu denen genug zugesagt haben, sind grün umrandet; Absagen rot. In der Liste oder im Monatskalender, wie du willst.
+WER IST DABEI?
+Tippe auf ein Spiel und sag zu oder ab - mit einem Grund, wenn du magst. Alle sehen sofort, wer am Samstag mitschaut. Spiele, zu denen genug zugesagt haben, sind grün umrandet; Absagen rot. In der Liste oder im Monatskalender, wie du willst.
 
 WAPPEN STATT WORTE
 Jedes Spiel zeigt die Wappen beider Mannschaften. So erkennst du in der Liste auf einen Blick, wer gegen wen spielt.
@@ -97,13 +97,13 @@ Who's coming to the match? Create a group, share the fixtures, RSVP - Bundesliga
 
 Description:
 ---
-Who's coming to the match? Matchday answers the question that goes around every football crew before every match day - without the group-chat chaos.
+Who's watching? Matchday is for groups of friends who watch football together - in the living room, at the pub or in the stadium. The fixtures are already in, you just say in or out. No more "who's coming Saturday?" in the group chat.
 
-ONE GROUP, ONE FIXTURE LIST
+YOUR CREW, YOUR FIXTURES
 Create a group and invite your people by email. The creator picks the calendars: the full Bundesliga or 2. Bundesliga, single clubs, the national team, Premier League, Champions League, NFL - or any other fixture list by calendar address. Fixtures update on their own, including rescheduled kick-offs.
 
-ANSWERS AT A GLANCE
-Tap a match and say you're in or out - with a reason if you like. Everyone in the group sees right away who's coming. Matches with enough people in get a green frame; declines show red. As a list or a month grid, whichever you prefer.
+WHO'S IN?
+Tap a match and say you're in or out - with a reason if you like. Everyone sees right away who's watching on Saturday. Matches with enough people in get a green frame; declines show red. As a list or a month grid, whichever you prefer.
 
 CRESTS, NOT WORDS
 Every match shows the crests of both teams, so you can see who's playing whom at a glance.

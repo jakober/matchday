@@ -6,19 +6,19 @@ Matchday - Wer kommt?
 
 ## Untertitel (App Store, 30 Zeichen) / Kurzbeschreibung (Play Store, 80 Zeichen)
 
-App Store: Spielplan teilen, zusagen, zusammen schauen
+App Store: Zusammen Fußball schauen
 
-Play Store: Bundesliga, Premier League, NFL: Spielplan teilen, zusagen, gemeinsam schauen.
+Play Store: Fußball zusammen schauen: Wer ist beim nächsten Spiel dabei? Spielplan teilen.
 
 ## Beschreibung (App Store 4000 / Play Store 4000 Zeichen)
 
-Wer kommt zum Spiel? Matchday beantwortet die Frage, die in jeder Fußballrunde vor jedem Spieltag kreist - ohne Gruppenchat-Chaos.
+Wer schaut mit? Matchday ist für Freundesrunden, die Fußball zusammen schauen - im Wohnzimmer, in der Kneipe oder im Stadion. Der Spielplan ist schon drin, ihr sagt nur noch zu oder ab. Kein „Wer kommt Samstag?“ mehr im Gruppenchat.
 
-EINE GRUPPE, EIN SPIELPLAN
+EURE RUNDE, EUER SPIELPLAN
 Lege eine Gruppe an und lade deine Leute per E-Mail ein. Der Ersteller wählt die Kalender: Bundesliga und 2. Bundesliga komplett oder einzelne Vereine, Nationalmannschaft, Premier League, Champions League, NFL - oder jeden anderen Spielplan per Kalenderadresse. Die Spielpläne aktualisieren sich von selbst, auch bei verlegten Anstoßzeiten.
 
-ZUSAGEN AUF EINEN BLICK
-Tippe auf ein Spiel und sag zu oder ab - mit einem Grund, wenn du magst. Alle in der Gruppe sehen sofort, wer dabei ist. Spiele, zu denen genug zugesagt haben, sind grün umrandet; Absagen rot. In der Liste oder im Monatskalender, wie du willst.
+WER IST DABEI?
+Tippe auf ein Spiel und sag zu oder ab - mit einem Grund, wenn du magst. Alle sehen sofort, wer am Samstag mitschaut. Spiele, zu denen genug zugesagt haben, sind grün umrandet; Absagen rot. In der Liste oder im Monatskalender, wie du willst.
 
 WAPPEN STATT WORTE
 Jedes Spiel zeigt die Wappen beider Mannschaften. So erkennst du in der Liste auf einen Blick, wer gegen wen spielt.

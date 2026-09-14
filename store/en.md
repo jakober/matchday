@@ -6,19 +6,19 @@ Matchday - Who's In?
 
 ## Subtitle (App Store, 30 characters) / Short description (Play Store, 80 characters)
 
-App Store: Share fixtures, RSVP, watch together
+App Store: Watch football together
 
-Play Store: Bundesliga, Premier League, NFL: share fixtures, RSVP, watch together.
+Play Store: Watch football together: who's in for the next match? Share fixtures, RSVP.
 
 ## Description (4000 characters)
 
-Who's coming to the match? Matchday answers the question that goes around every football crew before every match day - without the group-chat chaos.
+Who's watching? Matchday is for groups of friends who watch football together - in the living room, at the pub or in the stadium. The fixtures are already in, you just say in or out. No more "who's coming Saturday?" in the group chat.
 
-ONE GROUP, ONE FIXTURE LIST
+YOUR CREW, YOUR FIXTURES
 Create a group and invite your people by email. The creator picks the calendars: the full Bundesliga or 2. Bundesliga, single clubs, the national team, Premier League, Champions League, NFL - or any other fixture list by calendar address. Fixtures update on their own, including rescheduled kick-offs.
 
-ANSWERS AT A GLANCE
-Tap a match and say you're in or out - with a reason if you like. Everyone in the group sees right away who's coming. Matches with enough people in get a green frame; declines show red. As a list or a month grid, whichever you prefer.
+WHO'S IN?
+Tap a match and say you're in or out - with a reason if you like. Everyone sees right away who's watching on Saturday. Matches with enough people in get a green frame; declines show red. As a list or a month grid, whichever you prefer.
 
 CRESTS, NOT WORDS
 Every match shows the crests of both teams, so you can see who's playing whom at a glance.
