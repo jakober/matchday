@@ -24,8 +24,8 @@ Wer schaut mit? Matchday ist für Freundesrunden, die Fußball zusammen schauen 
 EURE RUNDE, EUER SPIELPLAN
 Lege eine Gruppe an und lade deine Leute per E-Mail ein. Der Ersteller wählt die Kalender: Bundesliga und 2. Bundesliga komplett oder einzelne Vereine, Nationalmannschaft, Premier League, Champions League, NFL - oder jeden anderen Spielplan per Kalenderadresse. Die Spielpläne aktualisieren sich von selbst, auch bei verlegten Anstoßzeiten.
 
-WER IST DABEI?
-Tippe auf ein Spiel und sag zu oder ab - mit einem Grund, wenn du magst. Alle sehen sofort, wer am Samstag mitschaut. Spiele, zu denen genug zugesagt haben, sind grün umrandet; Absagen rot. In der Liste oder im Monatskalender, wie du willst.
+WER IST DABEI, UND WO?
+Tippe auf ein Spiel und sag zu oder ab - mit einem Grund, wenn du magst. Alle sehen sofort, wer am Samstag mitschaut. Der Treffpunkt steht dabei: euer Stammplatz, oder für einzelne Spiele ein anderer. Spiele, zu denen genug zugesagt haben, sind grün umrandet; Absagen rot. In der Liste oder im Monatskalender, wie du willst.
 
 WAPPEN STATT WORTE
 Jedes Spiel zeigt die Wappen beider Mannschaften. So erkennst du in der Liste auf einen Blick, wer gegen wen spielt.
@@ -67,8 +67,8 @@ Who's watching? Matchday is for groups of friends who watch football together - 
 YOUR CREW, YOUR FIXTURES
 Create a group and invite your people by email. The creator picks the calendars: the full Bundesliga or 2. Bundesliga, single clubs, the national team, Premier League, Champions League, NFL - or any other fixture list by calendar address. Fixtures update on their own, including rescheduled kick-offs.
 
-WHO'S IN?
-Tap a match and say you're in or out - with a reason if you like. Everyone sees right away who's watching on Saturday. Matches with enough people in get a green frame; declines show red. As a list or a month grid, whichever you prefer.
+WHO'S IN, AND WHERE?
+Tap a match and say you're in or out - with a reason if you like. Everyone sees right away who's watching on Saturday. The meeting point is right there: your usual place, or a different one for single matches. Matches with enough people in get a green frame; declines show red. As a list or a month grid, whichever you prefer.
 
 CRESTS, NOT WORDS
 Every match shows the crests of both teams, so you can see who's playing whom at a glance.
@@ -149,9 +149,9 @@ Testen → Geschlossener Test → Track anlegen:
 - Länder/Regionen: **Alle Länder und Regionen hinzufügen** (die Tester sind international)
 
 Neuen Release erstellen:
-- App Bundle hochladen: C:\Users\jakober\matchday\store\out\release\matchday-0.40.aab
+- App Bundle hochladen: C:\Users\jakober\matchday\store\out\release\matchday-0.41.aab
 - Falls die Console nach Play App Signing fragt: „Von Google generierten Schlüssel verwenden" bzw. die Standardeinstellung bestätigen
-- Release-Name: 0.40
+- Release-Name: 0.41
 - Versionshinweise de-DE: Erste Testversion.
 - Versionshinweise en-US: First test release.
 - Release prüfen → Einführung starten (Veröffentlichung im geschlossenen Test)

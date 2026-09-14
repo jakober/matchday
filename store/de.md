@@ -17,8 +17,8 @@ Wer schaut mit? Matchday ist für Freundesrunden, die Fußball zusammen schauen 
 EURE RUNDE, EUER SPIELPLAN
 Lege eine Gruppe an und lade deine Leute per E-Mail ein. Der Ersteller wählt die Kalender: Bundesliga und 2. Bundesliga komplett oder einzelne Vereine, Nationalmannschaft, Premier League, Champions League, NFL - oder jeden anderen Spielplan per Kalenderadresse. Die Spielpläne aktualisieren sich von selbst, auch bei verlegten Anstoßzeiten.
 
-WER IST DABEI?
-Tippe auf ein Spiel und sag zu oder ab - mit einem Grund, wenn du magst. Alle sehen sofort, wer am Samstag mitschaut. Spiele, zu denen genug zugesagt haben, sind grün umrandet; Absagen rot. In der Liste oder im Monatskalender, wie du willst.
+WER IST DABEI, UND WO?
+Tippe auf ein Spiel und sag zu oder ab - mit einem Grund, wenn du magst. Alle sehen sofort, wer am Samstag mitschaut. Der Treffpunkt steht dabei: euer Stammplatz, oder für einzelne Spiele ein anderer. Spiele, zu denen genug zugesagt haben, sind grün umrandet; Absagen rot. In der Liste oder im Monatskalender, wie du willst.
 
 WAPPEN STATT WORTE
 Jedes Spiel zeigt die Wappen beider Mannschaften. So erkennst du in der Liste auf einen Blick, wer gegen wen spielt.

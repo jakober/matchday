@@ -93,6 +93,8 @@ object ReminderPlanner {
         rsvps: Map<String, Rsvp>,
         settings: ReminderSettings,
         now: Instant,
+        /** Treffpunkt je Spiel - Gruppenstandard oder Abweichung, sonst Kalenderort. */
+        locationOf: (Match) -> String? = { it.location },
     ): List<ScheduledReminder> {
         val upcoming = matches.filter { it.start > now }.sortedBy { it.start }
         val out = mutableListOf<ScheduledReminder>()
@@ -106,7 +108,7 @@ object ReminderPlanner {
                         id = "kickoff:${match.id}",
                         at = at,
                         title = match.displayTitle,
-                        body = kickoffBody(settings.minutesBefore, match.location),
+                        body = kickoffBody(settings.minutesBefore, locationOf(match)),
                     )
                 }
             }

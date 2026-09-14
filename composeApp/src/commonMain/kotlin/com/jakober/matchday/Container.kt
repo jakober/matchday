@@ -368,6 +368,9 @@ object Container {
                 importantMatchIds = backend.importantMatches(membership.groupId)
                     .map { "${it.calendarId}#${it.matchUid}" }
                     .toSet(),
+                watchLocation = backend.group(membership.groupId)?.watchLocation?.takeIf { it.isNotBlank() },
+                matchLocations = backend.matchLocations(membership.groupId)
+                    .associate { "${it.calendarId}#${it.matchUid}" to it.location },
             )
         }.onSuccess { fresh ->
             // Eine Gruppe ohne Mitglieder gibt es nicht - man selbst ist immer
@@ -376,6 +379,9 @@ object Container {
             // lassen ist in jedem Fall richtiger, als alles zu verwerfen.
             if (fresh.members.isEmpty()) return@onSuccess
             val importantChanged = fresh.importantMatchIds != _group.value.importantMatchIds
+            // Der Treffpunkt steht in der Erinnerung vor Anpfiff.
+            val locationChanged = fresh.watchLocation != _group.value.watchLocation ||
+                fresh.matchLocations != _group.value.matchLocations
             _group.value = fresh
             store.saveGroupSnapshot(fresh)
             // Die eigenen Antworten kommen mit dem Gruppenstand: Nach einer
@@ -384,7 +390,7 @@ object Container {
             val rsvpsChanged = store.replaceRsvps(ownRsvpsOf(fresh, membership.memberId))
             // Fuer eingeschraenkte Mitglieder haengt an den Markierungen, zu
             // welchen Spielen ueberhaupt erinnert wird.
-            if (rsvpsChanged || importantChanged) rescheduleReminders()
+            if (rsvpsChanged || importantChanged || locationChanged) rescheduleReminders()
         }
     }
 
@@ -553,6 +559,36 @@ object Container {
                     rescheduleReminders()
                 }
                 .onFailure { onError(it.message ?: S.removeFailed) }
+        }
+    }
+
+    /**
+     * Treffpunkt eines Spiels: die Abweichung, sonst der Standard der Gruppe,
+     * sonst der Ort aus dem Kalender (meist das Stadion).
+     */
+    fun locationOf(match: com.jakober.matchday.domain.Match): String? {
+        val snapshot = _group.value
+        return snapshot.matchLocations[match.id]
+            ?: snapshot.watchLocation
+            ?: match.location?.takeIf { it.isNotBlank() }
+    }
+
+    /** Standard-Treffpunkt der Gruppe setzen (Admin). */
+    suspend fun setWatchLocation(location: String?): Result<Unit> {
+        val membership = store.membership.value ?: return Result.failure(IllegalStateException(S.needGroup))
+        return runCatching {
+            backend.setWatchLocation(membership.groupId, location?.trim()?.ifEmpty { null })
+            refreshGroup()
+        }
+    }
+
+    /** Abweichenden Treffpunkt fuer ein Spiel setzen; leer = Standard (Admin). */
+    suspend fun setMatchLocation(matchId: String, location: String?): Result<Unit> {
+        val membership = store.membership.value ?: return Result.failure(IllegalStateException(S.needGroup))
+        val parts = splitMatchId(matchId) ?: return Result.failure(IllegalStateException(S.matchUnknown))
+        return runCatching {
+            backend.setMatchLocation(membership, parts.first, parts.second, location)
+            refreshGroup()
         }
     }
 
@@ -783,6 +819,7 @@ object Container {
             rsvps = store.rsvps.value,
             settings = store.reminders.value,
             now = Clock.System.now(),
+            locationOf = ::locationOf,
         )
         scheduler.replaceAll(plan)
     }

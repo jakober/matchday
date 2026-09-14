@@ -30,6 +30,17 @@ data class GroupDto(
     val name: String,
     @SerialName("invite_code") val inviteCode: String,
     @SerialName("admin_member_id") val adminMemberId: String? = null,
+    /** Standard-Treffpunkt der Gruppe, vom Admin gesetzt. */
+    @SerialName("watch_location") val watchLocation: String? = null,
+)
+
+/** Abweichender Treffpunkt fuer ein einzelnes Spiel. */
+@Serializable
+data class MatchLocationDto(
+    @SerialName("group_id") val groupId: String,
+    @SerialName("calendar_id") val calendarId: String,
+    @SerialName("match_uid") val matchUid: String,
+    val location: String,
 )
 
 /** Ein vom Admin hervorgehobenes Spiel. */

@@ -21,6 +21,7 @@ sagt zu oder ab, alle sehen, wer dabei ist. Eine Codebasis für Android und iOS
   in der Mail öffnet die App mit dem Code; sonst Code zum Weitergeben
 - Erinnerung vor Anpfiff (Vorlauf einstellbar) und Nachfrage eine Woche, drei
   Tage und 24 Stunden vorher, solange die Antwort fehlt
+- Treffpunkt je Gruppe (vom Admin), je Spiel abweichend; steht im Spiel und in der Erinnerung
 - Deutsch und Englisch, nach Gerätesprache
 
 ## Aufbau

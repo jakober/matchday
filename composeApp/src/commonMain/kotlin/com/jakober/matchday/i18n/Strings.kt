@@ -235,6 +235,14 @@ interface Strings {
     val join: String
     val admin: String
     val onlyImportantHint: String
+    val watchLocation: String
+    val watchLocationHint: String
+    val watchLocationPlaceholder: String
+    val watchLocationSaved: String
+    val matchLocationEdit: String
+    val matchLocationTitle: String
+    val matchLocationHint: String
+    val matchLocationUseDefault: String
     val invite: String
     val inviteIntro: String
     val emailOptional: String
@@ -498,6 +506,14 @@ object De : Strings {
     override val join = "Beitreten"
     override val admin = "ADMIN"
     override val onlyImportantHint = "Du siehst nur die hervorgehobenen Spiele."
+    override val watchLocation = "Treffpunkt"
+    override val watchLocationHint = "Wo ihr normalerweise zusammen schaut. Steht bei jedem Spiel und in der Erinnerung; einzelne Spiele lassen sich abweichend setzen."
+    override val watchLocationPlaceholder = "z. B. Bei Max, Sportsbar Eck"
+    override val watchLocationSaved = "Treffpunkt gespeichert."
+    override val matchLocationEdit = "Treffpunkt für dieses Spiel"
+    override val matchLocationTitle = "Treffpunkt für dieses Spiel"
+    override val matchLocationHint = "Gilt nur für dieses Spiel. Leer lassen, um den Treffpunkt der Gruppe zu verwenden."
+    override val matchLocationUseDefault = "Gruppen-Treffpunkt verwenden"
     override val invite = "EINLADEN"
     override val inviteIntro = "Jede Einladung gilt einmal. Du legst dabei fest, was der Eingeladene zu sehen bekommt. Mit Adresse geht der Code direkt per E-Mail raus, ohne siehst du ihn hier zum Weitergeben."
     override val emailOptional = "E-Mail-Adresse (optional)"
@@ -759,6 +775,14 @@ object En : Strings {
     override val join = "Join"
     override val admin = "ADMIN"
     override val onlyImportantHint = "You only see the highlighted matches."
+    override val watchLocation = "Meeting point"
+    override val watchLocationHint = "Where you usually watch together. Shown on every match and in the reminder; single matches can override it."
+    override val watchLocationPlaceholder = "e.g. At Max's, Corner Sports Bar"
+    override val watchLocationSaved = "Meeting point saved."
+    override val matchLocationEdit = "Meeting point for this match"
+    override val matchLocationTitle = "Meeting point for this match"
+    override val matchLocationHint = "Applies to this match only. Leave empty to use the group's meeting point."
+    override val matchLocationUseDefault = "Use group meeting point"
     override val invite = "INVITE"
     override val inviteIntro = "Each invitation works once. You decide what the invitee gets to see. With an address the code goes out by email right away; without one you see it here to pass on."
     override val emailOptional = "Email address (optional)"

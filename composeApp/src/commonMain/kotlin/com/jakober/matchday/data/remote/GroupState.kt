@@ -21,6 +21,10 @@ data class GroupSnapshot(
      * umgerechnet - so muss die Oberflaeche nichts ueber Kalender-Ids wissen.
      */
     val importantMatchIds: Set<String> = emptySet(),
+    /** Standard-Treffpunkt der Gruppe. */
+    val watchLocation: String? = null,
+    /** Abweichende Treffpunkte je Spiel, Schluessel ist die lokale Spiel-Id. */
+    val matchLocations: Map<String, String> = emptyMap(),
 )
 
 /**

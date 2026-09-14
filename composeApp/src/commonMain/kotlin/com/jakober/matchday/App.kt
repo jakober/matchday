@@ -302,6 +302,7 @@ private fun Root() {
     var groupError by remember { mutableStateOf<String?>(null) }
     var invite by remember { mutableStateOf<InviteResult?>(null) }
     var importantError by remember { mutableStateOf<String?>(null) }
+    var watchLocationNotice by remember { mutableStateOf<String?>(null) }
     var calendarError by remember { mutableStateOf<String?>(null) }
     var importBusy by remember { mutableStateOf(false) }
     var importPreview by remember { mutableStateOf<FeedPreview?>(null) }
@@ -609,6 +610,18 @@ private fun Root() {
                 invite = null
             },
             onBack = { screen = Screen.SETTINGS },
+            watchLocation = groupSnapshot.watchLocation,
+            onSaveWatchLocation = if (membership?.isAdmin == true) {
+                { value ->
+                    watchLocationNotice = null
+                    scope.launch {
+                        Container.setWatchLocation(value)
+                            .onSuccess { watchLocationNotice = S.watchLocationSaved }
+                            .onFailure { groupError = it.message ?: S.changeFailed }
+                    }
+                }
+            } else null,
+            watchLocationNotice = watchLocationNotice,
         )
     }
 
@@ -630,6 +643,17 @@ private fun Root() {
                 Container.setRsvp(match.id, status, comment)
             },
             onDismiss = { selected = null },
+            location = Container.locationOf(match),
+            hasOwnLocation = match.id in groupSnapshot.matchLocations,
+            onSetLocation = if (membership?.isAdmin == true) {
+                { value ->
+                    importantError = null
+                    scope.launch {
+                        Container.setMatchLocation(match.id, value)
+                            .onFailure { importantError = it.message ?: S.changeFailed }
+                    }
+                }
+            } else null,
         )
     }
 }

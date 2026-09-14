@@ -448,6 +448,50 @@ class MatchdayBackend {
         )
     }
 
+    /** Die Gruppe selbst - Name, Admin, Treffpunkt. */
+    suspend fun group(groupId: String): GroupDto? =
+        client.from("groups").select {
+            filter { eq("id", groupId) }
+        }.decodeList<GroupDto>().firstOrNull()
+
+    /** Standard-Treffpunkt setzen. Nur der Admin darf das (RLS). */
+    suspend fun setWatchLocation(groupId: String, location: String?) {
+        client.from("groups").update(
+            JsonObject(mapOf("watch_location" to (location?.let { JsonPrimitive(it) } ?: kotlinx.serialization.json.JsonNull)))
+        ) {
+            filter { eq("id", groupId) }
+        }
+    }
+
+    suspend fun matchLocations(groupId: String): List<MatchLocationDto> =
+        client.from("match_locations").select {
+            filter { eq("group_id", groupId) }
+        }.decodeList()
+
+    /** Abweichenden Treffpunkt setzen; null entfernt ihn wieder. */
+    suspend fun setMatchLocation(
+        membership: GroupMembership,
+        calendarId: String,
+        matchUid: String,
+        location: String?,
+    ) {
+        if (location.isNullOrBlank()) {
+            client.from("match_locations").delete {
+                filter {
+                    eq("group_id", membership.groupId)
+                    eq("calendar_id", calendarId)
+                    eq("match_uid", matchUid)
+                }
+            }
+        } else {
+            client.from("match_locations").upsert(
+                MatchLocationDto(membership.groupId, calendarId, matchUid, location.trim())
+            ) {
+                onConflict = "group_id,calendar_id,match_uid"
+            }
+        }
+    }
+
     suspend fun importantMatches(groupId: String): List<ImportantMatchDto> =
         client.from("important_matches").select {
             filter { eq("group_id", groupId) }

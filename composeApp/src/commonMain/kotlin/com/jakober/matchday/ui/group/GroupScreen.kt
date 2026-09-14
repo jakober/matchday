@@ -58,6 +58,7 @@ import com.jakober.matchday.data.remote.SCOPE_IMPORTANT
 import com.jakober.matchday.theme.CardCorner
 import com.jakober.matchday.theme.ChipCorner
 import com.jakober.matchday.ui.components.Avatar
+import androidx.compose.material.icons.filled.LocationOn
 
 /**
  * Gruppe anlegen, beitreten und verwalten. Ohne Gruppe bleibt die Zusage
@@ -81,6 +82,11 @@ fun GroupScreen(
     onRemoveMember: (MemberDto) -> Unit,
     onLeave: () -> Unit,
     onBack: () -> Unit,
+    /** Standard-Treffpunkt der Gruppe, fuer alle sichtbar. */
+    watchLocation: String? = null,
+    /** Admin: Treffpunkt speichern. Liefert eine Meldung zurueck. */
+    onSaveWatchLocation: ((String?) -> Unit)? = null,
+    watchLocationNotice: String? = null,
     /**
      * Gesetzt, wenn der Bildschirm als Tor dient - ohne Gruppe geht es
      * nicht weiter, und statt "zurueck" gibt es nur "abmelden".
@@ -130,6 +136,9 @@ fun GroupScreen(
                     onCreateInvite = onCreateInvite,
                     onRemoveMember = onRemoveMember,
                     onLeave = onLeave,
+                    watchLocation = watchLocation,
+                    onSaveWatchLocation = onSaveWatchLocation,
+                    watchLocationNotice = watchLocationNotice,
                 )
             }
             Spacer(Modifier.height(40.dp))
@@ -224,7 +233,11 @@ private fun InGroup(
     onCreateInvite: (scope: String, email: String?, name: String?) -> Unit,
     onRemoveMember: (MemberDto) -> Unit,
     onLeave: () -> Unit,
+    watchLocation: String?,
+    onSaveWatchLocation: ((String?) -> Unit)?,
+    watchLocationNotice: String?,
 ) {
+    var locationDraft by remember(watchLocation) { mutableStateOf(watchLocation.orEmpty()) }
     // Vor dem Entfernen nachfragen: Die Zusagen des Mitglieds verschwinden mit.
     var zuEntfernen by remember { mutableStateOf<MemberDto?>(null) }
     var inviteEmail by remember { mutableStateOf("") }
@@ -267,6 +280,55 @@ private fun InGroup(
                 text = S.onlyImportantHint,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+
+    // Treffpunkt: Der Admin setzt ihn, alle sehen ihn. Das ist der Ort, um
+    // den es in der App geht - er gehoert nach oben, vor die Einladungen.
+    Spacer(Modifier.height(24.dp))
+    Label(S.watchLocation)
+    if (onSaveWatchLocation != null) {
+        Text(
+            text = S.watchLocationHint,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(10.dp))
+        OutlinedTextField(
+            value = locationDraft,
+            onValueChange = { locationDraft = it },
+            placeholder = { Text(S.watchLocationPlaceholder) },
+            singleLine = true,
+            shape = RoundedCornerShape(ChipCorner),
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+            trailingIcon = {
+                if (locationDraft.trim() != watchLocation.orEmpty()) {
+                    TextButton(onClick = { onSaveWatchLocation(locationDraft.trim().ifEmpty { null }) }) {
+                        Text(S.save)
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        watchLocationNotice?.let {
+            Spacer(Modifier.height(6.dp))
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+        }
+    } else {
+        Spacer(Modifier.height(6.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Filled.LocationOn,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.size(10.dp))
+            Text(
+                text = watchLocation ?: "\u2013",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
             )
         }
     }

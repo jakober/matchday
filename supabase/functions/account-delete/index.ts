@@ -53,6 +53,26 @@ Deno.serve(async (request) => {
       }
     }
 
+    // Das Pruefkonto der Stores: Die Pruefer probieren das Loeschen damit
+    // aus, und beim naechsten Update scheitert ihre Anmeldung. Deshalb wird
+    // es sofort frisch angelegt - geloescht ist es trotzdem, samt allem,
+    // was daran hing. Adresse und Passwort kommen aus den Secrets.
+    const demoEmail = Deno.env.get("DEMO_EMAIL")?.trim().toLowerCase();
+    const demoPassword = Deno.env.get("DEMO_PASSWORD");
+    if (demoEmail && demoPassword && user.email?.toLowerCase() === demoEmail) {
+      const { data: created, error: createError } = await admin.auth.admin.createUser({
+        email: demoEmail,
+        password: demoPassword,
+        email_confirm: true,
+      });
+      if (createError || !created?.user) {
+        console.error("Demo-Konto neu anlegen", createError);
+      } else {
+        const { error: seedError } = await admin.rpc("seed_demo_group", { p_user: created.user.id });
+        if (seedError) console.error("seed_demo_group", seedError);
+      }
+    }
+
     return reply({ deleted: true });
   } catch (error) {
     console.error("account-delete", error);

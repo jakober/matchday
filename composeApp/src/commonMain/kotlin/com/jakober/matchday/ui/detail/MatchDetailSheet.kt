@@ -62,6 +62,9 @@ import com.jakober.matchday.theme.StatusOut
 import com.jakober.matchday.ui.components.Avatar
 import com.jakober.matchday.ui.components.DateText
 import com.jakober.matchday.ui.components.local
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
 
 /** Laenge des Absagegrunds - genug fuer einen Satz, zu wenig fuer einen Aufsatz. */
 private const val MAX_COMMENT = 140
@@ -86,7 +89,50 @@ fun MatchDetailSheet(
     onToggleImportant: () -> Unit,
     onSetStatus: (RsvpStatus, String?) -> Unit,
     onDismiss: () -> Unit,
+    /** Treffpunkt: Abweichung, Gruppenstandard oder Kalenderort. */
+    location: String? = match.location,
+    /** Nur fuer dieses Spiel gesetzt (nicht der Gruppenstandard)? */
+    hasOwnLocation: Boolean = false,
+    /** Admin: abweichenden Treffpunkt setzen; null = Standard verwenden. */
+    onSetLocation: ((String?) -> Unit)? = null,
 ) {
+    var locationDialog by remember(match.id) { mutableStateOf(false) }
+    var locationDraft by remember(match.id) { mutableStateOf("") }
+    if (locationDialog && onSetLocation != null) {
+        AlertDialog(
+            onDismissRequest = { locationDialog = false },
+            title = { Text(S.matchLocationTitle) },
+            text = {
+                Column {
+                    Text(S.matchLocationHint, style = MaterialTheme.typography.bodySmall)
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = locationDraft,
+                        onValueChange = { locationDraft = it },
+                        label = { Text(S.watchLocation) },
+                        placeholder = { Text(S.watchLocationPlaceholder) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    onSetLocation(locationDraft.trim().ifEmpty { null })
+                    locationDialog = false
+                }) { Text(S.save) }
+            },
+            dismissButton = {
+                if (hasOwnLocation) {
+                    TextButton(onClick = { onSetLocation(null); locationDialog = false }) {
+                        Text(S.matchLocationUseDefault)
+                    }
+                } else {
+                    TextButton(onClick = { locationDialog = false }) { Text(S.cancel) }
+                }
+            },
+        )
+    }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val dateTime = match.start.local()
 
@@ -203,9 +249,32 @@ fun MatchDetailSheet(
                 },
             )
 
-            match.location?.takeIf { it.isNotBlank() }?.let {
+            val shownLocation = location?.takeIf { it.isNotBlank() }
+            if (shownLocation != null || onSetLocation != null) {
                 Spacer(Modifier.height(10.dp))
-                InfoLine(icon = Icons.Filled.LocationOn, text = it)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.weight(1f)) {
+                        InfoLine(
+                            icon = Icons.Filled.LocationOn,
+                            text = shownLocation ?: S.watchLocation,
+                            muted = shownLocation == null,
+                        )
+                    }
+                    if (onSetLocation != null) {
+                        // Nur der Admin: Treffpunkt fuer dieses Spiel abweichend setzen.
+                        IconButton(onClick = {
+                            locationDraft = if (hasOwnLocation) shownLocation.orEmpty() else ""
+                            locationDialog = true
+                        }) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = S.matchLocationEdit,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                }
             }
 
             Spacer(Modifier.height(24.dp))
@@ -392,7 +461,7 @@ private fun PersonRow(person: Participant, accent: Color, icon: ImageVector) {
 }
 
 @Composable
-private fun InfoLine(icon: ImageVector, text: String) {
+private fun InfoLine(icon: ImageVector, text: String, muted: Boolean = false) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(
             imageVector = icon,
@@ -404,7 +473,7 @@ private fun InfoLine(icon: ImageVector, text: String) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = if (muted) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
         )
     }
 }

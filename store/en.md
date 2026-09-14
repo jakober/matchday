@@ -17,8 +17,8 @@ Who's watching? Matchday is for groups of friends who watch football together - 
 YOUR CREW, YOUR FIXTURES
 Create a group and invite your people by email. The creator picks the calendars: the full Bundesliga or 2. Bundesliga, single clubs, the national team, Premier League, Champions League, NFL - or any other fixture list by calendar address. Fixtures update on their own, including rescheduled kick-offs.
 
-WHO'S IN?
-Tap a match and say you're in or out - with a reason if you like. Everyone sees right away who's watching on Saturday. Matches with enough people in get a green frame; declines show red. As a list or a month grid, whichever you prefer.
+WHO'S IN, AND WHERE?
+Tap a match and say you're in or out - with a reason if you like. Everyone sees right away who's watching on Saturday. The meeting point is right there: your usual place, or a different one for single matches. Matches with enough people in get a green frame; declines show red. As a list or a month grid, whichever you prefer.
 
 CRESTS, NOT WORDS
 Every match shows the crests of both teams, so you can see who's playing whom at a glance.
