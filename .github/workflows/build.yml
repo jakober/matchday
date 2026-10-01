@@ -65,6 +65,11 @@ jobs:
         # Das Gradle-Projekt enthaelt ein Android-Target; ohne SDK schlaegt schon
         # die Konfigurationsphase fehl, auch wenn nur iOS gebaut wird.
         uses: android-actions/setup-android@v3
+        with:
+          # Ohne diese Zeile versucht die Action das Altpaket "tools" zu
+          # installieren, das Google aus dem Verzeichnis genommen hat - der
+          # Schritt bricht dann ab. Gebraucht wird es nicht.
+          packages: ''
 
       - name: Gradle einrichten
         uses: gradle/actions/setup-gradle@v4
