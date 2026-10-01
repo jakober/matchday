@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  Fussball mit gruenem Zusage-Haken. Erzeugt von store/icon.py - dort
-  aendern, nicht hier. Alles bleibt innerhalb der Sicherheitszone adaptiver
-  Symbole (66 von 108 dp), sonst schneiden runde Launcher die Raender ab.
+  Mittelkreis eines Spielfelds, darin die Leute der Gruppe. Erzeugt von
+  store/icon.py - dort aendern, nicht hier. Alles bleibt innerhalb der
+  Sicherheitszone adaptiver Symbole (66 von 108 dp), sonst schneiden runde
+  Launcher die Raender ab.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -10,18 +11,16 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Ball -->
-    <path android:fillColor="#FFFFFF" android:pathData="M51.0,34.0 a20.0,20.0 0 1,0 0,40.0 a20.0,20.0 0 1,0 0,-40.0 Z" />
-    <path android:fillColor="#161A21" android:pathData="M51.00,47.20 L57.47,51.90 L55.00,59.50 L47.00,59.50 L44.53,51.90 Z" />
-    <path android:strokeColor="#161A21" android:strokeWidth="1.9" android:strokeLineCap="round" android:pathData="M51.00,47.20 L51.00,34.60" />
-    <path android:strokeColor="#161A21" android:strokeWidth="1.9" android:strokeLineCap="round" android:pathData="M57.47,51.90 L69.45,48.01" />
-    <path android:strokeColor="#161A21" android:strokeWidth="1.9" android:strokeLineCap="round" android:pathData="M55.00,59.50 L62.40,69.69" />
-    <path android:strokeColor="#161A21" android:strokeWidth="1.9" android:strokeLineCap="round" android:pathData="M47.00,59.50 L39.60,69.69" />
-    <path android:strokeColor="#161A21" android:strokeWidth="1.9" android:strokeLineCap="round" android:pathData="M44.53,51.90 L32.55,48.01" />
+    <!-- Mittelkreis und Mittellinie -->
+    <path android:strokeColor="#37E27A" android:strokeWidth="2.6" android:pathData="M54.00,35.00 a19.00,19.00 0 1,0 0,38.00 a19.00,19.00 0 1,0 0,-38.00 Z" />
+    <path android:strokeColor="#37E27A" android:strokeWidth="2.6" android:strokeLineCap="round" android:pathData="M21.50,54.0 L32.40,54.0" />
+    <path android:strokeColor="#37E27A" android:strokeWidth="2.6" android:strokeLineCap="round" android:pathData="M75.60,54.0 L86.50,54.0" />
 
-    <!-- Haken, mit dunklem Rand als Trennung vom Ball -->
-    <path android:fillColor="#0F1115" android:pathData="M66.5,55.8 a10.7,10.7 0 1,0 0,21.4 a10.7,10.7 0 1,0 0,-21.4 Z" />
-    <path android:fillColor="#37E27A" android:pathData="M66.5,57.0 a9.5,9.5 0 1,0 0,19.0 a9.5,9.5 0 1,0 0,-19.0 Z" />
-    <path android:strokeColor="#FFFFFF" android:strokeWidth="2.6" android:strokeLineCap="round" android:strokeLineJoin="round"
-        android:pathData="M62.23,66.69 L65.36,69.92 L71.25,63.27" />
+    <!-- Die Leute der Gruppe -->
+    <path android:fillColor="#0F1115" android:pathData="M43.34,47.40 a6.60,6.60 0 1,0 0,13.20 a6.60,6.60 0 1,0 0,-13.20 Z" />
+    <path android:fillColor="#37E27A" android:pathData="M43.34,48.80 a5.20,5.20 0 1,0 0,10.40 a5.20,5.20 0 1,0 0,-10.40 Z" />
+    <path android:fillColor="#0F1115" android:pathData="M54.00,47.40 a6.60,6.60 0 1,0 0,13.20 a6.60,6.60 0 1,0 0,-13.20 Z" />
+    <path android:fillColor="#B06BFF" android:pathData="M54.00,48.80 a5.20,5.20 0 1,0 0,10.40 a5.20,5.20 0 1,0 0,-10.40 Z" />
+    <path android:fillColor="#0F1115" android:pathData="M64.66,47.40 a6.60,6.60 0 1,0 0,13.20 a6.60,6.60 0 1,0 0,-13.20 Z" />
+    <path android:fillColor="#FFA23E" android:pathData="M64.66,48.80 a5.20,5.20 0 1,0 0,10.40 a5.20,5.20 0 1,0 0,-10.40 Z" />
 </vector>

@@ -1,9 +1,14 @@
 """Erzeugt das App-Icon in allen Formaten - aus einer Zeichnung, damit alle
 gleich aussehen.
 
-Motiv: Fussball mit gruenem Zusage-Haken auf dunklem Grund - die Farben der
-App (Hintergrund #0F1115, Gruen #37E27A). Der Ball sagt Fussball, der Haken
-"Wer kommt?".
+Motiv: Der Mittelkreis eines Spielfelds mit der Mittellinie, darin drei
+ueberlappende Punkte - die Leute der Gruppe, wie in der Zusagezeile der App.
+Farben der App (Hintergrund #0F1115, Gruen #37E27A, dazu die Avatarfarben).
+
+Bewusst KEIN Fussball und KEIN Haken im Kreis: Google Play hat das vorige
+Motiv im Oktober 2026 wegen angeblich fremder Inhalte abgelehnt. Ball mit
+schwarzem Fuenfeck und gruener Haken-Kreis sind beide tausendfach vergeben;
+Mittelkreis mit Gruppenpunkten ist eigen und sagt dasselbe.
 
 Ausgabe:
   iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png
@@ -24,70 +29,66 @@ BG = (15, 17, 21)
 GREEN = (55, 226, 122)
 WHITE = (255, 255, 255)
 DARK = (22, 26, 33)
+# Dieselben drei Farben wie die ersten Avatare in der App.
+DOTS = ((55, 226, 122), (176, 107, 255), (255, 162, 62))
 
 
-def ball(draw, cx, cy, r, ink, paper, seam):
-    """Klassischer Ball: weisse Kugel, dunkles Fuenfeck in der Mitte, fuenf Naehte."""
-    draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=paper)
-    pr = r * 0.34
-    pent = [(cx + pr * math.sin(2 * math.pi * i / 5), cy - pr * math.cos(2 * math.pi * i / 5)) for i in range(5)]
-    draw.polygon(pent, fill=ink)
-    for (x, y) in pent:
-        # Naht vom Eck des Fuenfecks nach aussen, auf derselben Strahlrichtung
-        dx, dy = x - cx, y - cy
-        n = math.hypot(dx, dy)
-        ex, ey = cx + dx / n * r * 0.97, cy + dy / n * r * 0.97
-        draw.line((x, y, ex, ey), fill=ink, width=seam)
+def pitch(draw, cx, cy, r, line, width):
+    """Mittelkreis mit Mittellinie - links und rechts bis zum Rand."""
+    draw.ellipse((cx - r, cy - r, cx + r, cy + r), outline=line, width=width)
+    gap = r + width
+    draw.line((cx - r * 1.62, cy, cx - gap, cy), fill=line, width=width)
+    draw.line((cx + gap, cy, cx + r * 1.62, cy), fill=line, width=width)
 
 
-def check(draw, cx, cy, r, color, width):
-    """Haken in einem Kreis."""
-    draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=color)
-    p1 = (cx - r * 0.45, cy + r * 0.02)
-    p2 = (cx - r * 0.12, cy + r * 0.36)
-    p3 = (cx + r * 0.5, cy - r * 0.34)
-    draw.line((p1, p2), fill=WHITE, width=width)
-    draw.line((p2, p3), fill=WHITE, width=width)
-    for p in (p1, p2, p3):
-        draw.ellipse((p[0] - width / 2, p[1] - width / 2, p[0] + width / 2, p[1] + width / 2), fill=WHITE)
+def people(draw, cx, cy, r, ring):
+    """Drei ueberlappende Punkte: die Leute der Gruppe."""
+    step = r * 1.34
+    # Von rechts nach links zeichnen: der linke Punkt liegt oben, wie in der
+    # Avatarreihe der App.
+    for i, color in reversed(list(enumerate(DOTS))):
+        x = cx + (i - 1) * step
+        # Ring in Hintergrundfarbe, damit sich die Punkte abheben - wie die
+        # Avatarreihe in der Liste.
+        draw.ellipse((x - r - ring, cy - r - ring, x + r + ring, cy + r + ring), fill=BG)
+        draw.ellipse((x - r, cy - r, x + r, cy + r), fill=color)
 
 
 def render(size, with_background=True):
     s = size
     img = Image.new("RGBA", (s, s), BG if with_background else (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    cx = s * 0.47
-    cy = s * 0.50
-    r = s * 0.30
-    ball(draw, cx, cy, r, DARK, WHITE, max(2, int(s * 0.028)))
-    # Der Haken sitzt unten rechts auf dem Ball, mit dunklem Rand als Trennung.
-    bx, by, br = s * 0.70, s * 0.70, s * 0.145
-    draw.ellipse((bx - br - s * 0.018, by - br - s * 0.018, bx + br + s * 0.018, by + br + s * 0.018), fill=BG)
-    check(draw, bx, by, br, GREEN, max(3, int(s * 0.05)))
+    cx = cy = s * 0.5
+    pitch(draw, cx, cy, s * 0.30, GREEN, max(3, int(s * 0.042)))
+    people(draw, cx, cy, s * 0.082, max(2, int(s * 0.020)))
     return img
 
 
 def android_vector():
     """Adaptives Icon: 108dp Flaeche, Sicherheitszone 66dp um die Mitte."""
-    cx, cy, r = 51.0, 54.0, 20.0
-    pr = r * 0.34
-    pent = [(cx + pr * math.sin(2 * math.pi * i / 5), cy - pr * math.cos(2 * math.pi * i / 5)) for i in range(5)]
-    pent_path = "M" + " L".join(f"{x:.2f},{y:.2f}" for x, y in pent) + " Z"
-    seams = []
-    for (x, y) in pent:
-        dx, dy = x - cx, y - cy
-        n = math.hypot(dx, dy)
-        ex, ey = cx + dx / n * r * 0.97, cy + dy / n * r * 0.97
-        seams.append(f'    <path android:strokeColor="#161A21" android:strokeWidth="1.9" android:strokeLineCap="round" android:pathData="M{x:.2f},{y:.2f} L{ex:.2f},{ey:.2f}" />')
-    bx, by, br = 66.5, 66.5, 9.5
-    p1 = (bx - br * 0.45, by + br * 0.02)
-    p2 = (bx - br * 0.12, by + br * 0.36)
-    p3 = (bx + br * 0.5, by - br * 0.34)
+    cx = cy = 54.0
+    r = 19.0          # Mittelkreis
+    w = 2.6           # Strichstaerke
+    dot = 5.2         # Punktradius
+    ring = 1.4
+    gap = r + w
+    end = 32.5        # bleibt in der Sicherheitszone (54 +- 33)
+
+    def circle(x, y, rad):
+        return f"M{x:.2f},{y - rad:.2f} a{rad:.2f},{rad:.2f} 0 1,0 0,{2 * rad:.2f} a{rad:.2f},{rad:.2f} 0 1,0 0,{-2 * rad:.2f} Z"
+
+    dots = []
+    for i, color in enumerate(("#37E27A", "#B06BFF", "#FFA23E")):
+        x = cx + (i - 1) * dot * 2.05
+        dots.append(f'    <path android:fillColor="#0F1115" android:pathData="{circle(x, cy, dot + ring)}" />')
+        dots.append(f'    <path android:fillColor="{color}" android:pathData="{circle(x, cy, dot)}" />')
+
     fg = f'''<?xml version="1.0" encoding="utf-8"?>
 <!--
-  Fussball mit gruenem Zusage-Haken. Erzeugt von store/icon.py - dort
-  aendern, nicht hier. Alles bleibt innerhalb der Sicherheitszone adaptiver
-  Symbole (66 von 108 dp), sonst schneiden runde Launcher die Raender ab.
+  Mittelkreis eines Spielfelds, darin die Leute der Gruppe. Erzeugt von
+  store/icon.py - dort aendern, nicht hier. Alles bleibt innerhalb der
+  Sicherheitszone adaptiver Symbole (66 von 108 dp), sonst schneiden runde
+  Launcher die Raender ab.
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
@@ -95,16 +96,13 @@ def android_vector():
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Ball -->
-    <path android:fillColor="#FFFFFF" android:pathData="M{cx},{cy - r} a{r},{r} 0 1,0 0,{2 * r} a{r},{r} 0 1,0 0,{-2 * r} Z" />
-    <path android:fillColor="#161A21" android:pathData="{pent_path}" />
-{chr(10).join(seams)}
+    <!-- Mittelkreis und Mittellinie -->
+    <path android:strokeColor="#37E27A" android:strokeWidth="{w}" android:pathData="{circle(cx, cy, r)}" />
+    <path android:strokeColor="#37E27A" android:strokeWidth="{w}" android:strokeLineCap="round" android:pathData="M{cx - end:.2f},{cy} L{cx - gap:.2f},{cy}" />
+    <path android:strokeColor="#37E27A" android:strokeWidth="{w}" android:strokeLineCap="round" android:pathData="M{cx + gap:.2f},{cy} L{cx + end:.2f},{cy}" />
 
-    <!-- Haken, mit dunklem Rand als Trennung vom Ball -->
-    <path android:fillColor="#0F1115" android:pathData="M{bx},{by - br - 1.2} a{br + 1.2},{br + 1.2} 0 1,0 0,{2 * (br + 1.2)} a{br + 1.2},{br + 1.2} 0 1,0 0,{-2 * (br + 1.2)} Z" />
-    <path android:fillColor="#37E27A" android:pathData="M{bx},{by - br} a{br},{br} 0 1,0 0,{2 * br} a{br},{br} 0 1,0 0,{-2 * br} Z" />
-    <path android:strokeColor="#FFFFFF" android:strokeWidth="2.6" android:strokeLineCap="round" android:strokeLineJoin="round"
-        android:pathData="M{p1[0]:.2f},{p1[1]:.2f} L{p2[0]:.2f},{p2[1]:.2f} L{p3[0]:.2f},{p3[1]:.2f}" />
+    <!-- Die Leute der Gruppe -->
+{chr(10).join(dots)}
 </vector>
 '''
     mono = f'''<?xml version="1.0" encoding="utf-8"?>
@@ -114,9 +112,10 @@ def android_vector():
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:fillColor="#FFFFFF" android:pathData="M{cx},{cy - r} a{r},{r} 0 1,0 0,{2 * r} a{r},{r} 0 1,0 0,{-2 * r} Z" />
-    <path android:fillColor="#000000" android:pathData="{pent_path}" />
-    <path android:fillColor="#FFFFFF" android:pathData="M{bx},{by - br} a{br},{br} 0 1,0 0,{2 * br} a{br},{br} 0 1,0 0,{-2 * br} Z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="{w}" android:pathData="{circle(cx, cy, r)}" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="{w}" android:strokeLineCap="round" android:pathData="M{cx - end:.2f},{cy} L{cx - gap:.2f},{cy}" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="{w}" android:strokeLineCap="round" android:pathData="M{cx + gap:.2f},{cy} L{cx + end:.2f},{cy}" />
+{chr(10).join(f'    <path android:fillColor="#000000" android:pathData="{circle(cx + (i - 1) * dot * 2.05, cy, dot + ring)}" />' + chr(10) + f'    <path android:fillColor="#FFFFFF" android:pathData="{circle(cx + (i - 1) * dot * 2.05, cy, dot)}" />' for i in range(3))}
 </vector>
 '''
     return fg, mono
