@@ -49,11 +49,26 @@ jobs:
     # bei jedem Push - auf Linux, zum einfachen Preis.
     if: github.event_name == 'workflow_dispatch'
     name: iOS (Simulator)
-    # Laeuft wieder bei jedem Push: Oeffentliche Repositories haben
-    # unbegrenzte Actions-Minuten, auch auf macOS.
-    runs-on: macos-15
+    # Abbild nach Xcode-Fassung statt nach Betriebssystem: Nur Xcode 27 kennt
+    # das Falt-iPhone. Wer mit aelterem SDK baut, dessen App laeuft auf dem
+    # Geraet in einem kleinen Fenster statt auf dem ganzen Schirm.
+    runs-on: xcode-27
     steps:
       - uses: actions/checkout@v4
+
+      - name: Womit gebaut wird
+        run: |
+          ls -d /Applications/Xcode*.app
+          LATEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          sudo xcode-select -s "$LATEST"
+          V="$(xcodebuild -version | head -n 1)"
+          SDK="$(xcodebuild -showsdks | grep -o 'iphoneos[0-9.]*' | sort -V | tail -1)"
+          echo "::notice title=Xcode::$V"
+          echo "::notice title=iOS-SDK::${SDK:-unbekannt}"
+          case "$SDK" in
+            iphoneos27.1*|iphoneos2[89]*|iphoneos[3-9]*) ;;
+            *) echo "::warning::Mit $SDK gebaut. Fuer das ganze Bild auf dem Falt-iPhone braucht es iphoneos27.1 oder neuer." ;;
+          esac
 
       - name: JDK 17 einrichten
         uses: actions/setup-java@v4
