@@ -22,8 +22,11 @@ on:
 jobs:
   upload:
     name: Bauen und zu TestFlight hochladen
-    # Apple nimmt nur noch Pakete an, die mit dem iOS-26-SDK gebaut wurden.
-    runs-on: macos-26
+    # Abbild nach Xcode-Fassung statt nach Betriebssystem. Apple nimmt nur
+    # Pakete ab dem iOS-26-SDK an, und das Falt-iPhone gibt einer App erst mit
+    # dem 27.1-SDK das ganze Bild - mit aelterem laeuft sie dort in einem
+    # kleinen Fenster im gewoehnlichen iPhone-Format.
+    runs-on: xcode-27
 
     # match legt Zertifikat und Profil im Zweig "certificates" desselben Repos
     # ab - dafuer braucht der Lauf Schreibrecht.
@@ -83,6 +86,12 @@ jobs:
           echo "Verwende $LATEST"
           sudo xcode-select -s "$LATEST"
           xcodebuild -version
+          SDK="$(xcodebuild -showsdks | grep -o 'iphoneos[0-9.]*' | sort -V | tail -1)"
+          echo "::notice title=iOS-SDK::${SDK:-unbekannt}"
+          case "$SDK" in
+            iphoneos27.1*|iphoneos2[89]*|iphoneos[3-9]*) ;;
+            *) echo "::warning::Mit $SDK gebaut - auf dem Falt-iPhone bleibt die App damit im kleinen Fenster." ;;
+          esac
 
       - name: JDK 17 einrichten
         uses: actions/setup-java@v4
