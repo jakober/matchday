@@ -101,6 +101,11 @@ interface Strings {
     val statusIn: String
     val statusOut: String
     val statusOpen: String
+    val notifyIn: String
+    val notifyOut: String
+    val notifySavedIn: String
+    val notifySavedOut: String
+    val notifySaveFailed: String
     val allDay: String
 
     // -- Spieldetail
@@ -377,6 +382,11 @@ object De : Strings {
     override val statusIn = "Dabei"
     override val statusOut = "Nicht dabei"
     override val statusOpen = "Offen"
+    override val notifyIn = "Bin dabei"
+    override val notifyOut = "Kann nicht"
+    override val notifySavedIn = "Zusage gespeichert"
+    override val notifySavedOut = "Absage gespeichert"
+    override val notifySaveFailed = "Antwort nicht gespeichert. Bitte in der App antworten."
     override val allDay = "Ganztägig"
 
     override val unmarkImportant = "Hervorhebung aufheben"
@@ -646,6 +656,11 @@ object En : Strings {
     override val statusIn = "In"
     override val statusOut = "Out"
     override val statusOpen = "Open"
+    override val notifyIn = "I'm in"
+    override val notifyOut = "Can't make it"
+    override val notifySavedIn = "Saved: you're in"
+    override val notifySavedOut = "Saved: you're out"
+    override val notifySaveFailed = "Answer not saved. Please answer in the app."
     override val allDay = "All day"
 
     override val unmarkImportant = "Remove highlight"

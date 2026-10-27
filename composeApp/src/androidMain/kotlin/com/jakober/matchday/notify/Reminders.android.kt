@@ -85,6 +85,7 @@ class AndroidReminderScheduler(private val context: Context) : ReminderScheduler
             putExtra(ReminderReceiver.EXTRA_ID, reminder.id)
             putExtra(ReminderReceiver.EXTRA_TITLE, reminder.title)
             putExtra(ReminderReceiver.EXTRA_BODY, reminder.body)
+            putExtra(ReminderReceiver.EXTRA_MATCH_ID, reminder.matchId)
         }
         val pending = PendingIntent.getBroadcast(
             context,

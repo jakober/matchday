@@ -22,6 +22,7 @@ sagt zu oder ab, alle sehen, wer dabei ist. Eine Codebasis für Android und iOS
 - Erinnerung vor Anpfiff (Vorlauf einstellbar) und Nachfrage eine Woche, drei
   Tage und 24 Stunden vorher, solange die Antwort fehlt
 - Treffpunkt je Gruppe (vom Admin), je Spiel abweichend; steht im Spiel und in der Erinnerung
+- Android: zusagen oder absagen direkt aus der Benachrichtigung, auch von einer gekoppelten Uhr
 - Deutsch und Englisch, nach Gerätesprache
 
 ## Aufbau

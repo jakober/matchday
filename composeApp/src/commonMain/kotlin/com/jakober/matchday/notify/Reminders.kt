@@ -14,6 +14,13 @@ data class ScheduledReminder(
     val at: Instant,
     val title: String,
     val body: String,
+    /**
+     * Das Spiel, um das es geht. Android haengt daran die Knoepfe "Bin dabei"
+     * und "Kann nicht" - damit laesst sich direkt aus der Benachrichtigung
+     * antworten, auch von einer gekoppelten Uhr. Ohne Spiel (Testmeldung)
+     * bleibt das Feld leer und es gibt keine Knoepfe.
+     */
+    val matchId: String? = null,
 )
 
 /**
@@ -109,6 +116,7 @@ object ReminderPlanner {
                         at = at,
                         title = match.displayTitle,
                         body = kickoffBody(settings.minutesBefore, locationOf(match)),
+                        matchId = match.id,
                     )
                 }
             }
@@ -124,6 +132,7 @@ object ReminderPlanner {
                             at = at,
                             title = S.askAreYouIn,
                             body = undecidedBody(daysBefore, match.displayTitle),
+                            matchId = match.id,
                         )
                     }
                 }

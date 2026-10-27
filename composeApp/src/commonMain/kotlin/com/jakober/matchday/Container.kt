@@ -653,7 +653,30 @@ object Container {
     fun setRsvp(matchId: String, status: RsvpStatus, comment: String?) {
         store.setRsvp(matchId, status, comment)
         rescheduleReminders()
+        scope.launch { runCatching { pushRsvp(matchId, status, comment) } }
+    }
 
+    /**
+     * Antwort aus einer Benachrichtigung heraus, ohne dass die App offen ist.
+     *
+     * Zwei Unterschiede zu setRsvp: Der Prozess kann frisch gestartet sein,
+     * also wird die gespeicherte Sitzung zuerst geholt. Und es wird auf den
+     * Server gewartet, weil das System den Prozess sonst beendet, bevor die
+     * Antwort draussen ist. Liefert zurueck, ob es geklappt hat.
+     */
+    suspend fun answerFromNotification(matchId: String, status: RsvpStatus): Boolean {
+        if (store.membership.value == null) {
+            if (!backend.restoreSession()) return false
+            restoreMembership()
+            if (store.membership.value == null) return false
+        }
+        store.setRsvp(matchId, status, null)
+        rescheduleReminders()
+        return runCatching { pushRsvp(matchId, status, null) }.isSuccess
+    }
+
+    /** Die eigene Antwort in die Gruppe schieben und die anderen benachrichtigen. */
+    private suspend fun pushRsvp(matchId: String, status: RsvpStatus, comment: String?) {
         if (demoMode) return
         val membership = store.membership.value ?: return
         val parts = splitMatchId(matchId) ?: return
@@ -662,19 +685,15 @@ object Container {
         // an die anderen sagen kann, um welches Spiel es geht.
         val title = store.matches.value.firstOrNull { it.id == matchId }?.displayTitle
 
-        scope.launch {
-            runCatching {
-                if (status == RsvpStatus.UNDECIDED) {
-                    backend.clearRsvp(membership, calendarId, parts.second)
-                } else {
-                    backend.setRsvp(membership, calendarId, parts.second, status, comment, title)
-                    // Erst speichern, dann melden: Die Function liest die
-                    // Antwort aus der Datenbank, sie muss also schon dort sein.
-                    backend.notifyGroup(calendarId, parts.second)
-                }
-                refreshGroup()
-            }
+        if (status == RsvpStatus.UNDECIDED) {
+            backend.clearRsvp(membership, calendarId, parts.second)
+        } else {
+            backend.setRsvp(membership, calendarId, parts.second, status, comment, title)
+            // Erst speichern, dann melden: Die Function liest die Antwort aus
+            // der Datenbank, sie muss also schon dort sein.
+            backend.notifyGroup(calendarId, parts.second)
         }
+        refreshGroup()
     }
 
     /**
